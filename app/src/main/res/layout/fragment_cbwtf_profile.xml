@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    tools:context=".fragments.CbwtfProfileFragment">
+
+
+    <LinearLayout
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:id="@+id/cbwtf_profile_appbar"
+        app:layout_constraintTop_toTopOf="parent"
+        android:background="@color/app_color_dark"
+        android:layout_width="match_parent"
+        android:layout_height="?actionBarSize">
+
+        <ImageView
+            android:id="@+id/cbwtf_profile_back_button"
+            app:tint="@color/white"
+            android:padding="15dp"
+            android:src="@drawable/ic_baseline_arrow_back_ios_24"
+            android:layout_width="50dp"
+            android:layout_height="match_parent"/>
+
+        <ImageView
+            android:visibility="gone"
+            android:id="@+id/cbwtf_profile_appBar_logo"
+            android:padding="5dp"
+            android:background="@drawable/bg_white_round"
+            android:layout_margin="5dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"/>
+
+        <TextView
+            android:textStyle="bold"
+            android:textColor="@color/white"
+            android:gravity="center"
+            android:text="Profile"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"/>
+
+        <ImageView
+            android:id="@+id/cbwtf_profile_logout"
+            app:tint="@color/white"
+            android:padding="15dp"
+            android:src="@drawable/ic_baseline_logout_24"
+            android:layout_width="50dp"
+            android:layout_height="match_parent"/>
+
+    </LinearLayout>
+
+    <androidx.core.widget.NestedScrollView
+        app:layout_constraintTop_toBottomOf="@id/cbwtf_profile_appbar"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constrainedHeight="true"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <ImageView
+                android:id="@+id/cbwtf_profile_img"
+                android:layout_margin="20dp"
+                android:layout_width="match_parent"
+                android:layout_height="100dp"/>
+
+            <LinearLayout
+                android:layout_margin="20dp"
+                android:background="@drawable/bg_et"
+                android:orientation="vertical"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <TextView
+                    android:textColor="@color/app_color_dark"
+                    android:textStyle="bold"
+                    android:textSize="18sp"
+                    android:layout_marginStart="20dp"
+                    android:layout_marginEnd="20dp"
+                    android:layout_marginTop="20dp"
+                    android:layout_marginBottom="5dp"
+                    android:text="Name"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"/>
+
+                <TextView
+                    android:id="@+id/cbwtf_profile_name"
+                    android:textColor="#4A4848"
+                    android:textSize="16sp"
+                    android:layout_marginStart="20dp"
+                    android:layout_marginEnd="20dp"
+                    android:text="Aditya"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"/>
+
+                <TextView
+                    android:textColor="@color/app_color_dark"
+                    android:textStyle="bold"
+                    android:textSize="18sp"
+                    android:layout_marginStart="20dp"
+                    android:layout_marginEnd="20dp"
+                    android:layout_marginTop="20dp"
+                    android:layout_marginBottom="5dp"
+                    android:text="Mobile"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"/>
+
+                <TextView
+                    android:id="@+id/cbwtf_profile_mobile"
+                    android:textColor="#4A4848"
+                    android:textSize="16sp"
+                    android:layout_marginStart="20dp"
+                    android:layout_marginEnd="20dp"
+                    android:text="9876543210"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"/>
+
+                <TextView
+                    android:textColor="@color/app_color_dark"
+                    android:textStyle="bold"
+                    android:textSize="18sp"
+                    android:layout_marginStart="20dp"
+                    android:layout_marginEnd="20dp"
+                    android:layout_marginTop="20dp"
+                    android:layout_marginBottom="5dp"
+                    android:text="Address"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"/>
+
+                <TextView
+                    android:id="@+id/cbwtf_profile_address"
+                    android:textColor="#4A4848"
+                    android:textSize="16sp"
+                    android:layout_marginStart="20dp"
+                    android:layout_marginEnd="20dp"
+                    android:layout_marginBottom="20dp"
+                    android:text="Lucknow"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"/>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </androidx.core.widget.NestedScrollView>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        app:maxImageSize="50dp"
+        app:backgroundTint="@color/white"
+        app:tint="@color/app_color_dark"
+        app:fabSize="mini"
+        android:src="@drawable/ic_baseline_help_outline_24"
+        android:layout_marginBottom="10dp"
+        android:id="@+id/cbwtf_profile_help"
+        app:layout_constraintBottom_toTopOf="@id/cbwtf_profile_enquiry"
+        app:layout_constraintEnd_toEndOf="@id/cbwtf_profile_enquiry"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        app:backgroundTint="@color/white"
+        app:tint="@color/app_color_dark"
+        app:maxImageSize="50dp"
+        app:fabSize="mini"
+        android:src="@drawable/ic_outline_support_agent_24"
+        android:layout_margin="20dp"
+        android:id="@+id/cbwtf_profile_enquiry"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

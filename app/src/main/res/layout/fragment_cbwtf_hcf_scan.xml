@@ -1,0 +1,546 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    tools:context=".fragments.CbwtfHcfScanFragment">
+
+    <LinearLayout
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:id="@+id/cbwtf_hcf_scan_appbar"
+        app:layout_constraintTop_toTopOf="parent"
+        android:background="@color/app_color_dark"
+        android:layout_width="match_parent"
+        android:layout_height="?actionBarSize">
+
+        <LinearLayout
+            android:gravity="center_vertical"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="match_parent">
+
+            <ImageView
+                android:id="@+id/cbwtf_hcf_scan_back_button"
+                app:tint="@color/white"
+                android:padding="15dp"
+                android:src="@drawable/ic_baseline_arrow_back_ios_24"
+                android:layout_width="50dp"
+                android:layout_height="match_parent"/>
+
+            <ImageView
+                android:id="@+id/cbwtf_hcf_scan_appBar_logo"
+                android:padding="5dp"
+                android:background="@drawable/bg_white_round"
+                android:layout_margin="5dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"/>
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent">
+
+            <TextView
+                android:id="@+id/cbwtf_hcf_scan_appbar_tv"
+                android:textSize="18sp"
+                android:layout_margin="5dp"
+                android:gravity="center"
+                android:textStyle="bold"
+                android:textColor="@color/white"
+                android:text="Manual"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"/>
+
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/cbwtf_hcf_scan_appbar_switch"
+                app:trackTint="@color/app_color_dark"
+                android:layout_margin="5dp"
+                app:thumbTint="@color/white"
+                android:layout_width="wrap_content"
+
+                android:layout_height="match_parent"/>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+
+    <ScrollView
+        app:layout_constraintBottom_toTopOf="@id/cbwtf_hcf_scan_bottombar"
+        app:layout_constrainedHeight="true"
+        app:layout_constraintTop_toBottomOf="@id/cbwtf_hcf_scan_appbar"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <com.journeyapps.barcodescanner.DecoratedBarcodeView
+                android:id="@+id/barcode_scanner"
+                android:layout_width="match_parent"
+                android:layout_height="200dp"
+              >
+
+            </com.journeyapps.barcodescanner.DecoratedBarcodeView>
+
+
+
+            <TextView
+                android:textStyle="bold"
+                android:text="Name of HCF"
+                android:layout_marginStart="20dp"
+                android:layout_marginEnd="20dp"
+                android:layout_marginTop="20dp"
+                android:visibility="gone"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+            <TextView
+                android:text="HCF Name"
+                android:padding="5dp"
+                android:gravity="center_vertical"
+                android:background="@drawable/bg_et"
+                android:id="@+id/cbwtf_hcf_scan_name_tv"
+                android:layout_marginStart="20dp"
+                android:layout_marginEnd="20dp"
+                android:visibility="gone"
+                android:layout_width="match_parent"
+                android:layout_height="45dp"/>
+
+            <TextView
+                android:textStyle="bold"
+                android:layout_marginTop="20dp"
+                android:layout_marginStart="20dp"
+                android:layout_marginEnd="20dp"
+                android:text="HCF Code"
+                android:visibility="gone"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+            <LinearLayout
+                android:background="@drawable/bg_et"
+                android:layout_marginStart="20dp"
+                android:layout_marginEnd="20dp"
+                android:visibility="gone"
+                android:layout_width="match_parent"
+                android:layout_height="45dp">
+
+                <TextView
+                    android:id="@+id/cbwtf_hcf_scan_code_tv"
+                    android:padding="5dp"
+                    android:gravity="center_vertical"
+                    android:text="HCF QR Code"
+                    android:layout_weight="1"
+                    android:layout_width="0dp"
+                    android:layout_height="45dp"/>
+
+                <ImageView
+                    android:id="@+id/cbwtf_hcf_scan_reset"
+                    app:tint="@color/app_color_dark"
+                    android:padding="10dp"
+                    android:src="@drawable/ic_baseline_clear_24"
+                    android:layout_width="45dp"
+                    android:layout_height="match_parent"/>
+
+            </LinearLayout>
+
+            <TextView
+                android:textStyle="bold"
+                android:layout_marginTop="20dp"
+                android:layout_marginStart="20dp"
+                android:layout_marginEnd="20dp"
+                android:text="Location"
+                android:visibility="gone"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+            <TextView
+                android:layout_marginBottom="20dp"
+                android:background="@drawable/bg_et"
+                android:layout_marginStart="20dp"
+                android:layout_marginEnd="20dp"
+                android:id="@+id/cbwtf_hcf_scan_location_tv"
+                android:padding="5dp"
+                android:gravity="center_vertical"
+                android:visibility="gone"
+                android:text="HCF Location"
+                android:layout_width="match_parent"
+                android:layout_height="45dp"/>
+
+            <com.google.android.material.card.MaterialCardView
+                android:visibility="gone"
+                app:cardCornerRadius="10dp"
+                app:cardElevation="5dp"
+                android:layout_margin="20dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <LinearLayout
+                    android:gravity="center_vertical"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:layout_margin="10dp"
+                        android:textStyle="bold"
+                        android:textSize="18sp"
+                        android:text="Attendance"
+                        android:layout_weight="1"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"/>
+
+                    <ImageView
+                        android:id="@+id/cbwtf_hcf_scan_attendance"
+                        app:tint="@color/black"
+                        android:layout_margin="10dp"
+                        android:src="@drawable/ic_baseline_qr_code_scanner_24"
+                        android:layout_width="50dp"
+                        android:layout_height="50dp"/>
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_marginStart="20dp"
+                android:layout_marginEnd="20dp"
+                android:layout_marginBottom="10dp"
+                android:layout_width="match_parent"
+                android:layout_marginTop="20dp"
+                android:layout_height="wrap_content">
+
+                <LinearLayout
+                    android:background="@drawable/gradient_bg_green"
+                    android:orientation="horizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <LinearLayout
+                        android:layout_margin="5dp"
+                        android:gravity="center"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content">
+
+                        <TextView
+                            android:textStyle="bold"
+                            android:textColor="@color/white"
+                            android:text="Total bags"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"/>
+                        <TextView
+                            android:id="@+id/weight_total_bags"
+                            android:textStyle="bold"
+                            android:textSize="20sp"
+                            android:textColor="@color/white"
+                            android:text="0"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"/>
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_margin="5dp"
+                        android:gravity="center"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content">
+
+                        <TextView
+                            android:textStyle="bold"
+                            android:textColor="@color/white"
+                            android:text="Total weight (Kg)"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"/>
+
+                        <TextView
+                            android:id="@+id/weight_total_waste_weight"
+                            android:textStyle="bold"
+                            android:textSize="20sp"
+                            android:textColor="@color/white"
+                            android:text="000.000"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"/>
+
+                    </LinearLayout>
+
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:visibility="gone"
+                android:id="@+id/attendance_card"
+                app:cardBackgroundColor="@color/white"
+                app:strokeColor="@color/app_color"
+                app:strokeWidth="1dp"
+                android:layout_marginStart="20dp"
+                android:layout_marginEnd="20dp"
+                android:layout_marginBottom="10dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    android:gravity="center"
+                    android:textStyle="bold"
+                    android:textColor="#646464"
+                    android:layout_margin="10dp"
+                    android:text="Attendance"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"/>
+
+                <TextView
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:id="@+id/attendance_status_tv"
+                    android:drawablePadding="5dp"
+                    android:textColor="@color/white"
+                    android:text="Pending"
+                    android:layout_margin="10dp"
+                    android:layout_gravity="end"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    app:drawableTint="@color/white"
+                    app:drawableEndCompat="@drawable/ic_baseline_pending_actions_24" />
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <androidx.recyclerview.widget.RecyclerView
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    android:id="@+id/cbwtf_hcf_scan_weight_rv"
+                    android:layout_width="match_parent"
+                    android:minHeight="200dp"
+                    android:layout_height="wrap_content"/>
+
+                <TextView
+                    android:id="@+id/empty_tv"
+                    android:textColor="#969696"
+                    android:drawablePadding="10dp"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    android:text="Scan and add weights"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:drawableTopCompat="@drawable/weight_img"
+                    app:drawableTint="#969696" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+        </LinearLayout>
+    </ScrollView>
+
+    <LinearLayout
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="10dp"
+        android:orientation="horizontal"
+        android:id="@+id/cbwtf_hcf_scan_bottombar"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <com.google.android.material.button.MaterialButton
+            android:layout_marginEnd="5dp"
+            android:id="@+id/cbwtf_hcf_scan_button"
+            android:textStyle="bold"
+            android:text="Scan"
+            android:visibility="gone"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="50dp"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/cbwtf_hcf_scan_submit_button"
+            android:layout_marginStart="5dp"
+            android:textStyle="bold"
+            android:text="Submit"
+            android:backgroundTint="@color/app_color_dark"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="50dp"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:visibility="gone"
+            android:id="@+id/cbwtf_hcf_scan_attendance_button"
+            android:layout_marginStart="5dp"
+            android:textStyle="bold"
+            android:text="Attendance"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="50dp"/>
+
+    </LinearLayout>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:visibility="gone"
+        android:id="@+id/weight_view"
+        android:elevation="10dp"
+        android:background="@color/white"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:id="@+id/weight_view_header_bar"
+            android:background="@color/app_color_dark"
+            app:layout_constraintTop_toTopOf="parent"
+            android:layout_width="match_parent"
+            android:layout_height="?actionBarSize">
+
+            <ImageView
+                app:tint="@color/white"
+                android:id="@+id/back_button_weight"
+                android:padding="15dp"
+                android:src="@drawable/ic_baseline_arrow_back_ios_24"
+                android:layout_width="50dp"
+                android:layout_height="match_parent"/>
+
+            <TextView
+                android:textColor="@color/white"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:text="Waste Weight (Kg)"
+                android:layout_weight="1"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"/>
+
+            <View
+                android:layout_width="50dp"
+                android:layout_height="match_parent"/>
+
+        </LinearLayout>
+
+        <TextView
+            android:gravity="center"
+            android:id="@+id/weight_hcf_name"
+            android:textStyle="bold"
+            android:textSize="20sp"
+            android:layout_margin="20dp"
+            app:layout_constraintTop_toBottomOf="@id/weight_view_header_bar"
+            app:layout_constraintBottom_toTopOf="@id/weight_type_ll"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <LinearLayout
+            android:id="@+id/weight_type_ll"
+            android:layout_margin="20dp"
+            android:gravity="center"
+            android:orientation="horizontal"
+            app:layout_constraintBottom_toTopOf="@id/weight_tv"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:textColor="@color/black"
+                android:layout_margin="5dp"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:text="Waste bag colour:"
+                app:layout_constraintTop_toBottomOf="@id/weight_view_header_bar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+
+            <TextView
+                android:layout_margin="5dp"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:text="RED"
+                android:id="@+id/weight_type"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+
+            <ImageView
+                android:id="@+id/weight_type_img"
+                android:layout_margin="5dp"
+                android:layout_width="50dp"
+                android:layout_height="50dp"/>
+
+        </LinearLayout>
+
+        <TextView
+            android:fontFamily="@font/ds_digi_bold"
+            android:id="@+id/weight_tv"
+            android:textColor="@android:color/holo_red_light"
+            android:textSize="50sp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:gravity="center"
+            android:text="0"
+            app:layout_constraintBottom_toTopOf="@id/weighing_img"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <ImageView
+            android:scaleType="fitCenter"
+            android:id="@+id/weighing_img"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:layout_width="match_parent"
+            android:layout_height="100dp"/>
+
+        <TextView
+            android:layout_margin="20sp"
+            android:gravity="center"
+            android:text="Important: Please do not turn off the bluetooth, keep your mobile close to the machine"
+            app:layout_constraintBottom_toTopOf="@id/weight_add_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/weight_add_button"
+            android:text="Add weight"
+            android:visibility="gone"
+            android:layout_margin="10dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <LinearLayout
+            android:id="@+id/loading_view_ll"
+            android:layout_margin="10dp"
+            app:layout_constraintTop_toBottomOf="@id/weighing_img"
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <com.google.android.material.progressindicator.LinearProgressIndicator
+                android:layout_margin="10dp"
+                app:trackColor="@color/app_color"
+                app:indicatorColor="@color/app_color_light"
+                android:indeterminate="true"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+            <TextView
+                android:textStyle="bold"
+                android:textSize="15sp"
+                android:textColor="@color/app_color_dark"
+                android:layout_margin="10dp"
+                android:gravity="center"
+                android:text="Connecting to device"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+
+
+        </LinearLayout>
+
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

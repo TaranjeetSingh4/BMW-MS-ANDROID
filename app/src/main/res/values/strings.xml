@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">BMWMS</string>
+    <string name="u_guidelines_of_cpcb_and_bmwm_rules_u"><u>Guidelines of CPCB and BMWM rules</u></string>
+    <string name="how_it_works"><u>How it works</u></string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="ostron_email">ostronofficial@gmail.com</string>
+    <string name="ostron_number">8287508988</string>
+    <string name="ostron_website">http://ostron.in</string>
+    <string name="total"><u>TOTAL(P)</u></string>
+    <string name="todo">TODO</string>
+</resources>

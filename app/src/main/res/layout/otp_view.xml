@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <LinearLayout
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        android:background="@drawable/bg_et"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        app:layout_constraintTop_toTopOf="parent"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="@color/app_color_dark"
+            android:layout_margin="10dp"
+            android:gravity="center"
+            android:text="Enter OTP"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <TextView
+            android:layout_marginBottom="10dp"
+            android:textColor="#4A4848"
+            android:gravity="center"
+            android:text="Get the otp from HCF authority"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <com.mukesh.OtpView
+            android:layout_margin="10dp"
+            android:id="@+id/otp_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            android:itemBackground="@color/white"
+            android:textColor="#4A4848"
+            app:OtpItemCount="4"
+            app:OtpLineColor="@color/app_color_dark"
+            app:OtpViewType="rectangle"/>
+
+        <TextView
+            android:id="@+id/otp_name"
+            android:textStyle="bold"
+            android:textColor="#4A4848"
+            android:textSize="18sp"
+            android:layout_margin="10dp"
+            android:drawablePadding="10dp"
+            android:text="Aditya"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:drawableTint="@color/app_color_dark"
+            app:drawableStartCompat="@drawable/ic_baseline_person_24" />
+
+        <TextView
+            android:id="@+id/otp_error"
+            android:textColor="@android:color/holo_red_light"
+            android:gravity="center"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <TextView
+            android:visibility="gone"
+            android:id="@+id/otp_contact"
+            android:textStyle="bold"
+            android:textColor="#4A4848"
+            android:textSize="18sp"
+            android:layout_margin="10dp"
+            android:drawablePadding="10dp"
+            android:text="7408603843"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:drawableTint="@color/app_color_dark"
+            app:drawableStartCompat="@drawable/ic_baseline_call_24" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/otp_submit"
+            android:text="submit"
+            android:backgroundTint="@color/app_color_dark"
+            android:layout_marginBottom="5dp"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="10dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

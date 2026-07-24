@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".hcf.Activities.HcfLoginActivity">
+
+    <ImageView
+        android:id="@+id/hcf_login_bottom_img"
+        android:scaleType="centerCrop"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"/>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <LinearLayout
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <ImageView
+                android:id="@+id/hcf_login_header_img"
+                android:padding="10dp"
+                android:layout_margin="30dp"
+                android:layout_width="match_parent"
+                android:layout_height="150dp"/>
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:inputType="phone"
+                android:maxLength="10"
+                android:padding="5dp"
+                android:hint="Mobile number"
+                android:layout_marginTop="30dp"
+                android:layout_marginStart="30dp"
+                android:layout_marginEnd="30dp"
+                android:background="@drawable/bg_et"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"/>
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:inputType="textPassword"
+                android:padding="5dp"
+                android:hint="Password"
+                android:layout_marginTop="30dp"
+                android:layout_marginStart="30dp"
+                android:layout_marginEnd="30dp"
+                android:background="@drawable/bg_et"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:textStyle="bold"
+                android:text="Login"
+                android:backgroundTint="@color/app_color_dark"
+                android:layout_margin="30dp"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"/>
+
+            <TextView
+                android:textColor="@color/black"
+                android:id="@+id/hcf_guideline_link_tv"
+                android:layout_margin="5dp"
+                android:textStyle="bold"
+                android:visibility="gone"
+                android:text="@string/u_guidelines_of_cpcb_and_bmwm_rules_u"
+                android:gravity="center"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+            <TextView
+                android:textColor="@color/black"
+                android:id="@+id/hcf_youtube_link_tv"
+                android:drawablePadding="5dp"
+                android:textAlignment="center"
+                android:layout_margin="5dp"
+                android:textStyle="bold"
+                android:text="@string/how_it_works"
+                android:gravity="center"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:drawableTint="@android:color/holo_red_light"
+                app:drawableStartCompat="@drawable/ic_baseline_smart_display_24" />
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

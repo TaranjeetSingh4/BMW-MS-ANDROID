@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <LinearLayout
+        android:layout_margin="30dp"
+        android:background="@drawable/bg_et"
+        android:orientation="vertical"
+        app:layout_constraintTop_toTopOf="parent"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:id="@+id/manual_weight_color"
+                android:textColor="@android:color/holo_red_light"
+                android:textStyle="bold"
+                android:textSize="18sp"
+                android:layout_margin="5dp"
+                android:text="RED"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+
+            <ImageView
+                android:id="@+id/manual_weight_image"
+                android:layout_margin="5dp"
+                android:layout_width="30dp"
+                android:layout_height="30dp"/>
+
+        </LinearLayout>
+
+        <TextView
+            android:textColor="@color/app_color_dark"
+            android:layout_margin="10dp"
+            android:gravity="center"
+            android:text="Fill waste weight"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <EditText
+                android:inputType="number"
+                android:maxLength="3"
+                android:id="@+id/manual_weight_kilo"
+                android:padding="5dp"
+                android:hint="Weight in kilo"
+                android:layout_margin="10dp"
+                android:background="@drawable/bg_et"
+                android:layout_weight="1"
+                android:layout_width="0dp"
+                android:textColorHint="#4A4848"
+                android:layout_height="40dp"/>
+
+            <EditText
+                android:inputType="number"
+                android:maxLength="3"
+                android:id="@+id/manual_weight_gram"
+                android:padding="5dp"
+                android:hint="Weight in gram"
+                android:textColorHint="#4A4848"
+                android:layout_margin="10dp"
+                android:background="@drawable/bg_et"
+                android:layout_weight="1"
+                android:layout_width="0dp"
+                android:layout_height="40dp"/>
+
+        </LinearLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/manual_weight_add"
+            android:text="Add"
+            android:backgroundTint="@color/app_color_dark"
+            android:layout_margin="10dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
