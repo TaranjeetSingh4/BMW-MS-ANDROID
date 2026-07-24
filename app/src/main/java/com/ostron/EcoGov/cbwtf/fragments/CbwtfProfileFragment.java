@@ -29,6 +29,7 @@ import com.ostron.EcoGov.R;
 import com.ostron.EcoGov.activities.LoginActivity;
 import com.ostron.EcoGov.classes.AppStrings;
 import com.ostron.EcoGov.classes.MSP;
+import com.ostron.EcoGov.classes.VolleySingleton;
 
 import org.json.JSONObject;
 
@@ -187,7 +188,7 @@ public class CbwtfProfileFragment extends Fragment {
             }
         };
 
-        Volley.newRequestQueue(getContext()).add(request);
+        VolleySingleton.getInstance(getContext()).addToRequestQueue(request);
     }
 
 }

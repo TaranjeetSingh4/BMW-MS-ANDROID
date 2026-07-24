@@ -63,6 +63,7 @@ import com.ostron.EcoGov.activities.LoginActivity;
 import com.ostron.EcoGov.activities.PdfViewActivity;
 import com.ostron.EcoGov.classes.AppStrings;
 import com.ostron.EcoGov.classes.MSP;
+import com.ostron.EcoGov.classes.VolleySingleton;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -163,7 +164,7 @@ public class CbwtfDashboardActivity extends AppCompatActivity {
             }
         });
 
-        Volley.newRequestQueue(this).add(appNoticeRequest);
+        VolleySingleton.getInstance(this).addToRequestQueue(appNoticeRequest);
 
     }
 
@@ -728,7 +729,7 @@ public class CbwtfDashboardActivity extends AppCompatActivity {
             }
         };
 
-        Volley.newRequestQueue(this).add(request);
+        VolleySingleton.getInstance(this).addToRequestQueue(request);
     }
 
     public void hospitalDataRequest(String url, Map<String,String> map){
@@ -775,7 +776,7 @@ public class CbwtfDashboardActivity extends AppCompatActivity {
             }
         };
 
-        Volley.newRequestQueue(this).add(request);
+        VolleySingleton.getInstance(this).addToRequestQueue(request);
     }
 
 //    public void todayDataRequest(String url, Map<String,String> map){
@@ -843,7 +844,7 @@ public class CbwtfDashboardActivity extends AppCompatActivity {
 //            }
 //        };
 //
-//        Volley.newRequestQueue(this).add(request);
+//        VolleySingleton.getInstance(this).addToRequestQueue(request);
 //    }
 
     public void todayDataRequest(String url, Map<String,String> map){
@@ -897,7 +898,7 @@ public class CbwtfDashboardActivity extends AppCompatActivity {
             }
         };
 
-        Volley.newRequestQueue(this).add(request);
+        VolleySingleton.getInstance(this).addToRequestQueue(request);
     }
 
     public void generateOtp()
@@ -947,7 +948,7 @@ public class CbwtfDashboardActivity extends AppCompatActivity {
             }
         };
 
-        Volley.newRequestQueue(this).add(generateOtpRequest);
+        VolleySingleton.getInstance(this).addToRequestQueue(generateOtpRequest);
     }
 
     @Override
