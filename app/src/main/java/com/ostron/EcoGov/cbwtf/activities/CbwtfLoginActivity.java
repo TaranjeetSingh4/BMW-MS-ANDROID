@@ -28,6 +28,7 @@ import com.ostron.EcoGov.R;
 import com.ostron.EcoGov.activities.PdfViewActivity;
 import com.ostron.EcoGov.classes.AppStrings;
 import com.ostron.EcoGov.classes.MSP;
+import com.ostron.EcoGov.classes.VolleySingleton;
 
 import org.json.JSONObject;
 
@@ -193,6 +194,6 @@ public class CbwtfLoginActivity extends AppCompatActivity {
             }
         };
 
-        Volley.newRequestQueue(this).add(request);
+        VolleySingleton.getInstance(this).addToRequestQueue(request);
     }
 }

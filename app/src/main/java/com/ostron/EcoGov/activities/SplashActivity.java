@@ -44,6 +44,7 @@ import com.ostron.EcoGov.R;
 import com.ostron.EcoGov.cbwtf.activities.CbwtfDashboardActivity;
 import com.ostron.EcoGov.classes.AppStrings;
 import com.ostron.EcoGov.classes.MSP;
+import com.ostron.EcoGov.classes.VolleySingleton;
 //import com.tonyodev.fetch2.Download;
 //import com.tonyodev.fetch2.Error;
 //import com.tonyodev.fetch2.Fetch;
@@ -224,7 +225,7 @@ public class SplashActivity extends AppCompatActivity {
             }
         };
 
-        Volley.newRequestQueue(this).add(request);
+        VolleySingleton.getInstance(this).addToRequestQueue(request);
 
     }
 
@@ -258,7 +259,7 @@ public class SplashActivity extends AppCompatActivity {
             }
         });
 
-        Volley.newRequestQueue(this).add(appVersionRequest);
+        VolleySingleton.getInstance(this).addToRequestQueue(appVersionRequest);
 
     }
 

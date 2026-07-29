@@ -10,7 +10,10 @@
 <!--    <string name="site_url">http://cbwms.in/common/</string>-->
 <!--    <string name="base_url">http://cbwms.in/common/app/</string>-->
 
-    <string name="site_url">https://bmwms.in/</string>
-    <string name="base_url">https://bmwms.in/app/</string>
+    <!--<string name="site_url">https://bmwms.in/</string>
+    <string name="base_url">https://bmwms.in/app/</string>-->
+
+    <string name="site_url">http://staging16.dgmhup.in/</string>
+    <string name="base_url">http://staging16.dgmhup.in/app/</string>
 
 </resources>
