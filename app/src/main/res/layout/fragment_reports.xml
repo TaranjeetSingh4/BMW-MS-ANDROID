@@ -131,6 +131,7 @@
         android:layout_width="wrap_content"
         android:src="@drawable/baseline_send_24"
         android:layout_marginEnd="10dp"
+        android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="@+id/txtToDate"
         app:layout_constraintTop_toTopOf="@+id/txtToDate"
         app:layout_constraintEnd_toEndOf="parent"

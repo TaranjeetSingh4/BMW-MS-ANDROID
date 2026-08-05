@@ -29,7 +29,7 @@
             android:padding="10dp"
             android:textColor="#4A4848"
             android:gravity="center_vertical"
-            android:text="@string/ostron_email"
+            android:text="@string/official_email"
             android:layout_width="match_parent"
             android:layout_height="50dp"/>
 
@@ -37,7 +37,7 @@
             android:textSize="20sp"
             android:padding="10dp"
             android:gravity="center_vertical"
-            android:text="@string/ostron_number"
+            android:text="@string/official_number"
             android:textColor="#4A4848"
             android:layout_width="match_parent"
             android:layout_height="50dp"/>
@@ -47,7 +47,7 @@
             android:padding="10dp"
             android:textColor="#4A4848"
             android:gravity="center_vertical"
-            android:text="@string/ostron_website"
+            android:text="@string/official_website"
             android:layout_width="match_parent"
             android:layout_height="50dp"/>
 

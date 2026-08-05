@@ -23,3 +23,7 @@
 -keep public class com.github.douglasjunior.** {
   public protected *;
 }
+
+# Room rules
+-keep class * extends androidx.room.RoomDatabase
+-keep class com.appventurez.EcoGov.database.** { *; }

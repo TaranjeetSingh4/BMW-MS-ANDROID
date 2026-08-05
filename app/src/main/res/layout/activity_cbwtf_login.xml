@@ -22,81 +22,86 @@
             android:gravity="center_horizontal"
             android:orientation="vertical"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:padding="20dp">
 
             <ImageView
-                app:layout_constraintTop_toTopOf="parent"
                 android:id="@+id/cbwtf_login_header_img"
-                android:layout_margin="20dp"
                 android:layout_width="match_parent"
-                android:layout_height="100dp"/>
+                android:layout_height="100dp"
+                android:contentDescription="@string/image_description" />
 
-            <com.google.android.material.textfield.TextInputEditText
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_marginTop="40dp"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                app:boxStrokeColor="@color/app_color_dark"
+                app:hintTextColor="@color/app_color_dark"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/cbwtf_login_mobile_et"
+                    android:inputType="phone"
+                    android:maxLength="10"
+                    android:hint="@string/mobile_number"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"/>
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
                 android:layout_marginTop="20dp"
-                android:id="@+id/cbwtf_login_mobile_et"
-                android:inputType="phone"
-                android:maxLength="10"
-                android:padding="5dp"
-                android:hint="Mobile number"
-                android:layout_marginStart="20dp"
-                android:layout_marginEnd="20dp"
-                android:layout_marginBottom="20dp"
-                android:background="@drawable/bg_et"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                app:boxStrokeColor="@color/app_color_dark"
+                app:hintTextColor="@color/app_color_dark"
                 android:layout_width="match_parent"
-                android:layout_height="50dp"/>
+                android:layout_height="wrap_content">
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/cbwtf_login_password_et"
-                android:inputType="textPassword"
-                android:padding="5dp"
-                android:hint="Password"
-                android:layout_marginStart="20dp"
-                android:layout_marginEnd="20dp"
-                android:background="@drawable/bg_et"
-                android:layout_width="match_parent"
-                android:layout_height="50dp"/>
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/cbwtf_login_password_et"
+                    android:inputType="textPassword"
+                    android:hint="@string/password"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"/>
+            </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.button.MaterialButton
                 android:textStyle="bold"
                 android:onClick="onLogin"
                 android:id="@+id/cbwtf_login_button"
-                android:text="Login"
+                android:text="@string/login"
+                app:cornerRadius="8dp"
                 android:backgroundTint="@color/app_color_dark"
-                android:layout_margin="20dp"
+                android:layout_marginTop="20dp"
                 android:layout_width="match_parent"
                 android:layout_height="50dp"/>
 
             <TextView
                 android:textColor="@color/black"
                 android:id="@+id/cbwtf_guideline_link_tv"
-                android:layout_marginStart="20dp"
-                android:layout_marginEnd="20dp"
                 android:textStyle="bold"
                 android:visibility="gone"
+                android:layout_marginTop="20dp"
                 android:text="@string/u_guidelines_of_cpcb_and_bmwm_rules_u"
                 android:gravity="center"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"/>
 
             <TextView
-                android:layout_marginBottom="20dp"
-                android:textColor="@color/black"
                 android:id="@+id/cbwtf_youtube_link_tv"
-                android:drawablePadding="5dp"
-                android:textAlignment="center"
-                android:layout_marginTop="20dp"
-                android:layout_marginStart="20dp"
-                android:layout_marginEnd="20dp"
-                android:textStyle="bold"
-                android:text="@string/how_it_works"
-                android:gravity="center"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="40dp"
+                android:layout_marginBottom="20dp"
+                android:textColor="@color/black"
+                android:textStyle="bold"
+                android:visibility="gone"
+                android:text="@string/how_it_works"
+                android:gravity="center"
+                android:drawablePadding="5dp"
                 app:drawableTint="@android:color/holo_red_light"
                 app:drawableStartCompat="@drawable/ic_baseline_smart_display_24" />
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
-
 
 </androidx.constraintlayout.widget.ConstraintLayout>
