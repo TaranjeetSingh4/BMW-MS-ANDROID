@@ -347,6 +347,7 @@ public class ReportsFragment extends Fragment{
     }
 
     public void getData(String url, Map<String,String> map){
+        reportsModels.clear();
         StringRequest request = new StringRequest(Request.Method.POST, url, new Response.Listener<String>() {
             @Override
             public void onResponse(String response){
@@ -432,6 +433,7 @@ public class ReportsFragment extends Fragment{
                                 model.setRoute(jsonObject1.get("route").toString());
                                 model.setType(jsonObject1.get("type").toString());
                                 model.setType1(jsonObject1.get("type1").toString());
+                                model.setCreatedOn(jsonObject1.optString("created_on"));
 
                                 model.setTotalPackets(String.valueOf(packets));
 
@@ -540,6 +542,7 @@ public class ReportsFragment extends Fragment{
                                 model.setRoute(jsonObject1.get("route").toString());
                                 model.setType(jsonObject1.get("type").toString());
                                 model.setType1(jsonObject1.get("type1").toString());
+                                model.setCreatedOn(jsonObject1.optString("created_on"));
 
                                 model.setTotalPackets(String.valueOf(packets));
 
@@ -666,6 +669,7 @@ public class ReportsFragment extends Fragment{
                                 model.setRoute(jsonObject1.get("route").toString());
                                 model.setType(jsonObject1.get("type").toString());
                                 model.setType1(jsonObject1.get("type1").toString());
+                                model.setCreatedOn(jsonObject1.optString("created_on"));
 
                                 model.setTotalPackets(String.valueOf(packets));
 
@@ -752,18 +756,6 @@ public class ReportsFragment extends Fragment{
 
                         reportsModels.add(model);
                         Log.d("TAG", "onResponse: "+reportsModels.size());
-                        Iterator<ReportsModel> iterator = reportsModels.iterator();
-                        while (iterator.hasNext()) {
-                            ReportsModel modell = iterator.next();
-                            if (!modell.getCreatedOn().equalsIgnoreCase(getCurrentDateTime())) {
-                                iterator.remove();
-                                Log.d("TAG", "12345:3 " + modell.getCreatedOn());
-                            } else {
-                                Log.d("TAG", "12345:2 " + reportsModels.size());
-                            }
-                        }
-
-
                         reportsAdapter.notifyDataSetChanged();
 
                         if (size < 1){
@@ -864,31 +856,7 @@ public class ReportsFragment extends Fragment{
         }
     }
 
-    private static String extractDate(String timestamp) {
-        try {
-            // Parse the input timestamp
-            SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            Date parsedDate = inputFormat.parse(timestamp);
-
-            // Format the date to get only the date part
-            SimpleDateFormat outputFormat = new SimpleDateFormat("yyyy-MM-dd");
-            return outputFormat.format(parsedDate);
-        } catch (ParseException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
     @SuppressLint("SimpleDateFormat")
-    private String getCurrentDateTime() {
-        // Create a SimpleDateFormat object with the desired format
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-
-        // Get the current date and time and format it
-        Date currentDate = new Date();
-        return dateFormat.format(currentDate);
-    }
-
     public void sendMail() {
         StringRequest sendMailRequest = new StringRequest(Request.Method.POST, AppStrings.send_mail, new Response.Listener<String>() {
             @Override
