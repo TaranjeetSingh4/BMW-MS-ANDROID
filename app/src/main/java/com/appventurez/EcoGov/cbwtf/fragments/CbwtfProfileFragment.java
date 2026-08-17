@@ -149,6 +149,12 @@ public class CbwtfProfileFragment extends Fragment {
         address.setText(MSP.getInstance(getActivity()).getStringData(AppStrings.userAddress));
     }
 
+    private void showToast(String message) {
+        if (isAdded() && getContext() != null) {
+            Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+        }
+    }
+
     private void sendQueryData(String sender,String senderId,String message){
         StringRequest request = new StringRequest(Request.Method.POST, AppStrings.send_query, new Response.Listener<String>() {
             @Override
@@ -159,12 +165,12 @@ public class CbwtfProfileFragment extends Fragment {
 
                     if (object.get("status").toString().equalsIgnoreCase("success")){
 
-                        Toast.makeText(getContext(), "Query sent", Toast.LENGTH_SHORT).show();
+                        showToast("Query sent");
 
                     }
                 }catch (Exception e){
 
-                    Toast.makeText(getContext(), "Try again later "+e.getMessage(), Toast.LENGTH_SHORT).show();
+                    showToast("Try again later "+e.getMessage());
 
                 }
 
@@ -173,7 +179,7 @@ public class CbwtfProfileFragment extends Fragment {
             @Override
             public void onErrorResponse(VolleyError error) {
 
-                Toast.makeText(getContext(), "Try again later "+error.getMessage(), Toast.LENGTH_SHORT).show();
+                showToast("Try again later "+error.getMessage());
 
             }
         }){

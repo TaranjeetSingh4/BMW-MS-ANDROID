@@ -12,13 +12,13 @@ if (localPropertiesFile.exists()) {
 
 android {
     namespace "com.appventurez.EcoGov"
-    compileSdk 34
+    compileSdk 36
 
     defaultConfig {
         applicationId "com.appventurez.EcoGov"
         minSdk 21
-        targetSdk 34
-        versionCode 3
+        targetSdk 36
+        versionCode 4
         versionName "1.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }

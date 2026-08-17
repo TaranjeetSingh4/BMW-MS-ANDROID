@@ -49,10 +49,6 @@ import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
-import com.android.volley.toolbox.Volley;
-
-
-
 
 import com.bumptech.glide.Glide;
 import com.github.douglasjunior.bluetoothclassiclibrary.BluetoothStatus;
@@ -84,6 +80,7 @@ import com.journeyapps.barcodescanner.DefaultDecoderFactory;
 import com.journeyapps.barcodescanner.ScanContract;
 import com.journeyapps.barcodescanner.ScanIntentResult;
 import com.journeyapps.barcodescanner.ScanOptions;
+import com.journeyapps.barcodescanner.camera.CameraSettings;
 import com.karumi.dexter.Dexter;
 import com.karumi.dexter.MultiplePermissionsReport;
 import com.karumi.dexter.PermissionToken;
@@ -107,16 +104,22 @@ import com.appventurez.EcoGov.database.HospitalModel;
 import com.appventurez.EcoGov.database.MyDatabase;
 import com.appventurez.EcoGov.models.BluetoothDevicesModel;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import java.text.DecimalFormat;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import me.aflak.bluetooth.Bluetooth;
 
@@ -512,7 +515,7 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
 
                         checkAttendance(hcfCode,hospitalName);
                     }else {
-                        Toast.makeText(getContext(), "Wrong QR Code 1", Toast.LENGTH_SHORT).show();
+                        showToast("Wrong QR Code 1");
                     }
 
 //                    MSP.getInstance(getContext()).setStringData(AppStrings.currentHcfCode,hcfCode);
@@ -526,7 +529,7 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
                 }catch (Exception e){
                     e.printStackTrace();
                     Log.d("TAG", "onActivityResult:2 "+e.getMessage());
-                    Toast.makeText(getContext(), "Wrong QR Code 7", Toast.LENGTH_SHORT).show();
+                    showToast("Wrong QR Code 7");
                 }
 
             }
@@ -587,7 +590,7 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
                     barcodeView.resume();
                     manualWeightAlert.dismiss();
                 }else {
-                    Toast.makeText(getContext(), "Empty field", Toast.LENGTH_SHORT).show();
+                    showToast("Empty field");
                 }
 
             }
@@ -618,7 +621,7 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
                         }
 
                     }else {
-                        Toast.makeText(getContext(), "Wrong QR Code 5", Toast.LENGTH_SHORT).show();
+                        showToast("Wrong QR Code 5");
                     }
 
                 }catch (Exception e){
@@ -1129,7 +1132,7 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
 
                         if (dataSize == hospitalModels.size()){
                             progressDialog.dismiss();
-                            Toast.makeText(getContext(), "Submitted", Toast.LENGTH_SHORT).show();
+                            showToast("Submitted");
                             total_bags.setText("0");
                             total_waste_weight.setText("000.000");
                             dataSize = 0;
@@ -1472,13 +1475,33 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
 
     private void barcode(View view){
         barcodeView = view.findViewById(R.id.barcode_scanner);
+
+        CameraSettings settings = new CameraSettings();
+        settings.setContinuousFocusEnabled(true);
+        barcodeView.setCameraSettings(settings);
+
         Collection<BarcodeFormat> formats = Arrays.asList(BarcodeFormat.QR_CODE, BarcodeFormat.CODE_39);
         barcodeView.getBarcodeView().setDecoderFactory(new DefaultDecoderFactory(formats));
         barcodeView.initializeFromIntent(requireActivity().getIntent());
         barcodeView.decodeContinuous(callback);
 
         beepManager = new BeepManager(requireActivity());
-        barcodeView.resume();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (barcodeView != null) {
+            barcodeView.resume();
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        if (barcodeView != null) {
+            barcodeView.pause();
+        }
     }
 
     private BarcodeCallback callback = new BarcodeCallback() {
@@ -1537,12 +1560,42 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
                         }
                     }else {
                         qrAlreadyScanned = true;
-                        for (ReportsModel rm:reportsModels){
-                            if (rm.getQrId().equalsIgnoreCase(scannedQrCode) && rm.getType().equals("waste")) {
-                                qrAlreadyScanned = false;
-                                break;
+
+                        String customDataJson = MSP.getInstance(getContext()).getStringData("today_qr_custom_data");
+                        if (customDataJson != null && !customDataJson.isEmpty()) {
+                            try {
+                                Gson gson = new Gson();
+                                Type type = new TypeToken<List<Map<String, String>>>() {}.getType();
+                                List<Map<String, String>> customDataList = gson.fromJson(customDataJson, type);
+
+                                for (Map<String, String> dataMap : customDataList) {
+                                    String qrId = dataMap.get("qr_id");
+                                    String cbwtfWeight = dataMap.get("cbwtf_weight");
+                                    String hcfWeight = dataMap.get("hcf_weight");
+
+                                    if (qrId != null && qrId.equalsIgnoreCase(scannedQrCode)) {
+                                        if (hcfWeight != null && (!hcfWeight.equals("0") || !hcfWeight.equals("0.0") || !hcfWeight.equals("0.00") || !hcfWeight.equals("0.000"))) {
+                                            qrSwitch = true;
+                                        }
+                                        if (cbwtfWeight != null && (cbwtfWeight.equals("0") || cbwtfWeight.equals("0.0") || cbwtfWeight.equals("0.00") || cbwtfWeight.equals("0.000"))) {
+                                            qrAlreadyScanned = false;
+                                            break;
+                                        }
+                                    }
+                                }
+                            } catch (Exception e) {
+                                e.printStackTrace();
                             }
                         }
+
+                        /*if (qrAlreadyScanned) {
+                            for (ReportsModel rm : reportsModels) {
+                                if (rm.getQrId().equalsIgnoreCase(scannedQrCode) && rm.getType().equals("waste")) {
+                                    qrAlreadyScanned = false;
+                                    break;
+                                }
+                            }
+                        }*/
                     }
 
                     if (!qrCbwtfId.equals(MSP.getInstance(getContext()).getStringData(AppStrings.userCbwtfID))){
@@ -1595,7 +1648,7 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
                                     break;
                             }
                         }else {
-                            Toast.makeText(getContext(), "Reset HCF Code to scan other HCF", Toast.LENGTH_LONG).show();
+                            showToast("Reset HCF Code to scan other HCF", Toast.LENGTH_LONG);
                         }
 
                         if (qrColor.trim().equalsIgnoreCase("red")){
@@ -1621,16 +1674,16 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
                         Log.d("TAG", "barcodeResult: "+scanType);
                         if (scanType == 0){
                             barcodeView.resume();
-                            Toast.makeText(getContext(), "Already Scanned Or Wrong QR", Toast.LENGTH_SHORT).show();
+                            showToast("Already Scanned Or Wrong QR");
                         }else{
                             if(!qrSwitch && scanType != 0){
                                 barcodeView.resume();
                                 isFirstScanHCF = true;
                                 Log.d("TAG", "barcodeResult:First scan hcf ");
-                                Toast.makeText(getContext(), "First scan hcf", Toast.LENGTH_SHORT).show();
+                                showToast("First scan hcf");
                             }else{
                                 barcodeView.resume();
-                                Toast.makeText(getContext(), "Already Scanned Or Wrong QR OR Check For Near By Device permission", Toast.LENGTH_SHORT).show();
+                                showToast("Already Scanned Or Wrong QR OR Check For Near By Device permission");
                             }
                         }
                     }
@@ -1642,12 +1695,8 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
                     barcodeView.resume();
                     Log.d("TAG", "error " + e.getMessage());
                     isFirstScanHCF = true;
-                    Toast.makeText(getContext(), "Wrong QR Code Sticker OR Check For Near By Device permission", Toast.LENGTH_SHORT).show();
+                    showToast("Wrong QR Code Sticker OR Check For Near By Device permission");
                 }
-
-
-
-
         }
 
         @Override
@@ -1717,6 +1766,18 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
 //    }
 
 
+    private void showToast(String message) {
+        if (isAdded() && getContext() != null) {
+            Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void showToast(String message, int duration) {
+        if (isAdded() && getContext() != null) {
+            Toast.makeText(getContext(), message, duration).show();
+        }
+    }
+
     private void addWeightAuto(){
         String code = codeTv.getText().toString().trim();
         String hName = hcf_name.getText().toString().trim();
@@ -1756,21 +1817,17 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
 
         if (scanType==0){
          //   if (MSP.getInstance(getContext()).containsData(AppStrings.loginAs) && MSP.getInstance(requireActivity()).getStringData(AppStrings.loginAs).equalsIgnoreCase("hcf")){
-            if (MSP.getInstance(requireActivity()).getStringData(AppStrings.loginAs).equals("hcf"))
+            if (MSP.getInstance(getContext()).getStringData(AppStrings.loginAs).equals("hcf"))
             {
-                if (scannedHcfCode == null || MSP.getInstance(requireActivity()).getStringData(AppStrings.hcfCode) == null || !scannedHcfCode.equalsIgnoreCase(MSP.getInstance(requireActivity()).getStringData(AppStrings.hcfCode))) {
-                   Toast.makeText(
-                           requireActivity(),
-                   "Invalid Hospital ",
-                           Toast.LENGTH_SHORT
-                    ).show();
+                if (scannedHcfCode == null || MSP.getInstance(getContext()).getStringData(AppStrings.hcfCode) == null || !scannedHcfCode.equalsIgnoreCase(MSP.getInstance(getContext()).getStringData(AppStrings.hcfCode))) {
+                   showToast("Invalid Hospital ");
                    barcodeView.resume();
                    //  qrAlreadyScanned = true
                    return;
                }else {
                    if (qrExistsInReports || qrExistsInHospitals) {
                        Log.d("TAG", "Duplicate QR code detected. Not adding.");
-                       Toast.makeText(getContext(), "Duplicate QR Code! Not Added.", Toast.LENGTH_SHORT).show();
+                       showToast("Duplicate QR Code! Not Added.");
                        return;
                    } else {
                        hospitalModels.add(new HospitalModel(code, hName, wType, ww_ww[0], ww_ww[1], scannedQrCode));
@@ -1785,7 +1842,7 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
             }else{
                 if (qrExistsInReports || qrExistsInHospitals) {
             Log.d("TAG", "Duplicate QR code detected. Not adding.");
-            Toast.makeText(getContext(), "Duplicate QR Code! Not Added.", Toast.LENGTH_SHORT).show();
+            showToast("Duplicate QR Code! Not Added.");
             return;
         } else {
             hospitalModels.add(new HospitalModel(code, hName, wType, ww_ww[0], ww_ww[1], scannedQrCode));
@@ -1798,7 +1855,7 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
         }
         else {
             if (qrExistsInHospitals){
-                Toast.makeText(getContext(), "Duplicate QR Code! Not Added.", Toast.LENGTH_SHORT).show();
+                showToast("Duplicate QR Code! Not Added.");
                 return;
             }else{
                 hospitalModels.add(new HospitalModel(code, hName, wType, ww_ww[0], ww_ww[1], scannedQrCode));

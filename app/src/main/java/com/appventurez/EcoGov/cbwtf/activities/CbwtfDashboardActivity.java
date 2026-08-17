@@ -68,10 +68,13 @@ import com.appventurez.EcoGov.classes.VolleySingleton;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import com.google.gson.Gson;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -877,6 +880,7 @@ public class CbwtfDashboardActivity extends AppCompatActivity {
 
                                 Set<String> uniqueHospitals = new HashSet<>();
                                 double totalWeight = 0;
+                                List<Map<String, String>> customDataList = new ArrayList<>();
 
                                 JSONArray dataArray = jsonObject.getJSONArray("data");
                                 for (int i = 0; i < dataArray.length(); i++) {
@@ -891,7 +895,21 @@ public class CbwtfDashboardActivity extends AppCompatActivity {
                                     } catch (NumberFormatException e) {
                                         Log.e("parse_error", "Invalid weight: " + weightStr);
                                     }
+
+                                    // Create custom map for persistence
+                                    Map<String, String> dataMap = new HashMap<>();
+                                    dataMap.put("qr_data_id", item.optString("qr_data_id"));
+                                    dataMap.put("qr_id", item.optString("qr_id"));
+                                    dataMap.put("hospital_code", hospitalCode);
+                                    dataMap.put("operator_id", item.optString("operator_id"));
+                                    dataMap.put("cbwtf_weight", item.optString("cbwtf_weight"));
+                                    dataMap.put("hcf_weight", weightStr);
+                                    customDataList.add(dataMap);
                                 }
+
+                                // Store in SharedPreferences using Gson
+                                String jsonCustomData = new Gson().toJson(customDataList);
+                                MSP.getInstance(CbwtfDashboardActivity.this).setStringData("today_qr_custom_data", jsonCustomData);
 
                                 today_attempted.setText(String.valueOf(uniqueHospitals.size()));
                                 today_collected.setText(new DecimalFormat("000.000").format(totalWeight));

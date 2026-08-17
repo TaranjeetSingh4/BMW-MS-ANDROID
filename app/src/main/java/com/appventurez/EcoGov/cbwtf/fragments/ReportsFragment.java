@@ -39,6 +39,7 @@ import com.android.volley.toolbox.Volley;
 
 
 import com.facebook.shimmer.ShimmerFrameLayout;
+import com.appventurez.EcoGov.BuildConfig;
 import com.appventurez.EcoGov.R;
 import com.appventurez.EcoGov.cbwtf.adapters.GetCbwtfReportsAdapter;
 import com.appventurez.EcoGov.cbwtf.adapters.ReportsAdapter;
@@ -843,7 +844,7 @@ public class ReportsFragment extends Fragment{
     }
 
     private void openPDFWithReader(File pdfFile) {
-        Uri pdfUri = FileProvider.getUriForFile(requireContext(), "com.ostron.gov.fileprovider", pdfFile);
+        Uri pdfUri = FileProvider.getUriForFile(requireContext(), BuildConfig.APPLICATION_ID + ".provider", pdfFile);
 
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setDataAndType(pdfUri, "application/pdf");
@@ -856,6 +857,12 @@ public class ReportsFragment extends Fragment{
         }
     }
 
+    private void showToast(String message) {
+        if (isAdded() && getContext() != null) {
+            Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+        }
+    }
+
     @SuppressLint("SimpleDateFormat")
     public void sendMail() {
         StringRequest sendMailRequest = new StringRequest(Request.Method.POST, AppStrings.send_mail, new Response.Listener<String>() {
@@ -864,9 +871,9 @@ public class ReportsFragment extends Fragment{
                 try {
                     JSONObject jsonObject = new JSONObject(response);
                     if (jsonObject.optString("status").equalsIgnoreCase("success")) {
-                        Toast.makeText(getContext(), "Email Sent Successfully", Toast.LENGTH_SHORT).show();
+                        showToast("Email Sent Successfully");
                     } else {
-                        Toast.makeText(getContext(), "Failed to send email: " + jsonObject.optString("message"), Toast.LENGTH_SHORT).show();
+                        showToast("Failed to send email: " + jsonObject.optString("message"));
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -876,7 +883,7 @@ public class ReportsFragment extends Fragment{
             @Override
             public void onErrorResponse(VolleyError error) {
                 Log.e("TAG", "sendMail Error: " + error.getMessage());
-                Toast.makeText(getContext(), "Error sending email", Toast.LENGTH_SHORT).show();
+                showToast("Error sending email");
             }
         }) {
             @Nullable

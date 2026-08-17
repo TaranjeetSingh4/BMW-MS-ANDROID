@@ -43,10 +43,8 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.EcoApp"
-        android:usesCleartextTraffic="true">
-<!--        <activity-->
-<!--            android:name=".WebViewActivity"-->
-<!--            android:exported="false" />-->
+        android:usesCleartextTraffic="true"
+        android:enableOnBackInvokedCallback="false">
 
         <provider
             android:name="androidx.core.content.FileProvider"
