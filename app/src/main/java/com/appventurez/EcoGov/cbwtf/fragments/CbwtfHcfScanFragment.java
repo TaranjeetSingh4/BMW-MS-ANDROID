@@ -309,9 +309,9 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
             });
 
 
-            switchMaterial.setChecked(true);
-            appbar_tv.setText("Auto");
-            scanMode = 1;
+            switchMaterial.setChecked(false);
+            appbar_tv.setText("Manual");
+            scanMode = 0;
 
             scanButton.setOnClickListener(new View.OnClickListener() {
                 @Override
