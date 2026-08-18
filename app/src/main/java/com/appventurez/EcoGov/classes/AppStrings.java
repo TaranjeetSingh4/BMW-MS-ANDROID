@@ -18,6 +18,7 @@ public class AppStrings {
     public final static String get_today_data = base_url+"Cbwtf_api/get_today_qrdata";
     public final static String get_today_data_hcf = base_url+"Cbwtf_api/get_today_qrdata_hcf";
     public final static String get_report = base_url+"Cbwtf_api/get_report";
+    public final static String get_qr_data = base_url+"Cbwtf_api/get_qr_data";
     public final static String get_report_cbwtf = base_url+"Cbwtf_api_new/get_report";
     public final static String get_report_hcf = base_url+"Cbwtf_api/get_report_hcf";
     public final static String get_all_report = base_url+"Cbwtf_api/get_all_report";

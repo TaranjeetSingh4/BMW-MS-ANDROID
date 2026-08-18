@@ -1504,6 +1504,10 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
         }
     }
 
+    public interface RescanCallback {
+        void onResult(boolean qrAlreadyScanned, boolean qrSwitch, JSONObject data);
+    }
+
     private BarcodeCallback callback = new BarcodeCallback() {
         @Override
         public void barcodeResult(BarcodeResult result) {
@@ -1558,137 +1562,32 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
                                 }
                             }
                         }
+                        finalizeScanLogic(qrAlreadyScanned, qrSwitch, hcfCode, hospitalName, qrColor, qrCbwtfId);
                     }else {
                         qrAlreadyScanned = true;
 
-                        String customDataJson = MSP.getInstance(getContext()).getStringData("today_qr_custom_data");
-                        if (customDataJson != null && !customDataJson.isEmpty()) {
-                            try {
-                                Gson gson = new Gson();
-                                Type type = new TypeToken<List<Map<String, String>>>() {}.getType();
-                                List<Map<String, String>> customDataList = gson.fromJson(customDataJson, type);
+                        boolean foundInReports = false;
+                        for (ReportsModel rm : reportsModels) {
+                            if (rm.getQrId().equalsIgnoreCase(scannedQrCode) && rm.getType().equals("waste")) {
+                                foundInReports = true;
+                                break;
+                            }
+                        }
 
-                                for (Map<String, String> dataMap : customDataList) {
-                                    String qrId = dataMap.get("qr_id");
-                                    String cbwtfWeight = dataMap.get("cbwtf_weight");
-                                    String hcfWeight = dataMap.get("hcf_weight");
-
-                                    if (qrId != null && qrId.equalsIgnoreCase(scannedQrCode)) {
-                                        if (hcfWeight != null && (!hcfWeight.equals("0") || !hcfWeight.equals("0.0") || !hcfWeight.equals("0.00") || !hcfWeight.equals("0.000"))) {
-                                            qrSwitch = true;
-                                        }
-                                        if (cbwtfWeight != null && (cbwtfWeight.equals("0") || cbwtfWeight.equals("0.0") || cbwtfWeight.equals("0.00") || cbwtfWeight.equals("0.000"))) {
-                                            qrAlreadyScanned = false;
-                                            break;
-                                        }
-                                    }
+                        if (foundInReports) {
+                            getRescanObjectData(scannedQrCode, new RescanCallback() {
+                                @Override
+                                public void onResult(boolean qrAlreadyScannedAsync, boolean qrSwitchAsync, JSONObject dataObj) {
+                                    String hCode = dataObj.optString("hospital_code", hcfCode);
+                                    String hName = dataObj.optString("name", hospitalName);
+                                    String qCol = dataObj.optString("color_type_hcf", qrColor);
+                                    finalizeScanLogic(qrAlreadyScannedAsync, qrSwitchAsync, hCode, hName, qCol, qrCbwtfId);
                                 }
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                        }
-
-                        /*if (qrAlreadyScanned) {
-                            for (ReportsModel rm : reportsModels) {
-                                if (rm.getQrId().equalsIgnoreCase(scannedQrCode) && rm.getType().equals("waste")) {
-                                    qrAlreadyScanned = false;
-                                    break;
-                                }
-                            }
-                        }*/
-                    }
-
-                    if (!qrCbwtfId.equals(MSP.getInstance(getContext()).getStringData(AppStrings.userCbwtfID))){
-                        qrAlreadyScanned = true;
-                    }
-
-                    for (HospitalModel hmh:hospitalModels){
-                        if (hmh.getQr_code().equalsIgnoreCase(scannedQrCode)) {
-                            qrAlreadyScanned = true;
-                            qrSwitch = true;
-                            break;
+                            });
+                        } else {
+                            finalizeScanLogic(qrAlreadyScanned, qrSwitch, hcfCode, hospitalName, qrColor, qrCbwtfId);
                         }
                     }
-
-                    if (!qrAlreadyScanned){
-                        if (!MSP.getInstance(getContext()).containsData(AppStrings.currentHcfCode)){
-                            MSP.getInstance(getContext()).setStringData(AppStrings.currentHcfCode,hcfCode);
-                            MSP.getInstance(getContext()).setStringData(AppStrings.currentHcfName,hospitalName);
-                            hcf_name.setText(hospitalName);
-                            weight_hcf_name.setText(hospitalName);
-                            codeTv.setText(hcfCode);
-                            weight_type.setText(qrColor.toUpperCase());
-                            switch (scanMode){
-                                case 0:
-                                    manualWeightInput(qrColor);
-                                    break;
-                                case 1:
-                                    if (bluetoothConnected){
-                                        weightView.setVisibility(View.VISIBLE);
-                                    }else {
-                                        getBluetoothDevices();
-                                    }
-                                    break;
-                            }
-                        }else if (MSP.getInstance(getContext()).containsData(AppStrings.currentHcfCode)){
-                            hcf_name.setText(hospitalName);
-                            weight_hcf_name.setText(hospitalName);
-                            codeTv.setText(hcfCode);
-                            weight_type.setText(qrColor.toUpperCase());
-                            switch (scanMode){
-                                case 0:
-                                    manualWeightInput(qrColor);
-                                    break;
-                                case 1:
-                                    if (bluetoothConnected){
-                                        weightView.setVisibility(View.VISIBLE);
-                                    }else {
-                                        getBluetoothDevices();
-                                    }
-                                    break;
-                            }
-                        }else {
-                            showToast("Reset HCF Code to scan other HCF", Toast.LENGTH_LONG);
-                        }
-
-                        if (qrColor.trim().equalsIgnoreCase("red")){
-                            Glide.with(getContext()).load(R.drawable.red).into(weight_type_img);
-                            weight_type.setTextColor(getActivity().getResources().getColor(android.R.color.holo_red_light));
-                        }else if (qrColor.trim().equalsIgnoreCase("blue")){
-                            Glide.with(getContext()).load(R.drawable.blue).into(weight_type_img);
-                            weight_type.setTextColor(getActivity().getResources().getColor(android.R.color.holo_blue_light));
-                        }else if (qrColor.trim().equalsIgnoreCase("yellow")){
-                            Glide.with(getContext()).load(R.drawable.yellow).into(weight_type_img);
-                            weight_type.setTextColor(getActivity().getResources().getColor(android.R.color.holo_orange_light));
-                        }else if (qrColor.trim().equalsIgnoreCase("yellow c")){
-                            Glide.with(getContext()).load(R.drawable.yellow).into(weight_type_img);
-                            weight_type.setTextColor(getActivity().getResources().getColor(android.R.color.holo_orange_light));
-                        }else if (qrColor.trim().equalsIgnoreCase("white")){
-                            Glide.with(getContext()).load(R.drawable.gray).into(weight_type_img);
-                            weight_type.setTextColor(getActivity().getResources().getColor(android.R.color.darker_gray));
-                        }
-
-                        isFirstScanHCF = false;
-
-                    } else {
-                        Log.d("TAG", "barcodeResult: "+scanType);
-                        if (scanType == 0){
-                            barcodeView.resume();
-                            showToast("Already Scanned Or Wrong QR");
-                        }else{
-                            if(!qrSwitch && scanType != 0){
-                                barcodeView.resume();
-                                isFirstScanHCF = true;
-                                Log.d("TAG", "barcodeResult:First scan hcf ");
-                                showToast("First scan hcf");
-                            }else{
-                                barcodeView.resume();
-                                showToast("Already Scanned Or Wrong QR OR Check For Near By Device permission");
-                            }
-                        }
-                    }
-
-                    updateHospitalLocationForOnce(hcfCode);
 
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -1697,6 +1596,101 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
                     isFirstScanHCF = true;
                     showToast("Wrong QR Code Sticker OR Check For Near By Device permission");
                 }
+        }
+
+        private void finalizeScanLogic(boolean qrAlreadyScanned, boolean qrSwitch, String hcfCode, String hospitalName, String qrColor, String qrCbwtfId) {
+            if (!qrCbwtfId.equals(MSP.getInstance(getContext()).getStringData(AppStrings.userCbwtfID))){
+                qrAlreadyScanned = true;
+            }
+
+            for (HospitalModel hmh:hospitalModels){
+                if (hmh.getQr_code().equalsIgnoreCase(scannedQrCode)) {
+                    qrAlreadyScanned = true;
+                    qrSwitch = true;
+                    break;
+                }
+            }
+
+            if (!qrAlreadyScanned){
+                if (!MSP.getInstance(getContext()).containsData(AppStrings.currentHcfCode)){
+                    MSP.getInstance(getContext()).setStringData(AppStrings.currentHcfCode,hcfCode);
+                    MSP.getInstance(getContext()).setStringData(AppStrings.currentHcfName,hospitalName);
+                    hcf_name.setText(hospitalName);
+                    weight_hcf_name.setText(hospitalName);
+                    codeTv.setText(hcfCode);
+                    weight_type.setText(qrColor.toUpperCase());
+                    switch (scanMode){
+                        case 0:
+                            manualWeightInput(qrColor);
+                            break;
+                        case 1:
+                            if (bluetoothConnected){
+                                weightView.setVisibility(View.VISIBLE);
+                            }else {
+                                getBluetoothDevices();
+                            }
+                            break;
+                    }
+                }else if (MSP.getInstance(getContext()).containsData(AppStrings.currentHcfCode)){
+                    hcf_name.setText(hospitalName);
+                    weight_hcf_name.setText(hospitalName);
+                    codeTv.setText(hcfCode);
+                    weight_type.setText(qrColor.toUpperCase());
+                    switch (scanMode){
+                        case 0:
+                            manualWeightInput(qrColor);
+                            break;
+                        case 1:
+                            if (bluetoothConnected){
+                                weightView.setVisibility(View.VISIBLE);
+                            }else {
+                                getBluetoothDevices();
+                            }
+                            break;
+                    }
+                }else {
+                    showToast("Reset HCF Code to scan other HCF", Toast.LENGTH_LONG);
+                }
+
+                if (qrColor.trim().equalsIgnoreCase("red")){
+                    Glide.with(getContext()).load(R.drawable.red).into(weight_type_img);
+                    weight_type.setTextColor(getActivity().getResources().getColor(android.R.color.holo_red_light));
+                }else if (qrColor.trim().equalsIgnoreCase("blue")){
+                    Glide.with(getContext()).load(R.drawable.blue).into(weight_type_img);
+                    weight_type.setTextColor(getActivity().getResources().getColor(android.R.color.holo_blue_light));
+                }else if (qrColor.trim().equalsIgnoreCase("yellow")){
+                    Glide.with(getContext()).load(R.drawable.yellow).into(weight_type_img);
+                    weight_type.setTextColor(getActivity().getResources().getColor(android.R.color.holo_orange_light));
+                }else if (qrColor.trim().equalsIgnoreCase("yellow c")){
+                    Glide.with(getContext()).load(R.drawable.yellow).into(weight_type_img);
+                    weight_type.setTextColor(getActivity().getResources().getColor(android.R.color.holo_orange_light));
+                }else if (qrColor.trim().equalsIgnoreCase("white")){
+                    Glide.with(getContext()).load(R.drawable.gray).into(weight_type_img);
+                    weight_type.setTextColor(getActivity().getResources().getColor(android.R.color.darker_gray));
+                }
+
+                isFirstScanHCF = false;
+
+            } else {
+                Log.d("TAG", "barcodeResult: "+scanType);
+                if (scanType == 0){
+                    barcodeView.resume();
+                    showToast("Already Scanned Or Wrong QR");
+                }else{
+                    if(!qrSwitch && scanType != 0){
+                        barcodeView.resume();
+                        isFirstScanHCF = true;
+                        Log.d("TAG", "barcodeResult:First scan hcf ");
+                        showToast("First scan hcf");
+                    }else{
+                        barcodeView.resume();
+                        Log.e("ELSE","Already Scanned Or Processed (Status: qrSwitch=" + qrSwitch + ", qrAlreadyScanned=" + qrAlreadyScanned + ")");
+                        showToast("Already Scanned Or Wrong QR OR Check For Near By Device permission");
+                    }
+                }
+            }
+
+            updateHospitalLocationForOnce(hcfCode);
         }
 
         @Override
@@ -1874,6 +1868,56 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
 
     }
 
+    public void getRescanObjectData(String qrcode, RescanCallback callback) {
+        StringRequest request = new StringRequest(Request.Method.POST, AppStrings.get_qr_data, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                try {
+                    JSONObject jsonObject = new JSONObject(response);
 
+                    if (jsonObject.get("status").toString().equalsIgnoreCase("success")) {
+                        JSONObject data = jsonObject.getJSONObject("data");
+                        String cbwtfWeight = data.optString("cbwtf_weight");
+                        String hcfWeight = data.optString("hcf_weight");
+
+                        boolean qrSwitch = false;
+                        boolean qrAlreadyScanned = true;
+
+                        if (hcfWeight != null && (!hcfWeight.equals("0") || !hcfWeight.equals("0.0") || !hcfWeight.equals("0.00") || !hcfWeight.equals("0.000"))) {
+                            qrSwitch = true;
+                        }
+                        if (cbwtfWeight != null && (cbwtfWeight.equals("0") || cbwtfWeight.equals("0.0") || cbwtfWeight.equals("0.00") || cbwtfWeight.equals("0.000"))) {
+                            qrAlreadyScanned = false;
+                        }
+
+                        callback.onResult(qrAlreadyScanned, qrSwitch, data);
+
+                    } else {
+                        showToast("QR Data Not Found");
+                        barcodeView.resume();
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    barcodeView.resume();
+                }
+
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                barcodeView.resume();
+            }
+        }) {
+            @Nullable
+            @Override
+            protected Map<String, String> getParams() throws AuthFailureError {
+                Map<String, String> params = new HashMap<>();
+                params.put("qr_code", qrcode);
+                return params;
+            }
+        };
+
+        VolleySingleton.getInstance(getContext()).addToRequestQueue(request);
+    }
 
 }

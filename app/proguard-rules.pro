@@ -23,6 +23,8 @@
 -keep public class com.github.douglasjunior.** {
   public protected *;
 }
+# TEMP: verify whether R8 is affecting the HCF scan fragment
+-keep class com.appventurez.EcoGov.cbwtf.fragments.CbwtfHcfScanFragment { *; }
 
 # Room rules
 -keep class * extends androidx.room.RoomDatabase

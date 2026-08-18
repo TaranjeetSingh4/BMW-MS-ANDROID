@@ -4,6 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/app_color_dark"
+    android:fitsSystemWindows="true"
     tools:context=".cbwtf.activities.CbwtfDashboardActivity">
 
     <LinearLayout
@@ -57,6 +59,7 @@
         app:layout_constrainedHeight="true"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toBottomOf="@id/cbwtf_dashboard_appbar"
+        android:background="@color/white"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
