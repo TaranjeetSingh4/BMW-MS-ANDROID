@@ -3,6 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/app_color"
+    android:fitsSystemWindows="true"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context=".fragments.ReportsFragment">
 
@@ -29,7 +31,7 @@
             android:textColor="@color/white"
             android:layout_weight="1"
             android:gravity="center"
-            android:text="Reports"
+            android:text="@string/reports"
             android:layout_width="0dp"
             android:layout_height="match_parent"/>
 
@@ -49,6 +51,13 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
 
+    <!--<View
+        android:background="@color/white"
+        app:layout_constraintTop_toBottomOf="@id/report_appbar"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"/>-->
+
     <com.facebook.shimmer.ShimmerFrameLayout
         android:id="@+id/shimmer_report"
         app:layout_constrainedHeight="true"
@@ -61,6 +70,7 @@
 
     <ImageView
         android:id="@+id/imgFromDate"
+        android:contentDescription="@string/image_description"
         android:src="@drawable/calendar"
         android:layout_width="20dp"
         android:layout_marginStart="10dp"
@@ -74,7 +84,7 @@
         android:id="@+id/txtFromDate"
         app:layout_constraintStart_toEndOf="@+id/imgFromDate"
         android:layout_width="wrap_content"
-        android:text="from date"
+        android:text="@string/from_date"
         android:textColor="#3E3C3C"
         android:textSize="13sp"
         android:layout_marginTop="15dp"
@@ -86,6 +96,7 @@
 
     <ImageView
         android:id="@+id/imgToDate"
+        android:contentDescription="@string/image_description"
         android:src="@drawable/calendar"
         android:layout_width="20dp"
         android:layout_marginStart="10dp"
@@ -99,7 +110,7 @@
         android:id="@+id/txtToDate"
         app:layout_constraintStart_toEndOf="@+id/imgToDate"
         android:layout_width="wrap_content"
-        android:text="To date"
+        android:text="@string/to_date"
         android:textColor="#4A4848"
         android:textSize="13sp"
         android:layout_marginTop="15dp"
@@ -114,7 +125,7 @@
         android:id="@+id/btGetPDF"
         android:layout_marginStart="5dp"
         android:textStyle="bold"
-        android:text="Submit"
+        android:text="@string/submit"
         android:textColor="@color/white"
         app:layout_constraintBottom_toBottomOf="@+id/txtToDate"
         app:layout_constraintTop_toTopOf="@+id/txtToDate"
@@ -152,7 +163,7 @@
     <TextView
         android:visibility="gone"
         android:drawablePadding="10dp"
-        android:text="No reports found"
+        android:text="@string/no_reports_found"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
