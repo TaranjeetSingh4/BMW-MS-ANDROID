@@ -24,8 +24,8 @@
   public protected *;
 }
 # TEMP: verify whether R8 is affecting the HCF scan fragment
--keep class com.appventurez.EcoGov.cbwtf.fragments.CbwtfHcfScanFragment { *; }
+-keep class com.appventurez.bmwms.cbwtf.fragments.CbwtfHcfScanFragment { *; }
 
 # Room rules
 -keep class * extends androidx.room.RoomDatabase
--keep class com.appventurez.EcoGov.database.** { *; }
+-keep class com.appventurez.bmwms.database.** { *; }

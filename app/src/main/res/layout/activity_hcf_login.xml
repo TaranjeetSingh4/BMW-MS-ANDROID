@@ -25,6 +25,7 @@
             android:layout_height="match_parent">
 
             <ImageView
+                android:contentDescription="@string/image_description"
                 app:layout_constraintTop_toTopOf="parent"
                 android:id="@+id/hcf_login_header_img"
                 android:layout_margin="20dp"
@@ -58,7 +59,6 @@
 
             <com.google.android.material.button.MaterialButton
                 android:textStyle="bold"
-                android:onClick="onLogin"
                 android:id="@+id/hcf_login_button"
                 android:text="@string/login"
                 android:backgroundTint="@color/app_color_dark"

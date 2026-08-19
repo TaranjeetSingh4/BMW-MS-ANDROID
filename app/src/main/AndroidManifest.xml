@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="com.appventurez.EcoGov">
+    package="com.appventurez.bmwms">
 
     <uses-feature
         android:name="android.hardware.camera"
@@ -17,7 +17,6 @@
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
     <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <!-- Add these 2 permissions below. -->
 
     <uses-permission
@@ -30,7 +29,6 @@
         tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <application
         android:name=".classes.App"
@@ -109,7 +107,7 @@
 
         <provider
             android:name="androidx.core.content.FileProvider"
-            android:authorities="com.appventurez.EcoGov.fileprovider"
+            android:authorities="com.appventurez.bmwms.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data

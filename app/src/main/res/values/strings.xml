@@ -25,4 +25,8 @@
     <string name="cbwtf_weight">CBWTF Weight:</string>
     <string name="difference_weight">Difference Weight:</string>
     <string name="date">Date:</string>
+    <string name="choose_account_type_from_cbwtf_and_hcf">Choose account type from CBWTF and HCF</string>
+    <string name="bio_medical_waste_management_system">Bio Medical Waste Management System</string>
+    <string name="cbwtf_operator_login">CBWTF Operator Login</string>
+    <string name="hcf_login">HCF Login</string>
 </resources>

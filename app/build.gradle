@@ -11,14 +11,14 @@ if (localPropertiesFile.exists()) {
 }
 
 android {
-    namespace "com.appventurez.EcoGov"
+    namespace "com.appventurez.bmwms"
     compileSdk 36
 
     defaultConfig {
-        applicationId "com.appventurez.EcoGov"
+        applicationId "com.appventurez.bmwms"
         minSdk 21
         targetSdk 36
-        versionCode 4
+        versionCode 1
         versionName "1.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
