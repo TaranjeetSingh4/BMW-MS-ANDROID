@@ -27,6 +27,7 @@
 
             <ImageView
                 android:layout_margin="20dp"
+                android:contentDescription="@string/image_description"
                 app:layout_constraintTop_toTopOf="parent"
                 android:id="@+id/login_header_img"
                 android:layout_width="match_parent"
@@ -37,7 +38,7 @@
                 android:textStyle="bold"
                 android:textSize="18sp"
                 android:layout_margin="20dp"
-                android:text="Bio Medical Waste Management System"
+                android:text="@string/bio_medical_waste_management_system"
                 android:gravity="center"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"/>
@@ -46,27 +47,25 @@
                 android:textColor="@color/app_color_dark"
                 android:layout_marginStart="20dp"
                 android:layout_marginEnd="20dp"
-                android:text="Choose account type from CBWTF and HCF"
+                android:text="@string/choose_account_type_from_cbwtf_and_hcf"
                 android:gravity="center"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"/>
 
             <com.google.android.material.button.MaterialButton
                 android:textStyle="bold"
-                android:onClick="onCbwtf"
                 android:backgroundTint="@color/app_color_dark"
                 android:id="@+id/cbwtf_button"
-                android:text="CBWTF Operator Login"
+                android:text="@string/cbwtf_operator_login"
                 android:layout_margin="20dp"
                 android:layout_width="match_parent"
                 android:layout_height="50dp"/>
 
             <com.google.android.material.button.MaterialButton
                 android:textStyle="bold"
-                android:onClick="onHcf"
                 android:id="@+id/hfc_button"
                 android:backgroundTint="@color/app_color_dark"
-                android:text="HCF Login"
+                android:text="@string/hcf_login"
                 android:layout_marginStart="20dp"
                 android:layout_marginEnd="20dp"
                 android:layout_width="match_parent"

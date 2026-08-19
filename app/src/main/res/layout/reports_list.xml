@@ -110,7 +110,7 @@
                         android:textColor="@color/app_color_dark"
                         android:textStyle="bold"
                         android:textSize="12sp"
-                        android:text="Hospital Code:"
+                        android:text="@string/hospital_code"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"/>
 
@@ -118,7 +118,7 @@
                         android:textColor="@color/app_color_dark"
                         android:textStyle="bold"
                         android:textSize="12sp"
-                        android:text="HCF Weight:"
+                        android:text="@string/hcf_weight"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"/>
 
@@ -127,8 +127,8 @@
                         android:textColor="@color/app_color_dark"
                         android:textStyle="bold"
                         android:textSize="12sp"
-                        android:visibility="gone"
-                        android:text="CBWTF Weight:"
+                        android:visibility="visible"
+                        android:text="@string/cbwtf_weight"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"/>
 
@@ -137,7 +137,7 @@
                         android:textStyle="bold"
                         android:visibility="gone"
                         android:textSize="12sp"
-                        android:text="Difference Weight:"
+                        android:text="@string/difference_weight"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"/>
 
@@ -164,7 +164,7 @@
                         android:textColor="@color/app_color_dark"
                         android:textStyle="bold"
                         android:textSize="12sp"
-                        android:text="Date:"
+                        android:text="@string/date"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"/>
 
@@ -199,7 +199,7 @@
                         android:textColor="#4A4848"
                         android:textStyle="bold"
                         android:textSize="12sp"
-                        android:visibility="gone"
+                        android:visibility="visible"
                         android:text="Hospital name:"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"/>

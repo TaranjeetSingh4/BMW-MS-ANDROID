@@ -3,6 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/app_color_dark"
+    android:fitsSystemWindows="true"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context=".fragments.CbwtfProfileFragment">
 
@@ -56,6 +58,7 @@
         app:layout_constraintTop_toBottomOf="@id/cbwtf_profile_appbar"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constrainedHeight="true"
+        android:background="@color/white"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
@@ -151,23 +154,25 @@
     </androidx.core.widget.NestedScrollView>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        app:maxImageSize="50dp"
-        app:backgroundTint="@color/white"
-        app:tint="@color/app_color_dark"
-        app:fabSize="mini"
-        android:src="@drawable/ic_baseline_help_outline_24"
-        android:layout_marginBottom="10dp"
         android:id="@+id/cbwtf_profile_help"
-        app:layout_constraintBottom_toTopOf="@id/cbwtf_profile_enquiry"
-        app:layout_constraintEnd_toEndOf="@id/cbwtf_profile_enquiry"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="10dp"
+        android:layout_marginEnd="20dp"
+        android:src="@drawable/ic_baseline_help_outline_24"
+        app:backgroundTint="@color/white"
+        app:fabSize="mini"
+        app:layout_constraintBottom_toTopOf="@id/cbwtf_profile_enquiry"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:maxImageSize="50dp"
+        app:tint="@color/app_color_dark" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         app:backgroundTint="@color/white"
         app:tint="@color/app_color_dark"
         app:maxImageSize="50dp"
         app:fabSize="mini"
+        android:visibility="gone"
         android:src="@drawable/ic_outline_support_agent_24"
         android:layout_margin="20dp"
         android:id="@+id/cbwtf_profile_enquiry"

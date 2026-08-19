@@ -1,12 +1,32 @@
 <resources>
-    <string name="app_name">BMWMS</string>
+    <string name="app_name">UPBMW MIS QR</string>
     <string name="u_guidelines_of_cpcb_and_bmwm_rules_u"><u>Guidelines of CPCB and BMWM rules</u></string>
     <string name="how_it_works"><u>How it works</u></string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
-    <string name="ostron_email">ostronofficial@gmail.com</string>
-    <string name="ostron_number">8287508988</string>
-    <string name="ostron_website">http://ostron.in</string>
+    <string name="official_email">support@dgmhup.in</string>
+    <string name="official_number">9599297453</string>
+    <string name="official_website">https://www.appventurez.com/</string>
     <string name="total"><u>TOTAL(P)</u></string>
     <string name="todo">TODO</string>
+    <string name="designed_by_appventurez_mobitech_pvt_ltd">Designed By : Appventurez Mobitech Pvt. Ltd</string>
+    <string name="image_description">ImageDescription</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="login">Login</string>
+    <string name="mobile_number">Mobile number</string>
+    <string name="reports">Reports</string>
+    <string name="from_date">from date</string>
+    <string name="to_date">To date</string>
+    <string name="submit">Submit</string>
+    <string name="no_reports_found">No reports found</string>
+    <string name="hospital_code">Hospital Code:</string>
+    <string name="hcf_weight">HCF Weight:</string>
+    <string name="cbwtf_weight">CBWTF Weight:</string>
+    <string name="difference_weight">Difference Weight:</string>
+    <string name="date">Date:</string>
+    <string name="choose_account_type_from_cbwtf_and_hcf">Choose account type from CBWTF and HCF</string>
+    <string name="bio_medical_waste_management_system">Bio Medical Waste Management System</string>
+    <string name="cbwtf_operator_login">CBWTF Operator Login</string>
+    <string name="hcf_login">HCF Login</string>
 </resources>
