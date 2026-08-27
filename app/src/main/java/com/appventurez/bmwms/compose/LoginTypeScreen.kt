@@ -1,6 +1,7 @@
 package com.appventurez.bmwms.compose
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -10,9 +11,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.appventurez.bmwms.R
@@ -22,7 +28,9 @@ fun LoginTypeScreen(
     onCbwtfClick: () -> Unit,
     onHcfClick: () -> Unit,
     onGuidelineClick: () -> Unit,
-    onYoutubeClick: () -> Unit
+    onYoutubeClick: () -> Unit,
+    onPrivacyPolicyClick: () -> Unit,
+    onTermsConditionsClick: () -> Unit
 ) {
     val appColorDark = Color(0xFFFA8717)
 
@@ -131,6 +139,48 @@ fun LoginTypeScreen(
                     fontSize = 16.sp
                 )
             }*/
+        }
+
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            val annotatedString = buildAnnotatedString {
+                pushStringAnnotation(tag = "PRIVACY", annotation = "privacy")
+                withStyle(style = SpanStyle(color = colorResource(R.color.app_color_dark), textDecoration = TextDecoration.Underline)) {
+                    append("Privacy Policy")
+                }
+                pop()
+                
+                append(" | ")
+                
+                pushStringAnnotation(tag = "TERMS", annotation = "terms")
+                withStyle(style = SpanStyle(color = colorResource(R.color.app_color_dark), textDecoration = TextDecoration.Underline)) {
+                    append("Terms and Conditions")
+                }
+                pop()
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = "Privacy Policy",
+                    color = colorResource(R.color.app_color_dark),
+                    textDecoration = TextDecoration.Underline,
+                    modifier = Modifier.clickable { onPrivacyPolicyClick() }
+                )
+                Text(text = " | ", color = colorResource(R.color.app_color_dark))
+                Text(
+                    text = "Terms and Conditions",
+                    color = colorResource(R.color.app_color_dark),
+                    textDecoration = TextDecoration.Underline,
+                    modifier = Modifier.clickable { onTermsConditionsClick() }
+                )
+            }
         }
     }
 }

@@ -1,6 +1,5 @@
 package com.appventurez.bmwms.hcf.Activities
 
-import android.app.ProgressDialog
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.os.Bundle
@@ -9,6 +8,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.runtime.mutableStateOf
 import com.android.volley.AuthFailureError
 import com.android.volley.Request
 import com.android.volley.Response
@@ -27,18 +27,17 @@ class HcfLoginActivity : AppCompatActivity() {
 
     private var vibrator: Vibrator? = null
     private var loginAs = 1
-    private var progressDialog: ProgressDialog? = null
+    private var isLoading = mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         vibrator = getSystemService(VIBRATOR_SERVICE) as Vibrator
-        progressDialog = ProgressDialog(this)
-        progressDialog?.setMessage("Logging in...")
         loginAs = intent.getIntExtra("loginAs", 1)
 
         setContent {
             HcfLoginScreen(
+                isLoading = isLoading.value,
                 onLoginClick = { email, password ->
                     onLoginClick(email, password)
                 },
@@ -71,7 +70,7 @@ class HcfLoginActivity : AppCompatActivity() {
             vibrator?.vibrate(100)
             Toast.makeText(this, "Empty password", Toast.LENGTH_SHORT).show()
         } else {
-            progressDialog?.show()
+            isLoading.value = true
             val map = HashMap<String, String>()
             map["email"] = email
             map["password"] = password
@@ -115,24 +114,24 @@ class HcfLoginActivity : AppCompatActivity() {
                         }
                     }
 
-                    progressDialog?.dismiss()
+                    isLoading.value = false
                     val intent = Intent(this, CbwtfDashboardActivity::class.java)
                     intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     startActivity(intent)
                     finish()
                 } else {
-                    progressDialog?.dismiss()
+                    isLoading.value = false
                     vibrator?.vibrate(100)
                     Toast.makeText(this, "Wrong credential", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
-                progressDialog?.dismiss()
+                isLoading.value = false
                 e.printStackTrace()
                 Toast.makeText(this, "Something went wrong try again", Toast.LENGTH_SHORT).show()
             }
         }, Response.ErrorListener {
             Log.e("HcfLoginActivity", "Network Error: ${it.message}")
-            progressDialog?.dismiss()
+            isLoading.value = false
             Toast.makeText(this, "Something went wrong try again", Toast.LENGTH_SHORT).show()
         }) {
             @Throws(AuthFailureError::class)

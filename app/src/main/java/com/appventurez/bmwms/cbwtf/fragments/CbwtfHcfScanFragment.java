@@ -3,7 +3,6 @@ package com.appventurez.bmwms.cbwtf.fragments;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
-import android.app.ProgressDialog;
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -31,6 +30,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.room.Room;
 
 import android.os.Handler;
+import android.os.Looper;
 import android.provider.Settings;
 import android.text.format.DateFormat;
 import android.util.Log;
@@ -53,17 +53,16 @@ import com.android.volley.toolbox.StringRequest;
 import com.bumptech.glide.Glide;
 import com.github.douglasjunior.bluetoothclassiclibrary.BluetoothStatus;
 import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.PendingResult;
-import com.google.android.gms.common.api.ResultCallback;
-import com.google.android.gms.common.api.Status;
+import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.common.api.ResolvableApiException;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.LocationSettingsRequest;
-import com.google.android.gms.location.LocationSettingsResult;
-import com.google.android.gms.location.LocationSettingsStates;
+import com.google.android.gms.location.LocationSettingsResponse;
 import com.google.android.gms.location.LocationSettingsStatusCodes;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.CancellationToken;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.OnTokenCanceledListener;
@@ -121,7 +120,6 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
 
     View view;
 
-    ProgressDialog progressDialog;
     int loginAs = 0;
 
     TextView codeTv,appbar_tv,location_tv,hcf_name,total_bags,total_waste_weight,weight_hcf_name,empty_tv,attendanceStatusTv;
@@ -133,8 +131,6 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
     boolean isCameraPermissionGranted = false;
 
     boolean isLocationGranted = false;
-
-    GoogleApiClient googleApiClient;
 
     FusedLocationProviderClient fusedLocationProviderClient;
 
@@ -234,12 +230,6 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
             appbar_tv = view.findViewById(R.id.cbwtf_hcf_scan_appbar_tv);
             submit_button = view.findViewById(R.id.cbwtf_hcf_scan_submit_button);
             loading_ll = view.findViewById(R.id.loading_view_ll);
-
-
-            progressDialog = new ProgressDialog(getContext());
-            progressDialog.setCancelable(false);
-            progressDialog.setMessage("Submitting...");
-            progressDialog.create();
 
             Glide.with(getContext()).load(R.drawable.uplogogpb).into(appBarLogo);
 
@@ -354,7 +344,8 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
                     Log.d("TAG", "onClick: "+"HCF Scan ");
                     if (dataSize < hospitalModels.size()){
 
-                        progressDialog.show();
+                        // progressDialog.show();
+                        if (loading_ll != null) loading_ll.setVisibility(View.VISIBLE);
 
                         String date = DateFormat.format("yyyy-MM-dd",new Date().getTime()).toString();
 
@@ -698,175 +689,72 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
 
     }
 
-    public void checkLocationSetting(){
-        if (googleApiClient == null) {
-            googleApiClient = new GoogleApiClient.Builder(getContext())
-                    .addApi(LocationServices.API)
-                    .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
-                        @Override
-                        public void onConnected(@Nullable Bundle bundle) {
+    public void checkLocationSetting() {
+        LocationRequest locationRequest = LocationRequest.create();
+        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        locationRequest.setInterval(30 * 1000);
+        locationRequest.setFastestInterval(5 * 1000);
 
+        LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder()
+                .addLocationRequest(locationRequest);
+        builder.setAlwaysShow(true);
+
+        Task<LocationSettingsResponse> task = LocationServices.getSettingsClient(requireContext())
+                .checkLocationSettings(builder.build());
+
+        task.addOnCompleteListener(new OnCompleteListener<LocationSettingsResponse>() {
+            @SuppressLint("MissingPermission")
+            @Override
+            public void onComplete(@NonNull Task<LocationSettingsResponse> task) {
+                try {
+                    task.getResult(ApiException.class);
+                    // All location settings are satisfied.
+                    isLocationGranted = true;
+                    fusedLocationProviderClient.getCurrentLocation(LocationRequest.PRIORITY_HIGH_ACCURACY, new CancellationToken() {
+                        @Override
+                        public boolean isCancellationRequested() {
+                            return false;
                         }
 
+                        @NonNull
                         @Override
-                        public void onConnectionSuspended(int i) {
-
+                        public CancellationToken onCanceledRequested(@NonNull OnTokenCanceledListener onTokenCanceledListener) {
+                            return null;
                         }
-                    })
-                    .addOnConnectionFailedListener(new GoogleApiClient.OnConnectionFailedListener() {
+                    }).addOnSuccessListener(new OnSuccessListener<Location>() {
                         @Override
-                        public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-
-                        }
-                    }).build();
-            googleApiClient.connect();
-
-            LocationRequest locationRequest = LocationRequest.create();
-            locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-            locationRequest.setInterval(30 * 1000);
-            locationRequest.setFastestInterval(5 * 1000);
-            LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder()
-                    .addLocationRequest(locationRequest);
-
-            //**************************
-            builder.setAlwaysShow(true); //this is the key ingredient
-            //**************************
-
-            PendingResult<LocationSettingsResult> result =
-                    LocationServices.SettingsApi.checkLocationSettings(googleApiClient, builder.build());
-            result.setResultCallback(new ResultCallback<LocationSettingsResult>() {
-                @SuppressLint("MissingPermission")
-                @Override
-                public void onResult(LocationSettingsResult result) {
-                    final Status status = result.getStatus();
-                    final LocationSettingsStates state = result.getLocationSettingsStates();
-                    switch (status.getStatusCode()) {
-                        case LocationSettingsStatusCodes.SUCCESS:
-                            isLocationGranted = true;
-                            fusedLocationProviderClient.getCurrentLocation(LocationRequest.PRIORITY_HIGH_ACCURACY, new CancellationToken() {
-                                @Override
-                                public boolean isCancellationRequested() {
-                                    return false;
-                                }
-
-                                @NonNull
-                                @Override
-                                public CancellationToken onCanceledRequested(@NonNull OnTokenCanceledListener onTokenCanceledListener) {
-                                    return null;
-                                }
-                            }).addOnSuccessListener(new OnSuccessListener<Location>() {
-                                @Override
-                                public void onSuccess(Location location) {
-                                    if (location != null){
-                                        latitude = location.getLatitude();
-                                        longitude = location.getLongitude();
-
-                                        try {
-
-                                            List<Address> addresses = geocoder.getFromLocation(latitude,longitude,5);
-                                            location_tv.setText(addresses.get(0).getAddressLine(0));
-
-                                        }catch (Exception e){
-                                            e.printStackTrace();
-                                        }
+                        public void onSuccess(Location location) {
+                            if (location != null) {
+                                latitude = location.getLatitude();
+                                longitude = location.getLongitude();
+                                Log.d("LocationCheck", "Fetched location: Lat=" + latitude + ", Long=" + longitude);
+                                try {
+                                    List<Address> addresses = geocoder.getFromLocation(latitude, longitude, 5);
+                                    if (addresses != null && !addresses.isEmpty()) {
+                                        location_tv.setText(addresses.get(0).getAddressLine(0));
                                     }
+                                } catch (Exception e) {
+                                    e.printStackTrace();
                                 }
-                            });
-                            break;
+                            }
+                        }
+                    });
+                } catch (ApiException exception) {
+                    switch (exception.getStatusCode()) {
                         case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
-                            // Location settings are not satisfied. But could be fixed by showing the user
-                            // a dialog.
                             try {
-                                // Show the dialog by calling startResolutionForResult(),
-                                // and check the result in onActivityResult().
-                                status.startResolutionForResult(
-                                        getActivity(), 1000);
-                            } catch (IntentSender.SendIntentException e) {
-                                // Ignore the error.
+                                ResolvableApiException resolvable = (ResolvableApiException) exception;
+                                resolvable.startResolutionForResult(requireActivity(), 1000);
+                            } catch (IntentSender.SendIntentException | ClassCastException e) {
+                                e.printStackTrace();
                             }
                             break;
                         case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
-                            // Location settings are not satisfied. However, we have no way to fix the
-                            // settings so we won't show the dialog.
                             break;
                     }
                 }
-            });
-        }else {
-
-            googleApiClient.connect();
-
-            LocationRequest locationRequest = LocationRequest.create();
-            locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-            locationRequest.setInterval(30 * 1000);
-            locationRequest.setFastestInterval(5 * 1000);
-            LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder()
-                    .addLocationRequest(locationRequest);
-
-            //**************************
-            builder.setAlwaysShow(true);
-
-            PendingResult<LocationSettingsResult> result =
-                    LocationServices.SettingsApi.checkLocationSettings(googleApiClient, builder.build());
-            result.setResultCallback(new ResultCallback<LocationSettingsResult>() {
-                @SuppressLint("MissingPermission")
-                @Override
-                public void onResult(LocationSettingsResult result) {
-                    final Status status = result.getStatus();
-                    final LocationSettingsStates state = result.getLocationSettingsStates();
-                    switch (status.getStatusCode()) {
-                        case LocationSettingsStatusCodes.SUCCESS:
-                            isLocationGranted = true;
-                            fusedLocationProviderClient.getCurrentLocation(LocationRequest.PRIORITY_HIGH_ACCURACY, new CancellationToken() {
-                                @Override
-                                public boolean isCancellationRequested() {
-                                    return false;
-                                }
-
-                                @NonNull
-                                @Override
-                                public CancellationToken onCanceledRequested(@NonNull OnTokenCanceledListener onTokenCanceledListener) {
-                                    return null;
-                                }
-                            }).addOnSuccessListener(new OnSuccessListener<Location>() {
-                                @Override
-                                public void onSuccess(Location location) {
-                                    if (location != null){
-                                        latitude = location.getLatitude();
-                                        longitude = location.getLongitude();
-
-                                        try {
-
-                                            List<Address> addresses = geocoder.getFromLocation(latitude,longitude,5);
-                                            location_tv.setText(addresses.get(0).getAddressLine(0));
-
-                                        }catch (Exception e){
-                                            e.printStackTrace();
-                                        }
-                                    }
-                                }
-                            });
-                            break;
-                        case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
-                            // Location settings are not satisfied. But could be fixed by showing the user
-                            // a dialog.
-                            try {
-                                // Show the dialog by calling startResolutionForResult(),
-                                // and check the result in onActivityResult().
-                                status.startResolutionForResult(
-                                        getActivity(), 1000);
-                            } catch (IntentSender.SendIntentException e) {
-                                // Ignore the error.
-                            }
-                            break;
-                        case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
-                            // Location settings are not satisfied. However, we have no way to fix the
-                            // settings so we won't show the dialog.
-                            break;
-                    }
-                }
-            });
-        }
+            }
+        });
     }
 
     public void getBluetoothDevices(){
@@ -938,7 +826,7 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
         if (isWeightAdded) {
             isWeightAdded = false;
             if (!weight_tv.getText().toString().trim().equals("0")) {
-                new Handler().postDelayed(new Runnable() {
+                new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
                     @Override
                     public void run(){
                         Log.d("TAG", "Checking isFirstScanHCF before addWeightAuto: " + isFirstScanHCF);
@@ -1125,7 +1013,8 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
                         }
 
                         if (dataSize == hospitalModels.size()){
-                            progressDialog.dismiss();
+                            // progressDialog.dismiss();
+                            if (loading_ll != null) loading_ll.setVisibility(View.GONE);
                             showToast("Submitted");
                             total_bags.setText("0");
                             total_waste_weight.setText("000.000");
@@ -1139,7 +1028,7 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
 
                 }catch (Exception e){
                     e.printStackTrace();
-                    progressDialog.dismiss();
+                    if (loading_ll != null) loading_ll.setVisibility(View.GONE);
                     Log.i("res_p","e: "+e.getMessage());
                 }
 
@@ -1148,7 +1037,7 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
             @Override
             public void onErrorResponse(VolleyError error) {
                 Log.i("res_p","err: "+error.getMessage());
-                progressDialog.dismiss();
+                if (loading_ll != null) loading_ll.setVisibility(View.GONE);
             }
         }){
             @Nullable
@@ -1325,7 +1214,7 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
                         otpAlertDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
                             @Override
                             public void onDismiss(DialogInterface dialog) {
-                                //progressDialog.dismiss();
+                                if (loading_ll != null) loading_ll.setVisibility(View.GONE);
                             }
                         });
                         mOtp.setOtpCompletionListener(new OnOtpCompletionListener() {

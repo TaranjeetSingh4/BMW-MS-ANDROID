@@ -32,6 +32,16 @@ class LoginActivity : AppCompatActivity() {
                 },
                 onYoutubeClick = {
                     openYoutube()
+                },
+                onPrivacyPolicyClick = {
+                    val intent = Intent(this, WebViewActivity::class.java)
+                    intent.putExtra("url", "https://bmwms.dgmhup.in/privacy-policy")
+                    startActivity(intent)
+                },
+                onTermsConditionsClick = {
+                    val intent = Intent(this, WebViewActivity::class.java)
+                    intent.putExtra("url", "https://bmwms.dgmhup.in/terms-conditions")
+                    startActivity(intent)
                 }
             )
         }
