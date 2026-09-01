@@ -3,8 +3,11 @@ package com.appventurez.bmwms.cbwtf.activities
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.VibrationEffect
 import android.os.Vibrator
+import android.os.VibratorManager
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.setContent
@@ -31,7 +34,14 @@ class CbwtfLoginActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        vibrator = getSystemService(VIBRATOR_SERVICE) as Vibrator
+        vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val vibratorManager =
+                getSystemService(VIBRATOR_MANAGER_SERVICE) as VibratorManager
+            vibratorManager.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            getSystemService(VIBRATOR_SERVICE) as Vibrator
+        }
         
         loginAs = intent.getIntExtra("loginAs", 0)
 
@@ -61,12 +71,21 @@ class CbwtfLoginActivity : AppCompatActivity() {
         }
     }
 
+    private fun vibrate(duration: Long) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrator?.vibrate(VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE))
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator?.vibrate(duration)
+        }
+    }
+
     private fun onLoginClick(mobile: String, password: String) {
         if (mobile.trim().isEmpty()) {
-            vibrator?.vibrate(100)
+            vibrate(100)
             Toast.makeText(this, "Empty number", Toast.LENGTH_SHORT).show()
         } else if (password.trim().isEmpty()) {
-            vibrator?.vibrate(100)
+            vibrate(100)
             Toast.makeText(this, "Empty password", Toast.LENGTH_SHORT).show()
         } else {
             isLoading.value = true
@@ -120,7 +139,7 @@ class CbwtfLoginActivity : AppCompatActivity() {
                     finish()
                 } else {
                     isLoading.value = false
-                    vibrator?.vibrate(100)
+                    vibrate(100)
                     Toast.makeText(this, "Wrong credential", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {

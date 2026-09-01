@@ -17,8 +17,11 @@ import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.VibrationEffect;
 import android.os.Vibrator;
+import android.os.VibratorManager;
 import android.provider.Settings;
 import android.text.format.DateFormat;
 import android.util.Log;
@@ -330,9 +333,21 @@ public class CbwtfDashboardActivity extends AppCompatActivity {
     }
 
     public void init(){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            VibratorManager vibratorManager = (VibratorManager) getSystemService(VIBRATOR_MANAGER_SERVICE);
+            vibrator = vibratorManager.getDefaultVibrator();
+        } else {
+            vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
+        }
+    }
 
-        vibrator = (Vibrator)getSystemService(VIBRATOR_SERVICE);
-
+    private void vibrate(long duration) {
+        if (vibrator == null) return;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrator.vibrate(VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE));
+        } else {
+            vibrator.vibrate(duration);
+        }
     }
 
     public void loadImages(){
@@ -503,7 +518,7 @@ public class CbwtfDashboardActivity extends AppCompatActivity {
 //                if (multiplePermissionsReport.areAllPermissionsGranted()){
 //                    checkLocationSetting();
 //                }else{
-//                    vibrator.vibrate(100);
+//                    vibrate(100);
 //                    //Toast.makeText(CbwtfDashboardActivity.this, "Grant location permission", Toast.LENGTH_SHORT).show();
 //                    new AlertDialog.Builder(CbwtfDashboardActivity.this).setMessage("Grant location permission to continue\nApp permissions > Location > Allow").setPositiveButton("Setting", new DialogInterface.OnClickListener() {
 //                        @Override
