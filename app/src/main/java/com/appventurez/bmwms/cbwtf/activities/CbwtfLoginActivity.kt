@@ -1,15 +1,18 @@
 package com.appventurez.bmwms.cbwtf.activities
 
-import android.app.ProgressDialog
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.VibrationEffect
 import android.os.Vibrator
+import android.os.VibratorManager
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.runtime.mutableStateOf
 import com.android.volley.AuthFailureError
 import com.android.volley.Request
 import com.android.volley.Response
@@ -26,20 +29,25 @@ class CbwtfLoginActivity : AppCompatActivity() {
 
     private var vibrator: Vibrator? = null
     private var loginAs = 0
-    private var progressDialog: ProgressDialog? = null
+    private var isLoading = mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        vibrator = getSystemService(VIBRATOR_SERVICE) as Vibrator
-        progressDialog = ProgressDialog(this)
-        progressDialog?.setCancelable(false)
-        progressDialog?.setMessage("Please wait...")
+        vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val vibratorManager =
+                getSystemService(VIBRATOR_MANAGER_SERVICE) as VibratorManager
+            vibratorManager.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            getSystemService(VIBRATOR_SERVICE) as Vibrator
+        }
         
         loginAs = intent.getIntExtra("loginAs", 0)
 
         setContent {
             CbwtfLoginScreen(
+                isLoading = isLoading.value,
                 onLoginClick = { mobile, password ->
                     onLoginClick(mobile, password)
                 },
@@ -63,15 +71,24 @@ class CbwtfLoginActivity : AppCompatActivity() {
         }
     }
 
+    private fun vibrate(duration: Long) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrator?.vibrate(VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE))
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator?.vibrate(duration)
+        }
+    }
+
     private fun onLoginClick(mobile: String, password: String) {
         if (mobile.trim().isEmpty()) {
-            vibrator?.vibrate(100)
+            vibrate(100)
             Toast.makeText(this, "Empty number", Toast.LENGTH_SHORT).show()
         } else if (password.trim().isEmpty()) {
-            vibrator?.vibrate(100)
+            vibrate(100)
             Toast.makeText(this, "Empty password", Toast.LENGTH_SHORT).show()
         } else {
-            progressDialog?.show()
+            isLoading.value = true
             val map = HashMap<String, String>()
             map["mobile"] = mobile
             map["password"] = password
@@ -115,24 +132,24 @@ class CbwtfLoginActivity : AppCompatActivity() {
                         }
                     }
 
-                    progressDialog?.dismiss()
+                    isLoading.value = false
                     val intent = Intent(this, CbwtfDashboardActivity::class.java)
                     intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     startActivity(intent)
                     finish()
                 } else {
-                    progressDialog?.dismiss()
-                    vibrator?.vibrate(100)
+                    isLoading.value = false
+                    vibrate(100)
                     Toast.makeText(this, "Wrong credential", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
-                progressDialog?.dismiss()
+                isLoading.value = false
                 e.printStackTrace()
                 Toast.makeText(this, "Something went wrong try again", Toast.LENGTH_SHORT).show()
             }
         }, Response.ErrorListener {
             Log.e("CbwtfLoginActivity", "Network Error: ${it.message}")
-            progressDialog?.dismiss()
+            isLoading.value = false
             Toast.makeText(this, "Something went wrong try again", Toast.LENGTH_SHORT).show()
         }) {
             @Throws(AuthFailureError::class)

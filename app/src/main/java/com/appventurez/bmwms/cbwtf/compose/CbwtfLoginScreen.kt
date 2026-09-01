@@ -22,6 +22,7 @@ import com.appventurez.bmwms.R
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CbwtfLoginScreen(
+    isLoading: Boolean = false,
     onLoginClick: (String, String) -> Unit,
     onGuidelineClick: () -> Unit,
     onYoutubeClick: () -> Unit
@@ -59,7 +60,8 @@ fun CbwtfLoginScreen(
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = appColorDark,
                     unfocusedBorderColor = appColorDark
-                )
+                ),
+                enabled = !isLoading
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -75,7 +77,8 @@ fun CbwtfLoginScreen(
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = appColorDark,
                     unfocusedBorderColor = appColorDark
-                )
+                ),
+                enabled = !isLoading
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -86,7 +89,8 @@ fun CbwtfLoginScreen(
                     .fillMaxWidth()
                     .height(50.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = appColorDark),
-                shape = RoundedCornerShape(8.dp)
+                shape = RoundedCornerShape(8.dp),
+                enabled = !isLoading
             ) {
                 Text(
                     text = stringResource(id = R.string.login),
@@ -118,6 +122,15 @@ fun CbwtfLoginScreen(
                     fontSize = 16.sp
                 )
             }*/
+        }
+
+        if (isLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = appColorDark)
+            }
         }
     }
 }

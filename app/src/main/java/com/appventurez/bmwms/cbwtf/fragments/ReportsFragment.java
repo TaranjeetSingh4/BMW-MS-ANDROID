@@ -7,8 +7,11 @@ import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
+import android.util.Log;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.SearchView;
@@ -62,6 +65,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class ReportsFragment extends Fragment{
     View view;
@@ -312,8 +317,7 @@ public class ReportsFragment extends Fragment{
             public void onResponse(String response) {
                 String pdfUrl = "https://example.com/sample.pdf";
 
-                DownloadPDFTask downloadTask = new DownloadPDFTask();
-                downloadTask.execute(response);
+                downloadPDF(response);
                 try {
                     JSONObject jsonObject = new JSONObject(response);
 
@@ -795,13 +799,12 @@ public class ReportsFragment extends Fragment{
         reportsAdapter.onUpdate(list);
     }
 
-    private class DownloadPDFTask extends AsyncTask<String, Void, File> {
+    private void downloadPDF(String pdfUrl) {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Handler handler = new Handler(Looper.getMainLooper());
 
-        @Override
-        protected File doInBackground(String... urls) {
-            String pdfUrl = urls[0];
+        executor.execute(() -> {
             File pdfFile = null;
-
             try {
                 URL url = new URL(pdfUrl);
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -828,15 +831,13 @@ public class ReportsFragment extends Fragment{
                 e.printStackTrace();
             }
 
-            return pdfFile;
-        }
-
-        @Override
-        protected void onPostExecute(File pdfFile) {
-            if (pdfFile != null) {
-                openPDFWithReader(pdfFile);
-            }
-        }
+            File finalPdfFile = pdfFile;
+            handler.post(() -> {
+                if (finalPdfFile != null) {
+                    openPDFWithReader(finalPdfFile);
+                }
+            });
+        });
     }
 
     private void openPDFWithReader(File pdfFile) {

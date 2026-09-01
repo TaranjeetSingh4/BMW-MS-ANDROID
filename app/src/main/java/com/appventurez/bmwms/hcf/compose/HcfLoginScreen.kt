@@ -22,6 +22,7 @@ import com.appventurez.bmwms.R
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HcfLoginScreen(
+    isLoading: Boolean = false,
     onLoginClick: (String, String) -> Unit,
     onGuidelineClick: () -> Unit,
     onYoutubeClick: () -> Unit
@@ -32,19 +33,6 @@ fun HcfLoginScreen(
     val appColorDark = Color(0xFFFA8717) // Adjust to match your app_color_dark
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Bottom Background Image (if needed, currently gone in XML)
-        /*
-        AsyncImage(
-            model = R.drawable.img_011,
-            contentDescription = null,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(150.dp)
-                .align(Alignment.BottomCenter),
-            contentScale = ContentScale.Crop
-        )
-        */
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -72,7 +60,8 @@ fun HcfLoginScreen(
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = appColorDark,
                     unfocusedBorderColor = appColorDark
-                )
+                ),
+                enabled = !isLoading
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -88,7 +77,8 @@ fun HcfLoginScreen(
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = appColorDark,
                     unfocusedBorderColor = appColorDark
-                )
+                ),
+                enabled = !isLoading
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -99,7 +89,8 @@ fun HcfLoginScreen(
                     .fillMaxWidth()
                     .height(50.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = appColorDark),
-                shape = RoundedCornerShape(8.dp)
+                shape = RoundedCornerShape(8.dp),
+                enabled = !isLoading
             ) {
                 Text(
                     text = stringResource(id = R.string.login),
@@ -109,41 +100,15 @@ fun HcfLoginScreen(
             }
 
             Spacer(modifier = Modifier.height(20.dp))
+        }
 
-            // Guidelines Link (currently gone in XML, but kept here if needed)
-            /*
-            Text(
-                text = stringResource(id = R.string.u_guidelines_of_cpcb_and_bmwm_rules_u),
-                color = Color.Black,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onGuidelineClick() }
-            )
-            */
-
-            /*Row(
-                modifier = Modifier
-                    .padding(top = 20.dp)
-                    .clickable { onYoutubeClick() },
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
+        if (isLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_baseline_smart_display_24),
-                    contentDescription = null,
-                    tint = Color.Red,
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.width(5.dp))
-                Text(
-                    text = stringResource(id = R.string.how_it_works),
-                    color = Color.Black,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
-                )
-            }*/
+                CircularProgressIndicator(color = appColorDark)
+            }
         }
     }
 }
