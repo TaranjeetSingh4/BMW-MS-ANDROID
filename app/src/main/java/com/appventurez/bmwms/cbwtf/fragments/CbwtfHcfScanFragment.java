@@ -37,7 +37,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -112,6 +111,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import me.aflak.bluetooth.Bluetooth;
 
@@ -205,6 +205,7 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
             geocoder = new Geocoder(getContext());
             checkLocationPermission();
 
+            assert getArguments() != null;
             scanType = getArguments().getInt("scanType");
 
             getQRData(AppStrings.get_all_report);
@@ -300,7 +301,7 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {
                                 Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                                Uri uri = Uri.fromParts("package", getActivity().getPackageName(), null);
+                                Uri uri = Uri.fromParts("package", Objects.requireNonNull(getActivity()).getPackageName(), null);
                                 intent.setData(uri);
                                 startActivity(intent);
                             }
@@ -310,135 +311,120 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
                 }
             });
 
-            add_weight_button.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
+            add_weight_button.setOnClickListener(view -> {
 
-                    String code = codeTv.getText().toString();
-                    String hName = hcf_name.getText().toString();
-                    String wType = weight_type.getText().toString();
-                    weightView.setVisibility(View.GONE);
+                String code = codeTv.getText().toString();
+                String hName = hcf_name.getText().toString();
+                String wType = weight_type.getText().toString();
+                weightView.setVisibility(View.GONE);
 
-                    String[] ww_ww = finalWeight.trim().split("\\.");
+                String[] ww_ww = finalWeight.trim().split("\\.");
 
-                    hospitalModels.add(new HospitalModel(code,hName,wType,ww_ww[0],ww_ww[1],scannedQrCode));
-                    hospitalAdapter.notifyDataSetChanged();
+                hospitalModels.add(new HospitalModel(code,hName,wType,ww_ww[0],ww_ww[1],scannedQrCode));
+                hospitalAdapter.notifyDataSetChanged();
 
-                }
             });
 
-            submit_button.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    Log.d("TAG", "onClick: "+"HCF Scan ");
-                    if (dataSize < hospitalModels.size()){
+            submit_button.setOnClickListener(v -> {
+                Log.d("TAG", "onClick: "+"HCF Scan ");
+                if (dataSize < hospitalModels.size()){
 
-                        // progressDialog.show();
-                        if (loading_ll != null) loading_ll.setVisibility(View.VISIBLE);
+                    // progressDialog.show();
+                    if (loading_ll != null) loading_ll.setVisibility(View.VISIBLE);
 
-                        String date = DateFormat.format("yyyy-MM-dd",new Date().getTime()).toString();
-
-                        if (scanType == 0){
-                            /*
-                            * this condition for HCF scan
-                            * */
-                            if (MSP.getInstance(getContext()).getStringData(AppStrings.loginAs).equals("hcf")){
-                                Map<String,String> map = new HashMap<>();
-                                map.put("weight",hospitalModels.get(dataSize).getWaste_weight()+"."+hospitalModels.get(dataSize).getWaste_weight_g());
-                                map.put("admin_id",MSP.getInstance(getContext()).getStringData(AppStrings.userCbwtfID));
-                                map.put("handhover_address",latitude+","+longitude);
-                                map.put("type",hospitalModels.get(dataSize).getWaste_color());
-                                map.put("hospital_id",hospitalModels.get(dataSize).getHcf_code());
-                                map.put("seq_no",hospitalModels.get(dataSize).getQr_code());
-                                map.put("year",date);
-                                map.put("attenden_status","collected");
-                                cbwtfScanSubmitRequest(AppStrings.hcf_scan_submit_hcf,map);
-
-                            }else {
-
-                                Map<String,String> map = new HashMap<>();
-                                map.put("weight",hospitalModels.get(dataSize).getWaste_weight()+"."+hospitalModels.get(dataSize).getWaste_weight_g());
-                                map.put("admin_id",MSP.getInstance(getContext()).getStringData(AppStrings.userCbwtfID));
-                                map.put("operator_name",MSP.getInstance(getContext()).getStringData(AppStrings.userID));
-                                map.put("handhover_address",latitude+","+longitude);
-                                map.put("type",hospitalModels.get(dataSize).getWaste_color());
-                                map.put("hospital_id",hospitalModels.get(dataSize).getHcf_code());
-                                map.put("seq_no",hospitalModels.get(dataSize).getQr_code());
-                                map.put("year",date);
-                                map.put("attenden_status","collected");
-
-                                deleteQRData(hospitalModels.get(dataSize).getQr_code(),map);
-
-                            }
-
-                        }else {
-                            Map<String,String> map = new HashMap<>();
-                            map.put("weight",hospitalModels.get(dataSize).getWaste_weight()+"."+hospitalModels.get(dataSize).getWaste_weight_g());
-                            map.put("receiving_date",date);
-                            map.put("operator_id",MSP.getInstance(getContext()).getStringData(AppStrings.userID));
-                            map.put("receiving_address",latitude+","+longitude);
-                            map.put("color",hospitalModels.get(dataSize).getWaste_color());
-                            map.put("hospital_id",hospitalModels.get(dataSize).getHcf_code());
-                            map.put("seq_no",hospitalModels.get(dataSize).getQr_code());
-
-                            cbwtfScanSubmitRequest(AppStrings.cbwtf_scan_submit,map);
-                        }
-
-                    }
-                }
-            });
-
-            hcf_reset_button.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    MSP.getInstance(getContext()).removeData(AppStrings.currentHcfCode);
-                    codeTv.setText("HCF QR Code");
-                    hcf_name.setText("HCF Name");
-                    total_bags.setText("0");
-                    total_waste_weight.setText("000.000");
-                    dataSize = 0;
-                    hospitalModels.clear();
-                    hospitalAdapter.notifyDataSetChanged();
+                    String date = DateFormat.format("yyyy-MM-dd",new Date().getTime()).toString();
 
                     if (scanType == 0){
-                        if (MSP.getInstance(getContext()).getStringData(AppStrings.loginAs).equals("cbwtf")){
-                            if (MSP.getInstance(getContext()).getStringData(AppStrings.attendance_compulsory).equals("1")){
-                                submit_button.setVisibility(View.GONE);
-                                scanButton.setVisibility(View.GONE);
-                                attendanceButton.setVisibility(View.VISIBLE);
-                                attendanceCard.setVisibility(View.VISIBLE);
-                                attendanceStatusTv.setText("Pending");
-                                attendanceStatusTv.setTextColor(getActivity().getResources().getColor(R.color.yellow));
-                                attendanceStatusTv.setCompoundDrawablesWithIntrinsicBounds(0,0, R.drawable.ic_baseline_pending_actions_24,0);
-                                setTextViewDrawableColor(attendanceStatusTv, R.color.yellow);
+                        /*
+                        * this condition for HCF scan
+                        * */
+                        if (MSP.getInstance(getContext()).getStringData(AppStrings.loginAs).equals("hcf")){
+                            Map<String,String> map = new HashMap<>();
+                            map.put("weight",hospitalModels.get(dataSize).getWaste_weight()+"."+hospitalModels.get(dataSize).getWaste_weight_g());
+                            map.put("admin_id",MSP.getInstance(getContext()).getStringData(AppStrings.userCbwtfID));
+                            map.put("handhover_address",latitude+","+longitude);
+                            map.put("type",hospitalModels.get(dataSize).getWaste_color());
+                            map.put("hospital_id",hospitalModels.get(dataSize).getHcf_code());
+                            map.put("seq_no",hospitalModels.get(dataSize).getQr_code());
+                            map.put("year",date);
+                            map.put("attenden_status","collected");
+                            cbwtfScanSubmitRequest(AppStrings.hcf_scan_submit_hcf,map);
 
-                            }
+                        }else {
+
+                            Map<String,String> map = new HashMap<>();
+                            map.put("weight",hospitalModels.get(dataSize).getWaste_weight()+"."+hospitalModels.get(dataSize).getWaste_weight_g());
+                            map.put("admin_id",MSP.getInstance(getContext()).getStringData(AppStrings.userCbwtfID));
+                            map.put("operator_name",MSP.getInstance(getContext()).getStringData(AppStrings.userID));
+                            map.put("handhover_address",latitude+","+longitude);
+                            map.put("type",hospitalModels.get(dataSize).getWaste_color());
+                            map.put("hospital_id",hospitalModels.get(dataSize).getHcf_code());
+                            map.put("seq_no",hospitalModels.get(dataSize).getQr_code());
+                            map.put("year",date);
+                            map.put("attenden_status","collected");
+
+                            deleteQRData(hospitalModels.get(dataSize).getQr_code(),map);
+
+                        }
+
+                    }else {
+                        Map<String,String> map = new HashMap<>();
+                        map.put("weight",hospitalModels.get(dataSize).getWaste_weight()+"."+hospitalModels.get(dataSize).getWaste_weight_g());
+                        map.put("receiving_date",date);
+                        map.put("operator_id",MSP.getInstance(getContext()).getStringData(AppStrings.userID));
+                        map.put("receiving_address",latitude+","+longitude);
+                        map.put("color",hospitalModels.get(dataSize).getWaste_color());
+                        map.put("hospital_id",hospitalModels.get(dataSize).getHcf_code());
+                        map.put("seq_no",hospitalModels.get(dataSize).getQr_code());
+
+                        cbwtfScanSubmitRequest(AppStrings.cbwtf_scan_submit,map);
+                    }
+
+                }
+            });
+
+            hcf_reset_button.setOnClickListener(v -> {
+                MSP.getInstance(getContext()).removeData(AppStrings.currentHcfCode);
+                codeTv.setText("HCF QR Code");
+                hcf_name.setText("HCF Name");
+                total_bags.setText("0");
+                total_waste_weight.setText("000.000");
+                dataSize = 0;
+                hospitalModels.clear();
+                hospitalAdapter.notifyDataSetChanged();
+
+                if (scanType == 0){
+                    if (MSP.getInstance(getContext()).getStringData(AppStrings.loginAs).equals("cbwtf")){
+                        if (MSP.getInstance(getContext()).getStringData(AppStrings.attendance_compulsory).equals("1")){
+                            submit_button.setVisibility(View.GONE);
+                            scanButton.setVisibility(View.GONE);
+                            attendanceButton.setVisibility(View.VISIBLE);
+                            attendanceCard.setVisibility(View.VISIBLE);
+                            attendanceStatusTv.setText("Pending");
+                            attendanceStatusTv.setTextColor(Objects.requireNonNull(getActivity()).getResources().getColor(R.color.yellow));
+                            attendanceStatusTv.setCompoundDrawablesWithIntrinsicBounds(0,0, R.drawable.ic_baseline_pending_actions_24,0);
+                            setTextViewDrawableColor(attendanceStatusTv, R.color.yellow);
+
                         }
                     }
                 }
             });
 
-            attendanceButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
+            attendanceButton.setOnClickListener(v -> {
 
-                    if (getCameraPermission()){
-                        ScanOptions scanOptions = new ScanOptions();
-                        scanOptions.setOrientationLocked(true);
-                        scanOptions.setBarcodeImageEnabled(true);
-                        scanOptions.setPrompt("Scan Attendance Barcode");
-                        attendanceScanner.launch(scanOptions);
-                    }else {
-                        new AlertDialog.Builder(getContext()).setMessage("Grant camera permission to continue\nApp permissions > Camera > Allow").setPositiveButton("Setting", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                                Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                                Uri uri = Uri.fromParts("package", getActivity().getPackageName(), null);
-                                intent.setData(uri);
-                                startActivity(intent);
-                            }
-                        }).show();
-                    }
+                if (getCameraPermission()){
+                    ScanOptions scanOptions = new ScanOptions();
+                    scanOptions.setOrientationLocked(true);
+                    scanOptions.setBarcodeImageEnabled(true);
+                    scanOptions.setPrompt("Scan Attendance Barcode");
+                    attendanceScanner.launch(scanOptions);
+                }else {
+                    new AlertDialog.Builder(getContext()).setMessage("Grant camera permission to continue\nApp permissions > Camera > Allow").setPositiveButton("Setting", (dialogInterface, i) -> {
+                        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                        Uri uri = Uri.fromParts("package", getActivity().getPackageName(), null);
+                        intent.setData(uri);
+                        startActivity(intent);
+                    }).show();
                 }
             });
 
@@ -524,20 +510,20 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
         manualWeightColor.setText(w_color.toUpperCase());
 
         if (w_color.trim().equalsIgnoreCase("red")){
-            Glide.with(getContext()).load(R.drawable.red).into(manualWeightImage);
-            manualWeightColor.setTextColor(getActivity().getResources().getColor(android.R.color.holo_red_light));
+            Glide.with(Objects.requireNonNull(getContext())).load(R.drawable.red).into(manualWeightImage);
+            manualWeightColor.setTextColor(Objects.requireNonNull(getActivity()).getResources().getColor(android.R.color.holo_red_light));
         }else if (w_color.trim().equalsIgnoreCase("blue")){
-            Glide.with(getContext()).load(R.drawable.blue).into(manualWeightImage);
-            manualWeightColor.setTextColor(getActivity().getResources().getColor(android.R.color.holo_blue_light));
+            Glide.with(Objects.requireNonNull(getContext())).load(R.drawable.blue).into(manualWeightImage);
+            manualWeightColor.setTextColor(Objects.requireNonNull(getActivity()).getResources().getColor(android.R.color.holo_blue_light));
         }else if (w_color.trim().equalsIgnoreCase("yellow")){
-            Glide.with(getContext()).load(R.drawable.yellow).into(manualWeightImage);
-            manualWeightColor.setTextColor(getActivity().getResources().getColor(android.R.color.holo_orange_light));
+            Glide.with(Objects.requireNonNull(getContext())).load(R.drawable.yellow).into(manualWeightImage);
+            manualWeightColor.setTextColor(Objects.requireNonNull(getActivity()).getResources().getColor(android.R.color.holo_orange_light));
         }else if (w_color.trim().equalsIgnoreCase("yellow c")){
-            Glide.with(getContext()).load(R.drawable.yellow).into(manualWeightImage);
-            manualWeightColor.setTextColor(getActivity().getResources().getColor(android.R.color.holo_orange_light));
+            Glide.with(Objects.requireNonNull(getContext())).load(R.drawable.yellow).into(manualWeightImage);
+            manualWeightColor.setTextColor(Objects.requireNonNull(getActivity()).getResources().getColor(android.R.color.holo_orange_light));
         }else if (w_color.trim().equalsIgnoreCase("white")){
-            Glide.with(getContext()).load(R.drawable.gray).into(manualWeightImage);
-            manualWeightColor.setTextColor(getActivity().getResources().getColor(android.R.color.darker_gray));
+            Glide.with(Objects.requireNonNull(getContext())).load(R.drawable.gray).into(manualWeightImage);
+            manualWeightColor.setTextColor(Objects.requireNonNull(getActivity()).getResources().getColor(android.R.color.darker_gray));
         }
 
         manualWeightAdd.setOnClickListener(new View.OnClickListener() {
@@ -710,21 +696,18 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
                         public CancellationToken onCanceledRequested(@NonNull OnTokenCanceledListener onTokenCanceledListener) {
                             return null;
                         }
-                    }).addOnSuccessListener(new OnSuccessListener<Location>() {
-                        @Override
-                        public void onSuccess(Location location) {
-                            if (location != null) {
-                                latitude = location.getLatitude();
-                                longitude = location.getLongitude();
-                                Log.d("LocationCheck", "Fetched location: Lat=" + latitude + ", Long=" + longitude);
-                                try {
-                                    List<Address> addresses = geocoder.getFromLocation(latitude, longitude, 5);
-                                    if (addresses != null && !addresses.isEmpty()) {
-                                        location_tv.setText(addresses.get(0).getAddressLine(0));
-                                    }
-                                } catch (Exception e) {
-                                    Log.e(TAG, "Exception: ", e);
+                    }).addOnSuccessListener(location -> {
+                        if (location != null) {
+                            latitude = location.getLatitude();
+                            longitude = location.getLongitude();
+                            Log.d("LocationCheck", "Fetched location: Lat=" + latitude + ", Long=" + longitude);
+                            try {
+                                List<Address> addresses = geocoder.getFromLocation(latitude, longitude, 5);
+                                if (addresses != null && !addresses.isEmpty()) {
+                                    location_tv.setText(addresses.get(0).getAddressLine(0));
                                 }
+                            } catch (Exception e) {
+                                Log.e(TAG, "Exception: ", e);
                             }
                         }
                     });
@@ -735,7 +718,7 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
                                 ResolvableApiException resolvable = (ResolvableApiException) exception;
                                 resolvable.startResolutionForResult(requireActivity(), 1000);
                             } catch (IntentSender.SendIntentException | ClassCastException e) {
-                                e.printStackTrace();
+                                Log.e(TAG, "ClassCastException: ", e);
                             }
                             break;
                         case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
@@ -766,12 +749,9 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
         blRv.setLayoutManager(new LinearLayoutManager(getContext(),RecyclerView.VERTICAL,false));
         blRv.setAdapter(bluetoothDevicesAdapter);
 
-        closeAlert.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                barcodeView.resume();
-                alertDialog.dismiss();
-            }
+        closeAlert.setOnClickListener(view -> {
+            barcodeView.resume();
+            alertDialog.dismiss();
         });
 
         alertDialog.show();
@@ -895,11 +875,7 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
         final AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
         builder.setMessage("Enable GPS")
                 .setCancelable(false)
-                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-                    public void onClick(final DialogInterface dialog, final int id) {
-                        startActivity(new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS));
-                    }
-                });
+                .setPositiveButton("Yes", (dialog, id) -> startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)));
         final AlertDialog alert = builder.create();
         alert.show();
     }
@@ -910,7 +886,7 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
         int countBags = 0;
         double countWeight = 000.000;
 
-        if (hospitalModels.size() > 0){
+        if (!hospitalModels.isEmpty()){
             for (HospitalModel hm:hospitalModels){
                 countBags++;
                 String weightData = hm.getWaste_weight().trim().concat(".").concat(hm.getWaste_weight_g().trim());
@@ -1013,16 +989,13 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
                 }
 
             }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                VolleySingleton.logVolleyError("CbwtfHcfScanFragment", error);
-                if (loading_ll != null) loading_ll.setVisibility(View.GONE);
-            }
+        }, error -> {
+            VolleySingleton.logVolleyError("CbwtfHcfScanFragment", error);
+            if (loading_ll != null) loading_ll.setVisibility(View.GONE);
         }){
             @Nullable
             @Override
-            protected Map<String, String> getParams() throws AuthFailureError {
+            protected Map<String, String> getParams() {
                 return map;
             }
         };
@@ -1061,12 +1034,7 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
                 }
 
             }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                VolleySingleton.logVolleyError("CbwtfHcfScanFragment", error);
-            }
-        });
+        }, error -> VolleySingleton.logVolleyError("CbwtfHcfScanFragment", error));
 
         VolleySingleton.getInstance(getContext()).addToRequestQueue(request);
     }
@@ -1090,12 +1058,7 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
                 }
 
             }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                VolleySingleton.logVolleyError("CbwtfHcfScanFragment", error);
-            }
-        }){
+        }, error -> VolleySingleton.logVolleyError("CbwtfHcfScanFragment", error)){
             @Nullable
             @Override
             protected Map<String, String> getParams() throws AuthFailureError {
@@ -1142,11 +1105,8 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
                 }
 
             }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
+        }, error -> {
 
-            }
         }){
             @Nullable
             @Override
@@ -1197,18 +1157,10 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
                                 if (loading_ll != null) loading_ll.setVisibility(View.GONE);
                             }
                         });
-                        mOtp.setOtpCompletionListener(new OnOtpCompletionListener() {
-                            @Override
-                            public void onOtpCompleted(String otp) {
-                                otpButton.setOnClickListener(new View.OnClickListener() {
-                                    @Override
-                                    public void onClick(View v) {
-                                        otpError.setText("");
-                                        getOtp(otp,otpAlertDialog,otpError,mOtp,mHospitalCode);
-                                    }
-                                });
-                            }
-                        });
+                        mOtp.setOtpCompletionListener(otp -> otpButton.setOnClickListener(v -> {
+                            otpError.setText("");
+                            getOtp(otp,otpAlertDialog,otpError,mOtp,mHospitalCode);
+                        }));
                         otpAlertDialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
                         otpAlertDialog.show();
                     }
@@ -1253,7 +1205,7 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
                         attendanceButton.setVisibility(View.GONE);
                         attendanceCard.setVisibility(View.VISIBLE);
                         attendanceStatusTv.setText("Done");
-                        attendanceStatusTv.setTextColor(getActivity().getResources().getColor(R.color.green));
+                        attendanceStatusTv.setTextColor(Objects.requireNonNull(getActivity()).getResources().getColor(R.color.green));
                         attendanceStatusTv.setCompoundDrawablesWithIntrinsicBounds(0,0, R.drawable.ic_baseline_check_24,0);
                         setTextViewDrawableColor(attendanceStatusTv, R.color.green);
 
@@ -1266,15 +1218,12 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
                 }
 
             }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
+        }, error -> {
 
-            }
         }){
             @Nullable
             @Override
-            protected Map<String, String> getParams() throws AuthFailureError {
+            protected Map<String, String> getParams() {
                 Map<String,String> param = new HashMap<>();
                 param.put("hcf_code",mHospitalCode);
                 param.put("operator_id",MSP.getInstance(getContext()).getStringData(AppStrings.userID));
@@ -1317,11 +1266,8 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
                 }
 
             }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
+        }, error -> {
 
-            }
         }) {
             @Nullable
             @Override
@@ -1455,7 +1401,7 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
                 } catch (Exception e) {
                     e.printStackTrace();
                     barcodeView.resume();
-                    Log.d("TAG", "error " + e.getMessage());
+                    Log.d(TAG, "error " + e.getMessage());
                     isFirstScanHCF = true;
                     showToast("Wrong QR Code Sticker OR Check For Near By Device permission");
                 }
@@ -1516,20 +1462,20 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
                 }
 
                 if (qrColor.trim().equalsIgnoreCase("red")){
-                    Glide.with(getContext()).load(R.drawable.red).into(weight_type_img);
-                    weight_type.setTextColor(getActivity().getResources().getColor(android.R.color.holo_red_light));
+                    Glide.with(Objects.requireNonNull(getContext())).load(R.drawable.red).into(weight_type_img);
+                    weight_type.setTextColor(Objects.requireNonNull(getActivity()).getResources().getColor(android.R.color.holo_red_light));
                 }else if (qrColor.trim().equalsIgnoreCase("blue")){
-                    Glide.with(getContext()).load(R.drawable.blue).into(weight_type_img);
-                    weight_type.setTextColor(getActivity().getResources().getColor(android.R.color.holo_blue_light));
+                    Glide.with(Objects.requireNonNull(getContext())).load(R.drawable.blue).into(weight_type_img);
+                    weight_type.setTextColor(Objects.requireNonNull(getActivity()).getResources().getColor(android.R.color.holo_blue_light));
                 }else if (qrColor.trim().equalsIgnoreCase("yellow")){
-                    Glide.with(getContext()).load(R.drawable.yellow).into(weight_type_img);
-                    weight_type.setTextColor(getActivity().getResources().getColor(android.R.color.holo_orange_light));
+                    Glide.with(Objects.requireNonNull(getContext())).load(R.drawable.yellow).into(weight_type_img);
+                    weight_type.setTextColor(Objects.requireNonNull(getActivity()).getResources().getColor(android.R.color.holo_orange_light));
                 }else if (qrColor.trim().equalsIgnoreCase("yellow c")){
-                    Glide.with(getContext()).load(R.drawable.yellow).into(weight_type_img);
-                    weight_type.setTextColor(getActivity().getResources().getColor(android.R.color.holo_orange_light));
+                    Glide.with(Objects.requireNonNull(getContext())).load(R.drawable.yellow).into(weight_type_img);
+                    weight_type.setTextColor(Objects.requireNonNull(getActivity()).getResources().getColor(android.R.color.holo_orange_light));
                 }else if (qrColor.trim().equalsIgnoreCase("white")){
-                    Glide.with(getContext()).load(R.drawable.gray).into(weight_type_img);
-                    weight_type.setTextColor(getActivity().getResources().getColor(android.R.color.darker_gray));
+                    Glide.with(Objects.requireNonNull(getContext())).load(R.drawable.gray).into(weight_type_img);
+                    weight_type.setTextColor(Objects.requireNonNull(getActivity()).getResources().getColor(android.R.color.darker_gray));
                 }
 
                 isFirstScanHCF = false;
@@ -1760,17 +1706,12 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
                         barcodeView.resume();
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    Log.d(TAG, "Exception " + e.getMessage());
                     barcodeView.resume();
                 }
 
             }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                barcodeView.resume();
-            }
-        }) {
+        }, error -> barcodeView.resume()) {
             @Nullable
             @Override
             protected Map<String, String> getParams() throws AuthFailureError {

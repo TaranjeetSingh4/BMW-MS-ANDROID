@@ -7,12 +7,12 @@ import android.os.Bundle
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.mutableStateOf
 import com.android.volley.AuthFailureError
-import com.android.volley.Request
 import com.android.volley.Response
 import com.android.volley.toolbox.StringRequest
 import com.appventurez.bmwms.activities.PdfViewActivity
@@ -26,6 +26,7 @@ import java.util.HashMap
 import androidx.core.net.toUri
 
 class HcfLoginActivity : AppCompatActivity() {
+    private var TAG = "HcfLoginActivity"
 
     private var vibrator: Vibrator? = null
     private var loginAs = 1
@@ -67,6 +68,7 @@ class HcfLoginActivity : AppCompatActivity() {
         try {
             startActivity(appIntent)
         } catch (ex: ActivityNotFoundException) {
+            Log.d(TAG, "ActivityNotFoundException "+ ex.message)
             startActivity(webIntent)
         }
     }

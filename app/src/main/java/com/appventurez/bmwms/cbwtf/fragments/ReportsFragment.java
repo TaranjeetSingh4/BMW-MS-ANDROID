@@ -13,6 +13,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.SearchView;
 import androidx.core.app.ActivityCompat;
@@ -21,9 +22,6 @@ import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
-import android.os.Environment;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -65,6 +63,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -90,7 +89,7 @@ public class ReportsFragment extends Fragment{
     ImageView imgSend;
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         if (view == null){
 
@@ -108,58 +107,19 @@ public class ReportsFragment extends Fragment{
             imgFromDate= view.findViewById(R.id.imgFromDate);
             imgToDate= view.findViewById(R.id.imgToDate);
 
-            txtFromDate.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    openDatePicker(0);
-                }
-            });
+            txtFromDate.setOnClickListener(view -> openDatePicker(0));
 
-            imgFromDate.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    openDatePicker(0);
-                }
-            });
+            imgFromDate.setOnClickListener(view -> openDatePicker(0));
 
-            txtToDate.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    openDatePicker(1);
-                }
-            });
+            txtToDate.setOnClickListener(view -> openDatePicker(1));
 
-            imgToDate.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    openDatePicker(1);
-                }
-            });
+            imgToDate.setOnClickListener(view -> openDatePicker(1));
 
-            imgSend.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    sendMail();
-                }
-            });
+            imgSend.setOnClickListener(view -> sendMail());
 
-            btGetPDF.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
+            btGetPDF.setOnClickListener(view -> downloadPDF());
 
-                   /* checkPermissionsAndDownloadPDF();*/
-
-                    downloadPDF();
-
-                }
-            });
-
-            backButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    getActivity().finish();
-                }
-            });
+            backButton.setOnClickListener(view -> Objects.requireNonNull(getActivity()).finish());
 
             reportsAdapter = new ReportsAdapter(getContext(),reportsModels);
             reportsRV.setLayoutManager(new LinearLayoutManager(getContext(),RecyclerView.VERTICAL,false));
@@ -281,27 +241,24 @@ public class ReportsFragment extends Fragment{
         Calendar calendar = Calendar.getInstance();
         DatePickerDialog datePickerDialog = new DatePickerDialog(
                 requireContext(),
-                new DatePickerDialog.OnDateSetListener(){
-                    @Override
-                    public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
-                        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-                        Calendar selectedDateCalendar = Calendar.getInstance();
-                        selectedDateCalendar.set(Calendar.YEAR, year);
-                        selectedDateCalendar.set(Calendar.MONTH, month);
-                        selectedDateCalendar.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+                (view, year, month, dayOfMonth) -> {
+                    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+                    Calendar selectedDateCalendar = Calendar.getInstance();
+                    selectedDateCalendar.set(Calendar.YEAR, year);
+                    selectedDateCalendar.set(Calendar.MONTH, month);
+                    selectedDateCalendar.set(Calendar.DAY_OF_MONTH, dayOfMonth);
 
-                        String formattedDate = dateFormat.format(selectedDateCalendar.getTime());
+                    String formattedDate = dateFormat.format(selectedDateCalendar.getTime());
 
-                      if (type == 0){
-                          txtFromDate.setText(formattedDate);
-                      }else {
-                          txtToDate.setText(formattedDate);
-                      }
+                  if (type == 0){
+                      txtFromDate.setText(formattedDate);
+                  }else {
+                      txtToDate.setText(formattedDate);
+                  }
 
-                      if (!txtFromDate.getText().toString().trim().equals("from date") && !txtToDate.getText().toString().trim().equals("To date")){
-                          btGetPDF.setEnabled(true);
-                      }
-                    }
+                  if (!txtFromDate.getText().toString().trim().equals("from date") && !txtToDate.getText().toString().trim().equals("To date")){
+                      btGetPDF.setEnabled(true);
+                  }
                 },
                 calendar.get(Calendar.YEAR),
                 calendar.get(Calendar.MONTH),
@@ -313,31 +270,23 @@ public class ReportsFragment extends Fragment{
 
 
     public void getPDF(String url, Map<String,String> map){
-        StringRequest request = new StringRequest(Request.Method.POST, url, new Response.Listener<String>() {
-            @Override
-            public void onResponse(String response) {
-                String pdfUrl = "https://example.com/sample.pdf";
+        StringRequest request = new StringRequest(Request.Method.POST, url, response -> {
+            String pdfUrl = "https://example.com/sample.pdf";
 
-                downloadPDF(response);
-                try {
-                    JSONObject jsonObject = new JSONObject(response);
+            downloadPDF(response);
+            try {
+                JSONObject jsonObject = new JSONObject(response);
 
-                    if (jsonObject.get("status").toString().equalsIgnoreCase("success")){
+                if (jsonObject.get("status").toString().equalsIgnoreCase("success")){
 
-                    }else {
+                }else {
 
-                    }
-                }catch (Exception e){
-                    e.printStackTrace();
                 }
+            }catch (Exception e){
+                Log.d(TAG, "Exception "+e);
+            }
 
-            }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                Log.d("TAG", "onResponse: "+error.getMessage());
-            }
-        }){
+        }, error -> Log.d("TAG", "onResponse: "+error.getMessage())){
             @Nullable
             @Override
             protected Map<String, String> getParams() throws AuthFailureError {
@@ -350,435 +299,429 @@ public class ReportsFragment extends Fragment{
 
     public void getData(String url, Map<String,String> map){
         reportsModels.clear();
-        StringRequest request = new StringRequest(Request.Method.POST, url, new Response.Listener<String>() {
-            @Override
-            public void onResponse(String response){
-                try {
-                    JSONObject jsonObject = new JSONObject(response);
+        StringRequest request = new StringRequest(Request.Method.POST, url, response -> {
+            try {
+                JSONObject jsonObject = new JSONObject(response);
 
-                    Log.d("TAG", "onResponse: "+response);
-                    if (jsonObject.get("status").toString().equalsIgnoreCase("success")){
+                Log.d("TAG", "onResponse: "+response);
+                if (jsonObject.get("status").toString().equalsIgnoreCase("success")){
 
-                        shimmerFrameLayout.stopShimmer();
-                        shimmerFrameLayout.setVisibility(View.GONE);
+                    shimmerFrameLayout.stopShimmer();
+                    shimmerFrameLayout.setVisibility(View.GONE);
 
-                        ReportsModel model = new ReportsModel();
+                    ReportsModel model = new ReportsModel();
 
-                        int size = jsonObject.getJSONArray("data").length();
+                    int size = jsonObject.getJSONArray("data").length();
 
 
-                        String cDate = "";
-                        boolean firstData = false;
-                        boolean sameData = false;
+                    String cDate = "";
+                    boolean firstData = false;
+                    boolean sameData = false;
 
-                        int redCount = 0;
-                        int blueCount = 0;
-                        int yellowCount = 0;
-                        int whiteCount = 0;
+                    int redCount = 0;
+                    int blueCount = 0;
+                    int yellowCount = 0;
+                    int whiteCount = 0;
 
-                        int redCountCbwtf = 0;
-                        int blueCountCbwtf = 0;
-                        int yellowCountCbwtf = 0;
-                        int whiteCountCbwtf = 0;
+                    int redCountCbwtf = 0;
+                    int blueCountCbwtf = 0;
+                    int yellowCountCbwtf = 0;
+                    int whiteCountCbwtf = 0;
 
-                        double hWeight = 0;
-                        double cWeight = 0;
+                    double hWeight = 0;
+                    double cWeight = 0;
 
-                        int packets = 0;
+                    int packets = 0;
 
-                        for (int i=0;i<size;i++){
-                            JSONObject jsonObject1 = jsonObject.getJSONArray("data").getJSONObject(i);
+                    for (int i=0;i<size;i++){
+                        JSONObject jsonObject1 = jsonObject.getJSONArray("data").getJSONObject(i);
 
-                           // extractDate()
-                            if (cHCode.isEmpty()){
-                                cHCode = jsonObject1.get("hospital_code").toString().trim();
-                                cDate = jsonObject1.get("handover_date").toString().trim();
-                                firstData = true;
-                                packets++;
-                            }else if (cHCode.equals(jsonObject1.get("hospital_code").toString().trim()) && cDate.equals(jsonObject1.get("handover_date").toString().trim())){
-                                sameData = true;
-                                firstData = false;
-                                packets++;
-                            }else {
-                                firstData = false;
-                                sameData = false;
-                                cHCode = jsonObject1.get("hospital_code").toString().trim();
-                                cDate = jsonObject1.get("handover_date").toString().trim();
-                                packets = 1;
+                       // extractDate()
+                        if (cHCode.isEmpty()){
+                            cHCode = jsonObject1.get("hospital_code").toString().trim();
+                            cDate = jsonObject1.get("handover_date").toString().trim();
+                            firstData = true;
+                            packets++;
+                        }else if (cHCode.equals(jsonObject1.get("hospital_code").toString().trim()) && cDate.equals(jsonObject1.get("handover_date").toString().trim())){
+                            sameData = true;
+                            firstData = false;
+                            packets++;
+                        }else {
+                            firstData = false;
+                            sameData = false;
+                            cHCode = jsonObject1.get("hospital_code").toString().trim();
+                            cDate = jsonObject1.get("handover_date").toString().trim();
+                            packets = 1;
+                        }
+
+                        if (firstData){
+                            Log.d("TAG", "onResponse: "+22222);
+                            model.setName(jsonObject1.get("name").toString());
+                            model.setAddress(jsonObject1.get("address").toString());
+                            model.setCbwtfId(jsonObject1.get("cbwtf_id").toString());
+                            model.setColorTypeHcf(jsonObject1.get("color_type_hcf").toString());
+                            model.setDisposeDate(jsonObject1.get("dispose_date").toString());
+                            //model.setCbwtfWeight(jsonObject1.get("cbwtf_weight").toString());
+                            model.setDisposeOperatorName(jsonObject1.get("dispose_operator_name").toString());
+                            model.setColorTypeCbwtf(jsonObject1.get("color_type_cbwtf").toString());
+                            model.setDistrict(jsonObject1.get("district").toString());
+                            model.setHandoverDate(jsonObject1.get("handover_date").toString());
+                            model.setHcfLatLong(jsonObject1.get("hcf_lat_long").toString());
+                            model.setHcfType(jsonObject1.get("hcf_type").toString());
+                            //model.setHcfWeight(jsonObject1.get("hcf_weight").toString());
+                            model.setHospitalCode(jsonObject1.get("hospital_code").toString());
+                            model.setHospitalType(jsonObject1.get("hospital_type").toString());
+                            if (jsonObject1.get("lat_long_cbwtf").toString().trim().length() > 0){
+                                model.setLatLongCbwtf(jsonObject1.get("lat_long_cbwtf").toString());
                             }
+                            model.setOperatorId(jsonObject1.get("operator_id").toString());
+                            model.setOperatorIdCbwtf(jsonObject1.get("operator_id_cbwtf").toString());
+                            model.setOperatorName(jsonObject1.get("operator_name").toString());
+                            model.setQrDataId(jsonObject1.get("qr_data_id").toString());
+                            model.setQrId(jsonObject1.get("qr_id").toString());
+                            model.setRoute(jsonObject1.get("route").toString());
+                            model.setType(jsonObject1.get("type").toString());
+                            model.setType1(jsonObject1.get("type1").toString());
+                            model.setCreatedOn(jsonObject1.optString("created_on"));
 
-                            if (firstData){
-                                Log.d("TAG", "onResponse: "+22222);
-                                model.setName(jsonObject1.get("name").toString());
-                                model.setAddress(jsonObject1.get("address").toString());
-                                model.setCbwtfId(jsonObject1.get("cbwtf_id").toString());
-                                model.setColorTypeHcf(jsonObject1.get("color_type_hcf").toString());
-                                model.setDisposeDate(jsonObject1.get("dispose_date").toString());
-                                //model.setCbwtfWeight(jsonObject1.get("cbwtf_weight").toString());
-                                model.setDisposeOperatorName(jsonObject1.get("dispose_operator_name").toString());
-                                model.setColorTypeCbwtf(jsonObject1.get("color_type_cbwtf").toString());
-                                model.setDistrict(jsonObject1.get("district").toString());
-                                model.setHandoverDate(jsonObject1.get("handover_date").toString());
-                                model.setHcfLatLong(jsonObject1.get("hcf_lat_long").toString());
-                                model.setHcfType(jsonObject1.get("hcf_type").toString());
-                                //model.setHcfWeight(jsonObject1.get("hcf_weight").toString());
-                                model.setHospitalCode(jsonObject1.get("hospital_code").toString());
-                                model.setHospitalType(jsonObject1.get("hospital_type").toString());
-                                if (jsonObject1.get("lat_long_cbwtf").toString().trim().length() > 0){
-                                    model.setLatLongCbwtf(jsonObject1.get("lat_long_cbwtf").toString());
+                            model.setTotalPackets(String.valueOf(packets));
+
+                            if (jsonObject1.get("color_type_hcf").toString().toLowerCase().contains("red")){
+                                redCount++;
+                                model.setRed(String.valueOf(redCount));
+                                model.setBlue(String.valueOf(blueCount));
+                                model.setYellow(String.valueOf(yellowCount));
+                                model.setWhite(String.valueOf(whiteCount));
+                                hWeight = hWeight+Double.parseDouble(jsonObject1.get("hcf_weight").toString().trim());
+                                cWeight = cWeight+Double.parseDouble(jsonObject1.get("cbwtf_weight").toString().trim());
+                                model.setHcfWeight(String.valueOf(hWeight));
+                                model.setCbwtfWeight(String.valueOf(cWeight));
+
+                                if (jsonObject1.get("color_type_cbwtf").toString().toLowerCase().contains("red")){
+                                    redCountCbwtf++;
+                                    model.setRedCbwtf(String.valueOf(redCountCbwtf));
+                                    model.setBlueCbwtf(String.valueOf(blueCountCbwtf));
+                                    model.setYellowCbwtf(String.valueOf(yellowCountCbwtf));
+                                    model.setWhiteCbwtf(String.valueOf(whiteCountCbwtf));
                                 }
-                                model.setOperatorId(jsonObject1.get("operator_id").toString());
-                                model.setOperatorIdCbwtf(jsonObject1.get("operator_id_cbwtf").toString());
-                                model.setOperatorName(jsonObject1.get("operator_name").toString());
-                                model.setQrDataId(jsonObject1.get("qr_data_id").toString());
-                                model.setQrId(jsonObject1.get("qr_id").toString());
-                                model.setRoute(jsonObject1.get("route").toString());
-                                model.setType(jsonObject1.get("type").toString());
-                                model.setType1(jsonObject1.get("type1").toString());
-                                model.setCreatedOn(jsonObject1.optString("created_on"));
+                            }
+                            if (jsonObject1.get("color_type_hcf").toString().toLowerCase().contains("blue")){
+                                blueCount++;
+                                model.setRed(String.valueOf(redCount));
+                                model.setBlue(String.valueOf(blueCount));
+                                model.setYellow(String.valueOf(yellowCount));
+                                model.setWhite(String.valueOf(whiteCount));
+                                hWeight = hWeight+Double.parseDouble(jsonObject1.get("hcf_weight").toString().trim());
+                                cWeight = cWeight+Double.parseDouble(jsonObject1.get("cbwtf_weight").toString().trim());
+                                model.setHcfWeight(String.valueOf(hWeight));
+                                model.setCbwtfWeight(String.valueOf(cWeight));
 
-                                model.setTotalPackets(String.valueOf(packets));
-
-                                if (jsonObject1.get("color_type_hcf").toString().toLowerCase().contains("red")){
-                                    redCount++;
-                                    model.setRed(String.valueOf(redCount));
-                                    model.setBlue(String.valueOf(blueCount));
-                                    model.setYellow(String.valueOf(yellowCount));
-                                    model.setWhite(String.valueOf(whiteCount));
-                                    hWeight = hWeight+Double.parseDouble(jsonObject1.get("hcf_weight").toString().trim());
-                                    cWeight = cWeight+Double.parseDouble(jsonObject1.get("cbwtf_weight").toString().trim());
-                                    model.setHcfWeight(String.valueOf(hWeight));
-                                    model.setCbwtfWeight(String.valueOf(cWeight));
-
-                                    if (jsonObject1.get("color_type_cbwtf").toString().toLowerCase().contains("red")){
-                                        redCountCbwtf++;
-                                        model.setRedCbwtf(String.valueOf(redCountCbwtf));
-                                        model.setBlueCbwtf(String.valueOf(blueCountCbwtf));
-                                        model.setYellowCbwtf(String.valueOf(yellowCountCbwtf));
-                                        model.setWhiteCbwtf(String.valueOf(whiteCountCbwtf));
-                                    }
+                                if (jsonObject1.get("color_type_cbwtf").toString().toLowerCase().contains("blue")){
+                                    blueCountCbwtf++;
+                                    model.setRedCbwtf(String.valueOf(redCountCbwtf));
+                                    model.setBlueCbwtf(String.valueOf(blueCountCbwtf));
+                                    model.setYellowCbwtf(String.valueOf(yellowCountCbwtf));
+                                    model.setWhiteCbwtf(String.valueOf(whiteCountCbwtf));
                                 }
-                                if (jsonObject1.get("color_type_hcf").toString().toLowerCase().contains("blue")){
-                                    blueCount++;
-                                    model.setRed(String.valueOf(redCount));
-                                    model.setBlue(String.valueOf(blueCount));
-                                    model.setYellow(String.valueOf(yellowCount));
-                                    model.setWhite(String.valueOf(whiteCount));
-                                    hWeight = hWeight+Double.parseDouble(jsonObject1.get("hcf_weight").toString().trim());
-                                    cWeight = cWeight+Double.parseDouble(jsonObject1.get("cbwtf_weight").toString().trim());
-                                    model.setHcfWeight(String.valueOf(hWeight));
-                                    model.setCbwtfWeight(String.valueOf(cWeight));
+                            }
+                            if (jsonObject1.get("color_type_hcf").toString().toLowerCase().contains("yellow")){
+                                yellowCount++;
+                                model.setRed(String.valueOf(redCount));
+                                model.setBlue(String.valueOf(blueCount));
+                                model.setYellow(String.valueOf(yellowCount));
+                                model.setWhite(String.valueOf(whiteCount));
+                                hWeight = hWeight+Double.parseDouble(jsonObject1.get("hcf_weight").toString().trim());
+                                cWeight = cWeight+Double.parseDouble(jsonObject1.get("cbwtf_weight").toString().trim());
+                                model.setHcfWeight(String.valueOf(hWeight));
+                                model.setCbwtfWeight(String.valueOf(cWeight));
 
-                                    if (jsonObject1.get("color_type_cbwtf").toString().toLowerCase().contains("blue")){
-                                        blueCountCbwtf++;
-                                        model.setRedCbwtf(String.valueOf(redCountCbwtf));
-                                        model.setBlueCbwtf(String.valueOf(blueCountCbwtf));
-                                        model.setYellowCbwtf(String.valueOf(yellowCountCbwtf));
-                                        model.setWhiteCbwtf(String.valueOf(whiteCountCbwtf));
-                                    }
+                                if (jsonObject1.get("color_type_cbwtf").toString().toLowerCase().contains("yellow")){
+                                    yellowCountCbwtf++;
+                                    model.setRedCbwtf(String.valueOf(redCountCbwtf));
+                                    model.setBlueCbwtf(String.valueOf(blueCountCbwtf));
+                                    model.setYellowCbwtf(String.valueOf(yellowCountCbwtf));
+                                    model.setWhiteCbwtf(String.valueOf(whiteCountCbwtf));
                                 }
-                                if (jsonObject1.get("color_type_hcf").toString().toLowerCase().contains("yellow")){
-                                    yellowCount++;
-                                    model.setRed(String.valueOf(redCount));
-                                    model.setBlue(String.valueOf(blueCount));
-                                    model.setYellow(String.valueOf(yellowCount));
-                                    model.setWhite(String.valueOf(whiteCount));
-                                    hWeight = hWeight+Double.parseDouble(jsonObject1.get("hcf_weight").toString().trim());
-                                    cWeight = cWeight+Double.parseDouble(jsonObject1.get("cbwtf_weight").toString().trim());
-                                    model.setHcfWeight(String.valueOf(hWeight));
-                                    model.setCbwtfWeight(String.valueOf(cWeight));
+                            }
+                            if (jsonObject1.get("color_type_hcf").toString().toLowerCase().contains("white")){
+                                whiteCount++;
+                                model.setRed(String.valueOf(redCount));
+                                model.setBlue(String.valueOf(blueCount));
+                                model.setYellow(String.valueOf(yellowCount));
+                                model.setWhite(String.valueOf(whiteCount));
+                                hWeight = hWeight+Double.parseDouble(jsonObject1.get("hcf_weight").toString().trim());
+                                cWeight = cWeight+Double.parseDouble(jsonObject1.get("cbwtf_weight").toString().trim());
+                                model.setHcfWeight(String.valueOf(hWeight));
+                                model.setCbwtfWeight(String.valueOf(cWeight));
 
-                                    if (jsonObject1.get("color_type_cbwtf").toString().toLowerCase().contains("yellow")){
-                                        yellowCountCbwtf++;
-                                        model.setRedCbwtf(String.valueOf(redCountCbwtf));
-                                        model.setBlueCbwtf(String.valueOf(blueCountCbwtf));
-                                        model.setYellowCbwtf(String.valueOf(yellowCountCbwtf));
-                                        model.setWhiteCbwtf(String.valueOf(whiteCountCbwtf));
-                                    }
-                                }
-                                if (jsonObject1.get("color_type_hcf").toString().toLowerCase().contains("white")){
-                                    whiteCount++;
-                                    model.setRed(String.valueOf(redCount));
-                                    model.setBlue(String.valueOf(blueCount));
-                                    model.setYellow(String.valueOf(yellowCount));
-                                    model.setWhite(String.valueOf(whiteCount));
-                                    hWeight = hWeight+Double.parseDouble(jsonObject1.get("hcf_weight").toString().trim());
-                                    cWeight = cWeight+Double.parseDouble(jsonObject1.get("cbwtf_weight").toString().trim());
-                                    model.setHcfWeight(String.valueOf(hWeight));
-                                    model.setCbwtfWeight(String.valueOf(cWeight));
-
-                                    if (jsonObject1.get("color_type_cbwtf").toString().toLowerCase().contains("white")){
-                                        whiteCountCbwtf++;
-                                        model.setRedCbwtf(String.valueOf(redCountCbwtf));
-                                        model.setBlueCbwtf(String.valueOf(blueCountCbwtf));
-                                        model.setYellowCbwtf(String.valueOf(yellowCountCbwtf));
-                                        model.setWhiteCbwtf(String.valueOf(whiteCountCbwtf));
-                                    }
-                                }
-
-                            }else if (sameData){
-
-                                model.setName(jsonObject1.get("name").toString());
-                                model.setAddress(jsonObject1.get("address").toString());
-                                model.setCbwtfId(jsonObject1.get("cbwtf_id").toString());
-                                model.setColorTypeHcf(jsonObject1.get("color_type_hcf").toString());
-                                model.setDisposeDate(jsonObject1.get("dispose_date").toString());
-                                //model.setCbwtfWeight(jsonObject1.get("cbwtf_weight").toString());
-                                model.setDisposeOperatorName(jsonObject1.get("dispose_operator_name").toString());
-                                model.setColorTypeCbwtf(jsonObject1.get("color_type_cbwtf").toString());
-                                model.setDistrict(jsonObject1.get("district").toString());
-                                model.setHandoverDate(jsonObject1.get("handover_date").toString());
-                                model.setHcfLatLong(jsonObject1.get("hcf_lat_long").toString());
-                                model.setHcfType(jsonObject1.get("hcf_type").toString());
-                                //model.setHcfWeight(jsonObject1.get("hcf_weight").toString());
-                                model.setHospitalCode(jsonObject1.get("hospital_code").toString());
-                                model.setHospitalType(jsonObject1.get("hospital_type").toString());
-                                if (jsonObject1.get("lat_long_cbwtf").toString().trim().length() > 0){
-                                    model.setLatLongCbwtf(jsonObject1.get("lat_long_cbwtf").toString());
-                                }
-                                model.setOperatorId(jsonObject1.get("operator_id").toString());
-                                model.setOperatorIdCbwtf(jsonObject1.get("operator_id_cbwtf").toString());
-                                model.setOperatorName(jsonObject1.get("operator_name").toString());
-                                model.setQrDataId(jsonObject1.get("qr_data_id").toString());
-                                model.setQrId(jsonObject1.get("qr_id").toString());
-                                model.setRoute(jsonObject1.get("route").toString());
-                                model.setType(jsonObject1.get("type").toString());
-                                model.setType1(jsonObject1.get("type1").toString());
-                                model.setCreatedOn(jsonObject1.optString("created_on"));
-
-                                model.setTotalPackets(String.valueOf(packets));
-
-                                if (jsonObject1.get("color_type_hcf").toString().toLowerCase().contains("red")){
-                                    redCount++;
-                                    model.setRed(String.valueOf(redCount));
-                                    model.setBlue(String.valueOf(blueCount));
-                                    model.setYellow(String.valueOf(yellowCount));
-                                    model.setWhite(String.valueOf(whiteCount));
-                                    hWeight = hWeight+Double.parseDouble(jsonObject1.get("hcf_weight").toString().trim());
-                                    cWeight = cWeight+Double.parseDouble(jsonObject1.get("cbwtf_weight").toString().trim());
-                                    model.setHcfWeight(String.valueOf(hWeight));
-                                    model.setCbwtfWeight(String.valueOf(cWeight));
-
-                                    if (jsonObject1.get("color_type_cbwtf").toString().toLowerCase().contains("red")){
-                                        redCountCbwtf++;
-                                        model.setRedCbwtf(String.valueOf(redCountCbwtf));
-                                        model.setBlueCbwtf(String.valueOf(blueCountCbwtf));
-                                        model.setYellowCbwtf(String.valueOf(yellowCountCbwtf));
-                                        model.setWhiteCbwtf(String.valueOf(whiteCountCbwtf));
-                                    }
-                                }
-                                if (jsonObject1.get("color_type_hcf").toString().toLowerCase().contains("blue")){
-                                    blueCount++;
-                                    model.setRed(String.valueOf(redCount));
-                                    model.setBlue(String.valueOf(blueCount));
-                                    model.setYellow(String.valueOf(yellowCount));
-                                    model.setWhite(String.valueOf(whiteCount));
-                                    hWeight = hWeight+Double.parseDouble(jsonObject1.get("hcf_weight").toString().trim());
-                                    cWeight = cWeight+Double.parseDouble(jsonObject1.get("cbwtf_weight").toString().trim());
-                                    model.setHcfWeight(String.valueOf(hWeight));
-                                    model.setCbwtfWeight(String.valueOf(cWeight));
-
-                                    if (jsonObject1.get("color_type_cbwtf").toString().toLowerCase().contains("blue")){
-                                        blueCountCbwtf++;
-                                        model.setRedCbwtf(String.valueOf(redCountCbwtf));
-                                        model.setBlueCbwtf(String.valueOf(blueCountCbwtf));
-                                        model.setYellowCbwtf(String.valueOf(yellowCountCbwtf));
-                                        model.setWhiteCbwtf(String.valueOf(whiteCountCbwtf));
-                                    }
-                                }
-                                if (jsonObject1.get("color_type_hcf").toString().toLowerCase().contains("yellow")){
-                                    yellowCount++;
-                                    model.setRed(String.valueOf(redCount));
-                                    model.setBlue(String.valueOf(blueCount));
-                                    model.setYellow(String.valueOf(yellowCount));
-                                    model.setWhite(String.valueOf(whiteCount));
-                                    hWeight = hWeight+Double.parseDouble(jsonObject1.get("hcf_weight").toString().trim());
-                                    cWeight = cWeight+Double.parseDouble(jsonObject1.get("cbwtf_weight").toString().trim());
-                                    model.setHcfWeight(String.valueOf(hWeight));
-                                    model.setCbwtfWeight(String.valueOf(cWeight));
-
-                                    if (jsonObject1.get("color_type_cbwtf").toString().toLowerCase().contains("yellow")){
-                                        yellowCountCbwtf++;
-                                        model.setRedCbwtf(String.valueOf(redCountCbwtf));
-                                        model.setBlueCbwtf(String.valueOf(blueCountCbwtf));
-                                        model.setYellowCbwtf(String.valueOf(yellowCountCbwtf));
-                                        model.setWhiteCbwtf(String.valueOf(whiteCountCbwtf));
-                                    }
-                                }
-                                if (jsonObject1.get("color_type_hcf").toString().toLowerCase().contains("white")){
-                                    whiteCount++;
-                                    model.setRed(String.valueOf(redCount));
-                                    model.setBlue(String.valueOf(blueCount));
-                                    model.setYellow(String.valueOf(yellowCount));
-                                    model.setWhite(String.valueOf(whiteCount));
-                                    hWeight = hWeight+Double.parseDouble(jsonObject1.get("hcf_weight").toString().trim());
-                                    cWeight = cWeight+Double.parseDouble(jsonObject1.get("cbwtf_weight").toString().trim());
-                                    model.setHcfWeight(String.valueOf(hWeight));
-                                    model.setCbwtfWeight(String.valueOf(cWeight));
-
-                                    if (jsonObject1.get("color_type_cbwtf").toString().toLowerCase().contains("white")){
-                                        whiteCountCbwtf++;
-                                        model.setRedCbwtf(String.valueOf(redCountCbwtf));
-                                        model.setBlueCbwtf(String.valueOf(blueCountCbwtf));
-                                        model.setYellowCbwtf(String.valueOf(yellowCountCbwtf));
-                                        model.setWhiteCbwtf(String.valueOf(whiteCountCbwtf));
-                                    }
-                                }
-
-                            } else if (!sameData) {
-
-                                redCount = 0;
-                                blueCount = 0;
-                                yellowCount = 0;
-                                whiteCount = 0;
-
-                                redCountCbwtf = 0;
-                                blueCountCbwtf = 0;
-                                yellowCountCbwtf = 0;
-                                whiteCountCbwtf = 0;
-
-                                hWeight = 0;
-                                cWeight = 0;
-
-                                reportsModels.add(model);
-                                reportsAdapter.notifyItemInserted(i);
-
-                                model = new ReportsModel();
-
-                                model.setName(jsonObject1.get("name").toString());
-                                model.setAddress(jsonObject1.get("address").toString());
-                                model.setCbwtfId(jsonObject1.get("cbwtf_id").toString());
-                                model.setColorTypeHcf(jsonObject1.get("color_type_hcf").toString());
-                                model.setDisposeDate(jsonObject1.get("dispose_date").toString());
-                                //model.setCbwtfWeight(jsonObject1.get("cbwtf_weight").toString());
-                                model.setDisposeOperatorName(jsonObject1.get("dispose_operator_name").toString());
-                                model.setColorTypeCbwtf(jsonObject1.get("color_type_cbwtf").toString());
-                                model.setDistrict(jsonObject1.get("district").toString());
-                                model.setHandoverDate(jsonObject1.get("handover_date").toString());
-                                model.setHcfLatLong(jsonObject1.get("hcf_lat_long").toString());
-                                model.setHcfType(jsonObject1.get("hcf_type").toString());
-                                //model.setHcfWeight(jsonObject1.get("hcf_weight").toString());
-                                model.setHospitalCode(jsonObject1.get("hospital_code").toString());
-                                model.setHospitalType(jsonObject1.get("hospital_type").toString());
-                                if (jsonObject1.get("lat_long_cbwtf").toString().trim().length() > 0){
-                                    model.setLatLongCbwtf(jsonObject1.get("lat_long_cbwtf").toString());
-                                }
-                                model.setOperatorId(jsonObject1.get("operator_id").toString());
-                                model.setOperatorIdCbwtf(jsonObject1.get("operator_id_cbwtf").toString());
-                                model.setOperatorName(jsonObject1.get("operator_name").toString());
-                                model.setQrDataId(jsonObject1.get("qr_data_id").toString());
-                                model.setQrId(jsonObject1.get("qr_id").toString());
-                                model.setRoute(jsonObject1.get("route").toString());
-                                model.setType(jsonObject1.get("type").toString());
-                                model.setType1(jsonObject1.get("type1").toString());
-                                model.setCreatedOn(jsonObject1.optString("created_on"));
-
-                                model.setTotalPackets(String.valueOf(packets));
-
-                                if (jsonObject1.get("color_type_hcf").toString().toLowerCase().contains("red")){
-                                    redCount++;
-                                    model.setRed(String.valueOf(redCount));
-                                    model.setBlue(String.valueOf(blueCount));
-                                    model.setYellow(String.valueOf(yellowCount));
-                                    model.setWhite(String.valueOf(whiteCount));
-                                    hWeight = hWeight+Double.parseDouble(jsonObject1.get("hcf_weight").toString().trim());
-                                    cWeight = cWeight+Double.parseDouble(jsonObject1.get("cbwtf_weight").toString().trim());
-                                    model.setHcfWeight(String.valueOf(hWeight));
-                                    model.setCbwtfWeight(String.valueOf(cWeight));
-
-                                    if (jsonObject1.get("color_type_cbwtf").toString().toLowerCase().contains("red")){
-                                        redCountCbwtf++;
-                                        model.setRedCbwtf(String.valueOf(redCountCbwtf));
-                                        model.setBlueCbwtf(String.valueOf(blueCountCbwtf));
-                                        model.setYellowCbwtf(String.valueOf(yellowCountCbwtf));
-                                        model.setWhiteCbwtf(String.valueOf(whiteCountCbwtf));
-                                    }
-                                }
-                                if (jsonObject1.get("color_type_hcf").toString().toLowerCase().contains("blue")){
-                                    blueCount++;
-                                    model.setRed(String.valueOf(redCount));
-                                    model.setBlue(String.valueOf(blueCount));
-                                    model.setYellow(String.valueOf(yellowCount));
-                                    model.setWhite(String.valueOf(whiteCount));
-                                    hWeight = hWeight+Double.parseDouble(jsonObject1.get("hcf_weight").toString().trim());
-                                    cWeight = cWeight+Double.parseDouble(jsonObject1.get("cbwtf_weight").toString().trim());
-                                    model.setHcfWeight(String.valueOf(hWeight));
-                                    model.setCbwtfWeight(String.valueOf(cWeight));
-
-                                    if (jsonObject1.get("color_type_cbwtf").toString().toLowerCase().contains("blue")){
-                                        blueCountCbwtf++;
-                                        model.setRedCbwtf(String.valueOf(redCountCbwtf));
-                                        model.setBlueCbwtf(String.valueOf(blueCountCbwtf));
-                                        model.setYellowCbwtf(String.valueOf(yellowCountCbwtf));
-                                        model.setWhiteCbwtf(String.valueOf(whiteCountCbwtf));
-                                    }
-                                }
-                                if (jsonObject1.get("color_type_hcf").toString().toLowerCase().contains("yellow")){
-                                    yellowCount++;
-                                    model.setRed(String.valueOf(redCount));
-                                    model.setBlue(String.valueOf(blueCount));
-                                    model.setYellow(String.valueOf(yellowCount));
-                                    model.setWhite(String.valueOf(whiteCount));
-                                    hWeight = hWeight+Double.parseDouble(jsonObject1.get("hcf_weight").toString().trim());
-                                    cWeight = cWeight+Double.parseDouble(jsonObject1.get("cbwtf_weight").toString().trim());
-                                    model.setHcfWeight(String.valueOf(hWeight));
-                                    model.setCbwtfWeight(String.valueOf(cWeight));
-
-                                    if (jsonObject1.get("color_type_cbwtf").toString().toLowerCase().contains("yellow")){
-                                        yellowCountCbwtf++;
-                                        model.setRedCbwtf(String.valueOf(redCountCbwtf));
-                                        model.setBlueCbwtf(String.valueOf(blueCountCbwtf));
-                                        model.setYellowCbwtf(String.valueOf(yellowCountCbwtf));
-                                        model.setWhiteCbwtf(String.valueOf(whiteCountCbwtf));
-                                    }
-                                }
-                                if (jsonObject1.get("color_type_hcf").toString().toLowerCase().contains("white")){
-                                    whiteCount++;
-                                    model.setRed(String.valueOf(redCount));
-                                    model.setBlue(String.valueOf(blueCount));
-                                    model.setYellow(String.valueOf(yellowCount));
-                                    model.setWhite(String.valueOf(whiteCount));
-                                    hWeight = hWeight+Double.parseDouble(jsonObject1.get("hcf_weight").toString().trim());
-                                    cWeight = cWeight+Double.parseDouble(jsonObject1.get("cbwtf_weight").toString().trim());
-                                    model.setHcfWeight(String.valueOf(hWeight));
-                                    model.setCbwtfWeight(String.valueOf(cWeight));
-
-                                    if (jsonObject1.get("color_type_cbwtf").toString().toLowerCase().contains("white")){
-                                        whiteCountCbwtf++;
-                                        model.setRedCbwtf(String.valueOf(redCountCbwtf));
-                                        model.setBlueCbwtf(String.valueOf(blueCountCbwtf));
-                                        model.setYellowCbwtf(String.valueOf(yellowCountCbwtf));
-                                        model.setWhiteCbwtf(String.valueOf(whiteCountCbwtf));
-                                    }
+                                if (jsonObject1.get("color_type_cbwtf").toString().toLowerCase().contains("white")){
+                                    whiteCountCbwtf++;
+                                    model.setRedCbwtf(String.valueOf(redCountCbwtf));
+                                    model.setBlueCbwtf(String.valueOf(blueCountCbwtf));
+                                    model.setYellowCbwtf(String.valueOf(yellowCountCbwtf));
+                                    model.setWhiteCbwtf(String.valueOf(whiteCountCbwtf));
                                 }
                             }
 
+                        }else if (sameData){
+
+                            model.setName(jsonObject1.get("name").toString());
+                            model.setAddress(jsonObject1.get("address").toString());
+                            model.setCbwtfId(jsonObject1.get("cbwtf_id").toString());
+                            model.setColorTypeHcf(jsonObject1.get("color_type_hcf").toString());
+                            model.setDisposeDate(jsonObject1.get("dispose_date").toString());
+                            //model.setCbwtfWeight(jsonObject1.get("cbwtf_weight").toString());
+                            model.setDisposeOperatorName(jsonObject1.get("dispose_operator_name").toString());
+                            model.setColorTypeCbwtf(jsonObject1.get("color_type_cbwtf").toString());
+                            model.setDistrict(jsonObject1.get("district").toString());
+                            model.setHandoverDate(jsonObject1.get("handover_date").toString());
+                            model.setHcfLatLong(jsonObject1.get("hcf_lat_long").toString());
+                            model.setHcfType(jsonObject1.get("hcf_type").toString());
+                            //model.setHcfWeight(jsonObject1.get("hcf_weight").toString());
+                            model.setHospitalCode(jsonObject1.get("hospital_code").toString());
+                            model.setHospitalType(jsonObject1.get("hospital_type").toString());
+                            if (jsonObject1.get("lat_long_cbwtf").toString().trim().length() > 0){
+                                model.setLatLongCbwtf(jsonObject1.get("lat_long_cbwtf").toString());
+                            }
+                            model.setOperatorId(jsonObject1.get("operator_id").toString());
+                            model.setOperatorIdCbwtf(jsonObject1.get("operator_id_cbwtf").toString());
+                            model.setOperatorName(jsonObject1.get("operator_name").toString());
+                            model.setQrDataId(jsonObject1.get("qr_data_id").toString());
+                            model.setQrId(jsonObject1.get("qr_id").toString());
+                            model.setRoute(jsonObject1.get("route").toString());
+                            model.setType(jsonObject1.get("type").toString());
+                            model.setType1(jsonObject1.get("type1").toString());
+                            model.setCreatedOn(jsonObject1.optString("created_on"));
+
+                            model.setTotalPackets(String.valueOf(packets));
+
+                            if (jsonObject1.get("color_type_hcf").toString().toLowerCase().contains("red")){
+                                redCount++;
+                                model.setRed(String.valueOf(redCount));
+                                model.setBlue(String.valueOf(blueCount));
+                                model.setYellow(String.valueOf(yellowCount));
+                                model.setWhite(String.valueOf(whiteCount));
+                                hWeight = hWeight+Double.parseDouble(jsonObject1.get("hcf_weight").toString().trim());
+                                cWeight = cWeight+Double.parseDouble(jsonObject1.get("cbwtf_weight").toString().trim());
+                                model.setHcfWeight(String.valueOf(hWeight));
+                                model.setCbwtfWeight(String.valueOf(cWeight));
+
+                                if (jsonObject1.get("color_type_cbwtf").toString().toLowerCase().contains("red")){
+                                    redCountCbwtf++;
+                                    model.setRedCbwtf(String.valueOf(redCountCbwtf));
+                                    model.setBlueCbwtf(String.valueOf(blueCountCbwtf));
+                                    model.setYellowCbwtf(String.valueOf(yellowCountCbwtf));
+                                    model.setWhiteCbwtf(String.valueOf(whiteCountCbwtf));
+                                }
+                            }
+                            if (jsonObject1.get("color_type_hcf").toString().toLowerCase().contains("blue")){
+                                blueCount++;
+                                model.setRed(String.valueOf(redCount));
+                                model.setBlue(String.valueOf(blueCount));
+                                model.setYellow(String.valueOf(yellowCount));
+                                model.setWhite(String.valueOf(whiteCount));
+                                hWeight = hWeight+Double.parseDouble(jsonObject1.get("hcf_weight").toString().trim());
+                                cWeight = cWeight+Double.parseDouble(jsonObject1.get("cbwtf_weight").toString().trim());
+                                model.setHcfWeight(String.valueOf(hWeight));
+                                model.setCbwtfWeight(String.valueOf(cWeight));
+
+                                if (jsonObject1.get("color_type_cbwtf").toString().toLowerCase().contains("blue")){
+                                    blueCountCbwtf++;
+                                    model.setRedCbwtf(String.valueOf(redCountCbwtf));
+                                    model.setBlueCbwtf(String.valueOf(blueCountCbwtf));
+                                    model.setYellowCbwtf(String.valueOf(yellowCountCbwtf));
+                                    model.setWhiteCbwtf(String.valueOf(whiteCountCbwtf));
+                                }
+                            }
+                            if (jsonObject1.get("color_type_hcf").toString().toLowerCase().contains("yellow")){
+                                yellowCount++;
+                                model.setRed(String.valueOf(redCount));
+                                model.setBlue(String.valueOf(blueCount));
+                                model.setYellow(String.valueOf(yellowCount));
+                                model.setWhite(String.valueOf(whiteCount));
+                                hWeight = hWeight+Double.parseDouble(jsonObject1.get("hcf_weight").toString().trim());
+                                cWeight = cWeight+Double.parseDouble(jsonObject1.get("cbwtf_weight").toString().trim());
+                                model.setHcfWeight(String.valueOf(hWeight));
+                                model.setCbwtfWeight(String.valueOf(cWeight));
+
+                                if (jsonObject1.get("color_type_cbwtf").toString().toLowerCase().contains("yellow")){
+                                    yellowCountCbwtf++;
+                                    model.setRedCbwtf(String.valueOf(redCountCbwtf));
+                                    model.setBlueCbwtf(String.valueOf(blueCountCbwtf));
+                                    model.setYellowCbwtf(String.valueOf(yellowCountCbwtf));
+                                    model.setWhiteCbwtf(String.valueOf(whiteCountCbwtf));
+                                }
+                            }
+                            if (jsonObject1.get("color_type_hcf").toString().toLowerCase().contains("white")){
+                                whiteCount++;
+                                model.setRed(String.valueOf(redCount));
+                                model.setBlue(String.valueOf(blueCount));
+                                model.setYellow(String.valueOf(yellowCount));
+                                model.setWhite(String.valueOf(whiteCount));
+                                hWeight = hWeight+Double.parseDouble(jsonObject1.get("hcf_weight").toString().trim());
+                                cWeight = cWeight+Double.parseDouble(jsonObject1.get("cbwtf_weight").toString().trim());
+                                model.setHcfWeight(String.valueOf(hWeight));
+                                model.setCbwtfWeight(String.valueOf(cWeight));
+
+                                if (jsonObject1.get("color_type_cbwtf").toString().toLowerCase().contains("white")){
+                                    whiteCountCbwtf++;
+                                    model.setRedCbwtf(String.valueOf(redCountCbwtf));
+                                    model.setBlueCbwtf(String.valueOf(blueCountCbwtf));
+                                    model.setYellowCbwtf(String.valueOf(yellowCountCbwtf));
+                                    model.setWhiteCbwtf(String.valueOf(whiteCountCbwtf));
+                                }
+                            }
+
+                        } else if (!sameData) {
+
+                            redCount = 0;
+                            blueCount = 0;
+                            yellowCount = 0;
+                            whiteCount = 0;
+
+                            redCountCbwtf = 0;
+                            blueCountCbwtf = 0;
+                            yellowCountCbwtf = 0;
+                            whiteCountCbwtf = 0;
+
+                            hWeight = 0;
+                            cWeight = 0;
+
+                            reportsModels.add(model);
+                            reportsAdapter.notifyItemInserted(i);
+
+                            model = new ReportsModel();
+
+                            model.setName(jsonObject1.get("name").toString());
+                            model.setAddress(jsonObject1.get("address").toString());
+                            model.setCbwtfId(jsonObject1.get("cbwtf_id").toString());
+                            model.setColorTypeHcf(jsonObject1.get("color_type_hcf").toString());
+                            model.setDisposeDate(jsonObject1.get("dispose_date").toString());
+                            //model.setCbwtfWeight(jsonObject1.get("cbwtf_weight").toString());
+                            model.setDisposeOperatorName(jsonObject1.get("dispose_operator_name").toString());
+                            model.setColorTypeCbwtf(jsonObject1.get("color_type_cbwtf").toString());
+                            model.setDistrict(jsonObject1.get("district").toString());
+                            model.setHandoverDate(jsonObject1.get("handover_date").toString());
+                            model.setHcfLatLong(jsonObject1.get("hcf_lat_long").toString());
+                            model.setHcfType(jsonObject1.get("hcf_type").toString());
+                            //model.setHcfWeight(jsonObject1.get("hcf_weight").toString());
+                            model.setHospitalCode(jsonObject1.get("hospital_code").toString());
+                            model.setHospitalType(jsonObject1.get("hospital_type").toString());
+                            if (jsonObject1.get("lat_long_cbwtf").toString().trim().length() > 0){
+                                model.setLatLongCbwtf(jsonObject1.get("lat_long_cbwtf").toString());
+                            }
+                            model.setOperatorId(jsonObject1.get("operator_id").toString());
+                            model.setOperatorIdCbwtf(jsonObject1.get("operator_id_cbwtf").toString());
+                            model.setOperatorName(jsonObject1.get("operator_name").toString());
+                            model.setQrDataId(jsonObject1.get("qr_data_id").toString());
+                            model.setQrId(jsonObject1.get("qr_id").toString());
+                            model.setRoute(jsonObject1.get("route").toString());
+                            model.setType(jsonObject1.get("type").toString());
+                            model.setType1(jsonObject1.get("type1").toString());
+                            model.setCreatedOn(jsonObject1.optString("created_on"));
+
+                            model.setTotalPackets(String.valueOf(packets));
+
+                            if (jsonObject1.get("color_type_hcf").toString().toLowerCase().contains("red")){
+                                redCount++;
+                                model.setRed(String.valueOf(redCount));
+                                model.setBlue(String.valueOf(blueCount));
+                                model.setYellow(String.valueOf(yellowCount));
+                                model.setWhite(String.valueOf(whiteCount));
+                                hWeight = hWeight+Double.parseDouble(jsonObject1.get("hcf_weight").toString().trim());
+                                cWeight = cWeight+Double.parseDouble(jsonObject1.get("cbwtf_weight").toString().trim());
+                                model.setHcfWeight(String.valueOf(hWeight));
+                                model.setCbwtfWeight(String.valueOf(cWeight));
+
+                                if (jsonObject1.get("color_type_cbwtf").toString().toLowerCase().contains("red")){
+                                    redCountCbwtf++;
+                                    model.setRedCbwtf(String.valueOf(redCountCbwtf));
+                                    model.setBlueCbwtf(String.valueOf(blueCountCbwtf));
+                                    model.setYellowCbwtf(String.valueOf(yellowCountCbwtf));
+                                    model.setWhiteCbwtf(String.valueOf(whiteCountCbwtf));
+                                }
+                            }
+                            if (jsonObject1.get("color_type_hcf").toString().toLowerCase().contains("blue")){
+                                blueCount++;
+                                model.setRed(String.valueOf(redCount));
+                                model.setBlue(String.valueOf(blueCount));
+                                model.setYellow(String.valueOf(yellowCount));
+                                model.setWhite(String.valueOf(whiteCount));
+                                hWeight = hWeight+Double.parseDouble(jsonObject1.get("hcf_weight").toString().trim());
+                                cWeight = cWeight+Double.parseDouble(jsonObject1.get("cbwtf_weight").toString().trim());
+                                model.setHcfWeight(String.valueOf(hWeight));
+                                model.setCbwtfWeight(String.valueOf(cWeight));
+
+                                if (jsonObject1.get("color_type_cbwtf").toString().toLowerCase().contains("blue")){
+                                    blueCountCbwtf++;
+                                    model.setRedCbwtf(String.valueOf(redCountCbwtf));
+                                    model.setBlueCbwtf(String.valueOf(blueCountCbwtf));
+                                    model.setYellowCbwtf(String.valueOf(yellowCountCbwtf));
+                                    model.setWhiteCbwtf(String.valueOf(whiteCountCbwtf));
+                                }
+                            }
+                            if (jsonObject1.get("color_type_hcf").toString().toLowerCase().contains("yellow")){
+                                yellowCount++;
+                                model.setRed(String.valueOf(redCount));
+                                model.setBlue(String.valueOf(blueCount));
+                                model.setYellow(String.valueOf(yellowCount));
+                                model.setWhite(String.valueOf(whiteCount));
+                                hWeight = hWeight+Double.parseDouble(jsonObject1.get("hcf_weight").toString().trim());
+                                cWeight = cWeight+Double.parseDouble(jsonObject1.get("cbwtf_weight").toString().trim());
+                                model.setHcfWeight(String.valueOf(hWeight));
+                                model.setCbwtfWeight(String.valueOf(cWeight));
+
+                                if (jsonObject1.get("color_type_cbwtf").toString().toLowerCase().contains("yellow")){
+                                    yellowCountCbwtf++;
+                                    model.setRedCbwtf(String.valueOf(redCountCbwtf));
+                                    model.setBlueCbwtf(String.valueOf(blueCountCbwtf));
+                                    model.setYellowCbwtf(String.valueOf(yellowCountCbwtf));
+                                    model.setWhiteCbwtf(String.valueOf(whiteCountCbwtf));
+                                }
+                            }
+                            if (jsonObject1.get("color_type_hcf").toString().toLowerCase().contains("white")){
+                                whiteCount++;
+                                model.setRed(String.valueOf(redCount));
+                                model.setBlue(String.valueOf(blueCount));
+                                model.setYellow(String.valueOf(yellowCount));
+                                model.setWhite(String.valueOf(whiteCount));
+                                hWeight = hWeight+Double.parseDouble(jsonObject1.get("hcf_weight").toString().trim());
+                                cWeight = cWeight+Double.parseDouble(jsonObject1.get("cbwtf_weight").toString().trim());
+                                model.setHcfWeight(String.valueOf(hWeight));
+                                model.setCbwtfWeight(String.valueOf(cWeight));
+
+                                if (jsonObject1.get("color_type_cbwtf").toString().toLowerCase().contains("white")){
+                                    whiteCountCbwtf++;
+                                    model.setRedCbwtf(String.valueOf(redCountCbwtf));
+                                    model.setBlueCbwtf(String.valueOf(blueCountCbwtf));
+                                    model.setYellowCbwtf(String.valueOf(yellowCountCbwtf));
+                                    model.setWhiteCbwtf(String.valueOf(whiteCountCbwtf));
+                                }
+                            }
                         }
 
+                    }
 
-                        reportsModels.add(model);
-                        Log.d("TAG", "onResponse: "+reportsModels.size());
-                        reportsAdapter.notifyDataSetChanged();
 
-                        if (size < 1){
-                            empty_view.setVisibility(View.VISIBLE);
-                        }
+                    reportsModels.add(model);
+                    Log.d("TAG", "onResponse: "+reportsModels.size());
+                    reportsAdapter.notifyDataSetChanged();
 
-                    }else {
-                        shimmerFrameLayout.stopShimmer();
-                        shimmerFrameLayout.setVisibility(View.GONE);
+                    if (size < 1){
                         empty_view.setVisibility(View.VISIBLE);
                     }
-                }catch (Exception e){
-                    e.printStackTrace();
+
+                }else {
+                    shimmerFrameLayout.stopShimmer();
+                    shimmerFrameLayout.setVisibility(View.GONE);
+                    empty_view.setVisibility(View.VISIBLE);
                 }
-
+            }catch (Exception e){
+                e.printStackTrace();
             }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
 
-            }
+        }, error -> {
+
         }){
             @Nullable
             @Override
@@ -877,12 +820,9 @@ public class ReportsFragment extends Fragment{
                     Log.e(TAG, "Exception: ", e);
                 }
             }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                Log.e("TAG", "sendMail Error: " + error.getMessage());
-                showToast("Error sending email");
-            }
+        }, error -> {
+            Log.e("TAG", "sendMail Error: " + error.getMessage());
+            showToast("Error sending email");
         }) {
             @Nullable
             @Override

@@ -45,7 +45,6 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.LocationSettingsResponse;
 import com.google.android.gms.location.LocationSettingsStatusCodes;
-import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.card.MaterialCardView;
 import com.journeyapps.barcodescanner.ScanContract;
@@ -122,49 +121,41 @@ public class CbwtfDashboardActivity extends AppCompatActivity {
     }
 
     private  void getNotice(){
-        StringRequest appNoticeRequest = new StringRequest(Request.Method.POST, AppStrings.get_app_notice, new Response.Listener<String>() {
-            @Override
-            public void onResponse(String response) {
-                try {
+        StringRequest appNoticeRequest = new StringRequest(Request.Method.POST, AppStrings.get_app_notice, response -> {
+            try {
 
-                    JSONObject noticeObject = new JSONObject(response);
+                JSONObject noticeObject = new JSONObject(response);
 
-                    if (noticeObject.get("status").toString().equalsIgnoreCase("success")){
+                if (noticeObject.get("status").toString().equalsIgnoreCase("success")){
 
-                        String url = noticeObject.getJSONArray("data").getJSONObject(0).get("notice_url").toString();
-                        String noticeStatus = noticeObject.getJSONArray("data").getJSONObject(0).get("notice_status").toString();
+                    String url = noticeObject.getJSONArray("data").getJSONObject(0).get("notice_url").toString();
+                    String noticeStatus = noticeObject.getJSONArray("data").getJSONObject(0).get("notice_status").toString();
 
-                        if (noticeStatus.equalsIgnoreCase("1")){
+                    if (noticeStatus.equalsIgnoreCase("1")){
 
-                            WebView webView = new WebView(CbwtfDashboardActivity.this);
+                        WebView webView = new WebView(CbwtfDashboardActivity.this);
 
-                            webView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+                        webView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
-                            webView.loadUrl(url);
+                        webView.loadUrl(url);
 
-                            new AlertDialog.Builder(CbwtfDashboardActivity.this).setView(webView).show();
+                        new AlertDialog.Builder(CbwtfDashboardActivity.this).setView(webView).show();
 
-                        }else if (noticeStatus.equalsIgnoreCase("2")){
-                            WebView webView = new WebView(CbwtfDashboardActivity.this);
+                    }else if (noticeStatus.equalsIgnoreCase("2")){
+                        WebView webView = new WebView(CbwtfDashboardActivity.this);
 
-                            webView.loadUrl(url);
+                        webView.loadUrl(url);
 
-                            new AlertDialog.Builder(CbwtfDashboardActivity.this).setCancelable(false).setView(webView).show();
-                        }
-
+                        new AlertDialog.Builder(CbwtfDashboardActivity.this).setCancelable(false).setView(webView).show();
                     }
 
-                }catch (Exception e){
-                    Log.e(TAG, "Exception: ", e);
                 }
 
+            }catch (Exception e){
+                Log.e(TAG, "Exception: ", e);
             }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                Log.e(TAG, "VolleyError: ", error);
-            }
-        });
+
+        }, error -> Log.e(TAG, "VolleyError: ", error));
 
         VolleySingleton.getInstance(this).addToRequestQueue(appNoticeRequest);
 
@@ -261,14 +252,11 @@ public class CbwtfDashboardActivity extends AppCompatActivity {
         hcf_card.setOnClickListener(view -> {
             if (!getBluethoothPermission()){
 
-                new AlertDialog.Builder(CbwtfDashboardActivity.this).setMessage("Grant camera permission to continue\nApp permissions > Camera > Allow").setPositiveButton("Setting", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                        Uri uri = Uri.fromParts("package", getPackageName(), null);
-                        intent.setData(uri);
-                        startActivity(intent);
-                    }
+                new AlertDialog.Builder(CbwtfDashboardActivity.this).setMessage("Grant camera permission to continue\nApp permissions > Camera > Allow").setPositiveButton("Setting", (dialogInterface, i) -> {
+                    Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                    Uri uri = Uri.fromParts("package", getPackageName(), null);
+                    intent.setData(uri);
+                    startActivity(intent);
                 }).show();
             }
 
@@ -544,40 +532,37 @@ public class CbwtfDashboardActivity extends AppCompatActivity {
         });
     }
 
-    ActivityResultLauncher<ScanOptions> launcher = registerForActivityResult(new ScanContract(), new ActivityResultCallback<ScanIntentResult>() {
-        @Override
-        public void onActivityResult(ScanIntentResult result) {
+    ActivityResultLauncher<ScanOptions> launcher = registerForActivityResult(new ScanContract(), result -> {
 
-            if (result.getContents() != null){
-                try {
-                    String[] data = result.getContents().split("&",2);
+        if (result.getContents() != null){
+            try {
+                String[] data = result.getContents().split("&",2);
 
-                    String hcfCode = data[0];
+                String hcfCode = data[0];
 
-                    String[] data1 = data[1].split("/",3);
+                String[] data1 = data[1].split("/",3);
 
-                    String hospitalName = data1[1];
-                    String qrCbwtfId = data1[2];
+                String hospitalName = data1[1];
+                String qrCbwtfId = data1[2];
 
-                    String[] data2 = data1[0].split("-",2);
+                String[] data2 = data1[0].split("-",2);
 
-                    String qrCode = data2[0];
-                    String qrColor = data2[1];
+                String qrCode = data2[0];
+                String qrColor = data2[1];
 
-                    Map<String,String> map = new HashMap<>();
+                Map<String,String> map = new HashMap<>();
 
-                    map.put("hospital_code",hcfCode);
+                map.put("hospital_code",hcfCode);
 
-                    hospitalDataRequest(AppStrings.hospital_data,map);
+                hospitalDataRequest(AppStrings.hospital_data,map);
 
-                } catch (Exception e) {
-                    Log.e(TAG, "Exception: ", e);
-                    Log.d("TAG", "onActivityResult: " + e.getMessage());
-                    Toast.makeText(CbwtfDashboardActivity.this, "Wrong QR Code", Toast.LENGTH_SHORT).show();
-                }
+            } catch (Exception e) {
+                Log.e(TAG, "Exception: ", e);
+                Log.d("TAG", "onActivityResult: " + e.getMessage());
+                Toast.makeText(CbwtfDashboardActivity.this, "Wrong QR Code", Toast.LENGTH_SHORT).show();
             }
-
         }
+
     });
 
 
@@ -606,41 +591,33 @@ public class CbwtfDashboardActivity extends AppCompatActivity {
 
 
     public void networkRequest(String url, Map<String,String> map){
-        StringRequest request = new StringRequest(Request.Method.POST, url, new Response.Listener<String>() {
-            @Override
-            public void onResponse(String response) {
+        StringRequest request = new StringRequest(Request.Method.POST, url, response -> {
 
-                try {
+            try {
 
-                    JSONObject jsonObject = new JSONObject(response);
+                JSONObject jsonObject = new JSONObject(response);
 
-                    if (jsonObject.get("status").toString().equalsIgnoreCase("success")){
+                if (jsonObject.get("status").toString().equalsIgnoreCase("success")){
 
-                        String cbwtfName = "";
-                        String attendace_compulsory = "";
+                    String cbwtfName = "";
+                    String attendace_compulsory = "";
 
-                        for (int i=0;i<jsonObject.getJSONArray("data").length();i++){
-                            cbwtfName = jsonObject.getJSONArray("data").getJSONObject(i).get("name").toString();
-                            attendace_compulsory = jsonObject.getJSONArray("data").getJSONObject(i).get("attendace_compulsory").toString();
-                            MSP.getInstance(CbwtfDashboardActivity.this).setStringData(AppStrings.attendance_compulsory,attendace_compulsory);
-                        }
-
-                        header_tv.setText(cbwtfName);
-
+                    for (int i=0;i<jsonObject.getJSONArray("data").length();i++){
+                        cbwtfName = jsonObject.getJSONArray("data").getJSONObject(i).get("name").toString();
+                        attendace_compulsory = jsonObject.getJSONArray("data").getJSONObject(i).get("attendace_compulsory").toString();
+                        MSP.getInstance(CbwtfDashboardActivity.this).setStringData(AppStrings.attendance_compulsory,attendace_compulsory);
                     }
 
-                }catch (Exception e){
-                    e.printStackTrace();
+                    header_tv.setText(cbwtfName);
 
                 }
 
+            }catch (Exception e){
+                e.printStackTrace();
+
             }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                VolleySingleton.logVolleyError("CbwtfDashboardActivity", error);
-            }
-        }){
+
+        }, error -> VolleySingleton.logVolleyError("CbwtfDashboardActivity", error)){
             @Nullable
             @Override
             protected Map<String, String> getParams() throws AuthFailureError {
@@ -652,42 +629,33 @@ public class CbwtfDashboardActivity extends AppCompatActivity {
     }
 
     public void hospitalDataRequest(String url, Map<String,String> map){
-        StringRequest request = new StringRequest(Request.Method.POST, url, new Response.Listener<String>() {
-            @Override
-            public void onResponse(String response) {
+        StringRequest request = new StringRequest(Request.Method.POST, url, response -> {
 
-                try {
+            try {
 
-                    JSONObject jsonObject = new JSONObject(response);
+                JSONObject jsonObject = new JSONObject(response);
 
-                    if (jsonObject.get("status").toString().equalsIgnoreCase("success")){
+                if (jsonObject.get("status").toString().equalsIgnoreCase("success")){
 
-                        String hospitalName = "";
-                        String hospitalAddress = "";
+                    String hospitalName = "";
+                    String hospitalAddress = "";
 
-                        for (int i=0;i<jsonObject.getJSONArray("data").length();i++){
-                            hospitalName = jsonObject.getJSONArray("data").getJSONObject(i).get("name").toString();
-                            hospitalAddress = jsonObject.getJSONArray("data").getJSONObject(i).get("address").toString();
-                        }
-
-                        new AlertDialog.Builder(CbwtfDashboardActivity.this).setMessage(
-                                "Hospital name: "+hospitalName.concat("\n\n").concat("Hospital address: "+hospitalAddress)
-                        ).show();
-
+                    for (int i=0;i<jsonObject.getJSONArray("data").length();i++){
+                        hospitalName = jsonObject.getJSONArray("data").getJSONObject(i).get("name").toString();
+                        hospitalAddress = jsonObject.getJSONArray("data").getJSONObject(i).get("address").toString();
                     }
 
-                }catch (Exception e){
-                    e.printStackTrace();
+                    new AlertDialog.Builder(CbwtfDashboardActivity.this).setMessage(
+                            "Hospital name: "+hospitalName.concat("\n\n").concat("Hospital address: "+hospitalAddress)
+                    ).show();
 
                 }
 
+            }catch (Exception e){
+                Log.d(TAG, "Exception "+e);
             }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                VolleySingleton.logVolleyError("CbwtfDashboardActivity", error);
-            }
-        }){
+
+        }, error -> VolleySingleton.logVolleyError("CbwtfDashboardActivity", error)){
             @Nullable
             @Override
             protected Map<String, String> getParams() throws AuthFailureError {
@@ -768,63 +736,55 @@ public class CbwtfDashboardActivity extends AppCompatActivity {
 
     public void todayDataRequest(String url, Map<String,String> map){
         StringRequest request = new StringRequest(Request.Method.POST, url,
-                new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String response) {
-                        Log.i("res_p", response);
-                        try {
-                            JSONObject jsonObject = new JSONObject(response);
+                response -> {
+                    Log.i("res_p", response);
+                    try {
+                        JSONObject jsonObject = new JSONObject(response);
 
-                            if (jsonObject.getString("status").equalsIgnoreCase("success")) {
+                        if (jsonObject.getString("status").equalsIgnoreCase("success")) {
 
-                                Set<String> uniqueHospitals = new HashSet<>();
-                                double totalWeight = 0;
-                                List<Map<String, String>> customDataList = new ArrayList<>();
+                            Set<String> uniqueHospitals = new HashSet<>();
+                            double totalWeight = 0;
+                            List<Map<String, String>> customDataList = new ArrayList<>();
 
-                                JSONArray dataArray = jsonObject.getJSONArray("data");
-                                for (int i = 0; i < dataArray.length(); i++) {
-                                    JSONObject item = dataArray.getJSONObject(i);
-                                    String hospitalCode = item.getString("hospital_code").trim();
-                                    String weightStr = item.getString("hcf_weight").trim();
+                            JSONArray dataArray = jsonObject.getJSONArray("data");
+                            for (int i = 0; i < dataArray.length(); i++) {
+                                JSONObject item = dataArray.getJSONObject(i);
+                                String hospitalCode = item.getString("hospital_code").trim();
+                                String weightStr = item.getString("hcf_weight").trim();
 
-                                    uniqueHospitals.add(hospitalCode);
+                                uniqueHospitals.add(hospitalCode);
 
-                                    try {
-                                        totalWeight += Double.parseDouble(weightStr);
-                        } catch (NumberFormatException e) {
-                            Log.e(TAG, "Invalid weight: " + weightStr, e);
-                        }
+                                try {
+                                    totalWeight += Double.parseDouble(weightStr);
+                    } catch (NumberFormatException e) {
+                        Log.e(TAG, "Invalid weight: " + weightStr, e);
+                    }
 
-                                    // Create custom map for persistence
-                                    Map<String, String> dataMap = new HashMap<>();
-                                    dataMap.put("qr_data_id", item.optString("qr_data_id"));
-                                    dataMap.put("qr_id", item.optString("qr_id"));
-                                    dataMap.put("hospital_code", hospitalCode);
-                                    dataMap.put("operator_id", item.optString("operator_id"));
-                                    dataMap.put("cbwtf_weight", item.optString("cbwtf_weight"));
-                                    dataMap.put("hcf_weight", weightStr);
-                                    customDataList.add(dataMap);
-                                }
-
-                                // Store in SharedPreferences using Gson
-                                String jsonCustomData = new Gson().toJson(customDataList);
-                                MSP.getInstance(CbwtfDashboardActivity.this).setStringData("today_qr_custom_data", jsonCustomData);
-
-                                today_attempted.setText(String.valueOf(uniqueHospitals.size()));
-                                today_collected.setText(new DecimalFormat("000.000").format(totalWeight));
+                                // Create custom map for persistence
+                                Map<String, String> dataMap = new HashMap<>();
+                                dataMap.put("qr_data_id", item.optString("qr_data_id"));
+                                dataMap.put("qr_id", item.optString("qr_id"));
+                                dataMap.put("hospital_code", hospitalCode);
+                                dataMap.put("operator_id", item.optString("operator_id"));
+                                dataMap.put("cbwtf_weight", item.optString("cbwtf_weight"));
+                                dataMap.put("hcf_weight", weightStr);
+                                customDataList.add(dataMap);
                             }
 
-                        } catch (Exception e) {
-                            e.printStackTrace();
+                            // Store in SharedPreferences using Gson
+                            String jsonCustomData = new Gson().toJson(customDataList);
+                            MSP.getInstance(CbwtfDashboardActivity.this).setStringData("today_qr_custom_data", jsonCustomData);
+
+                            today_attempted.setText(String.valueOf(uniqueHospitals.size()));
+                            today_collected.setText(new DecimalFormat("000.000").format(totalWeight));
                         }
+
+                    } catch (Exception e) {
+                        Log.d(TAG, "Exception "+e);
                     }
                 },
-                new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        Log.e("Volley", "Error: " + error.getMessage());
-                    }
-                }) {
+                error -> Log.e("Volley", "Error: " + error.getMessage())) {
             @Nullable
             @Override
             protected Map<String, String> getParams() throws AuthFailureError {
@@ -840,35 +800,29 @@ public class CbwtfDashboardActivity extends AppCompatActivity {
         String otpValue = String.format("%04d",new Random().nextInt(10000));
         String date = String.valueOf(DateFormat.format("yyyy-MM-dd",new Date().getTime()));
 
-        StringRequest generateOtpRequest = new StringRequest(Request.Method.POST, AppStrings.generate_otp, new Response.Listener<String>() {
-            @Override
-            public void onResponse(String response) {
+        StringRequest generateOtpRequest = new StringRequest(Request.Method.POST, AppStrings.generate_otp, response -> {
 
-                try {
+            try {
 
-                    JSONObject otpObject = new JSONObject(response);
+                JSONObject otpObject = new JSONObject(response);
 
-                    if (otpObject.get("status").toString().equalsIgnoreCase("success")){
+                if (otpObject.get("status").toString().equalsIgnoreCase("success")){
 
-                        String otp = otpObject.getJSONArray("data").getJSONObject(0).get("otp").toString();
+                    String otp = otpObject.getJSONArray("data").getJSONObject(0).get("otp").toString();
 
-                        otp_tv.setText(otp);
+                    otp_tv.setText(otp);
 
-                    }else {
+                }else {
 
-                    }
-
-                }catch (Exception e){
-                    Log.e(TAG, "Exception: ", e);
                 }
 
+            }catch (Exception e){
+                Log.e(TAG, "Exception: ", e);
             }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                VolleySingleton.logVolleyError("CbwtfDashboardActivity", error);
-                generateOtp();
-            }
+
+        }, error -> {
+            VolleySingleton.logVolleyError("CbwtfDashboardActivity", error);
+            generateOtp();
         }){
             @Nullable
             @Override

@@ -20,7 +20,6 @@ import android.widget.Toast;
 import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
 import com.android.volley.Response;
-import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 
 
@@ -52,11 +51,14 @@ import org.json.JSONObject;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Timer;
 import java.util.TimerTask;
 
 @SuppressLint("CustomSplashScreen")
 public class SplashActivity extends AppCompatActivity {
+
+    private static final String TAG = "SplashActivity";
 
     ImageView splash_image;
     int loginAs = 0;
@@ -88,7 +90,7 @@ public class SplashActivity extends AppCompatActivity {
         progressTv = downloadView.findViewById(R.id.download_progress_tv);
 
         downloadAlert.setView(downloadView);
-        downloadAlert.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        Objects.requireNonNull(downloadAlert.getWindow()).setBackgroundDrawableResource(android.R.color.transparent);
         downloadAlert.setCancelable(false);
 
         splash_image = findViewById(R.id.splash_image);
@@ -152,77 +154,71 @@ public class SplashActivity extends AppCompatActivity {
     }
 
     public void networkRequest(String url, Map<String,String> map){
-        StringRequest request = new StringRequest(Request.Method.POST, url, new Response.Listener<String>() {
-            @Override
-            public void onResponse(String response) {
+        StringRequest request = new StringRequest(Request.Method.POST, url, response -> {
 
-                try {
+            try {
 
-                    JSONObject jsonObject = new JSONObject(response);
+                JSONObject jsonObject = new JSONObject(response);
 
-                    if (isNextActivityStarted) return;
+                if (isNextActivityStarted) return;
 
-                    if (jsonObject.get("status").toString().equalsIgnoreCase("success")){
+                if (jsonObject.get("status").toString().equalsIgnoreCase("success")){
 
-                        if (loginAs == 0){
+                    if (loginAs == 0){
 
-                            String operatorID = jsonObject.getJSONArray("data").getJSONObject(0).get("operator_id").toString();
-                            String operatorName = jsonObject.getJSONArray("data").getJSONObject(0).get("name").toString();
-                            String operatorAddress = jsonObject.getJSONArray("data").getJSONObject(0).get("address").toString();
-                            String operatorMobile = jsonObject.getJSONArray("data").getJSONObject(0).get("mobile").toString();
-                            String operatorCbwtfID = jsonObject.getJSONArray("data").getJSONObject(0).get("cbwtf_id").toString();
-                            String userPassword = jsonObject.getJSONArray("data").getJSONObject(0).get("password").toString();
+                        String operatorID = jsonObject.getJSONArray("data").getJSONObject(0).get("operator_id").toString();
+                        String operatorName = jsonObject.getJSONArray("data").getJSONObject(0).get("name").toString();
+                        String operatorAddress = jsonObject.getJSONArray("data").getJSONObject(0).get("address").toString();
+                        String operatorMobile = jsonObject.getJSONArray("data").getJSONObject(0).get("mobile").toString();
+                        String operatorCbwtfID = jsonObject.getJSONArray("data").getJSONObject(0).get("cbwtf_id").toString();
+                        String userPassword = jsonObject.getJSONArray("data").getJSONObject(0).get("password").toString();
 
-                            MSP.getInstance(SplashActivity.this).setStringData(AppStrings.userPassword,userPassword);
-                            MSP.getInstance(SplashActivity.this).setStringData(AppStrings.userName,operatorName);
-                            MSP.getInstance(SplashActivity.this).setStringData(AppStrings.userMobile,operatorMobile);
-                            MSP.getInstance(SplashActivity.this).setStringData(AppStrings.userAddress,operatorAddress);
-                            MSP.getInstance(SplashActivity.this).setStringData(AppStrings.userID,operatorID);
-                            MSP.getInstance(SplashActivity.this).setStringData(AppStrings.userCbwtfID,operatorCbwtfID);
-                            MSP.getInstance(SplashActivity.this).setStringData(AppStrings.loginAs,"cbwtf");
+                        MSP.getInstance(SplashActivity.this).setStringData(AppStrings.userPassword,userPassword);
+                        MSP.getInstance(SplashActivity.this).setStringData(AppStrings.userName,operatorName);
+                        MSP.getInstance(SplashActivity.this).setStringData(AppStrings.userMobile,operatorMobile);
+                        MSP.getInstance(SplashActivity.this).setStringData(AppStrings.userAddress,operatorAddress);
+                        MSP.getInstance(SplashActivity.this).setStringData(AppStrings.userID,operatorID);
+                        MSP.getInstance(SplashActivity.this).setStringData(AppStrings.userCbwtfID,operatorCbwtfID);
+                        MSP.getInstance(SplashActivity.this).setStringData(AppStrings.loginAs,"cbwtf");
 
-                        }else{
+                    }else{
 
-                            String operatorID = jsonObject.getJSONArray("data").getJSONObject(0).get("hospital_code").toString();
-                            String operatorName = jsonObject.getJSONArray("data").getJSONObject(0).get("name").toString();
-                            String operatorAddress = jsonObject.getJSONArray("data").getJSONObject(0).get("address").toString();
-                            String operatorMobile = jsonObject.getJSONArray("data").getJSONObject(0).get("mobile").toString();
-                            String operatorCbwtfID = jsonObject.getJSONArray("data").getJSONObject(0).get("cbwtf_id").toString();
-                            String userPassword = jsonObject.getJSONArray("data").getJSONObject(0).get("password").toString();
-                            String hcfCode = jsonObject.getJSONArray("data").getJSONObject(0).get("hospital_code").toString();
+                        String operatorID = jsonObject.getJSONArray("data").getJSONObject(0).get("hospital_code").toString();
+                        String operatorName = jsonObject.getJSONArray("data").getJSONObject(0).get("name").toString();
+                        String operatorAddress = jsonObject.getJSONArray("data").getJSONObject(0).get("address").toString();
+                        String operatorMobile = jsonObject.getJSONArray("data").getJSONObject(0).get("mobile").toString();
+                        String operatorCbwtfID = jsonObject.getJSONArray("data").getJSONObject(0).get("cbwtf_id").toString();
+                        String userPassword = jsonObject.getJSONArray("data").getJSONObject(0).get("password").toString();
+                        String hcfCode = jsonObject.getJSONArray("data").getJSONObject(0).get("hospital_code").toString();
 
-                            MSP.getInstance(SplashActivity.this).setStringData(AppStrings.userPassword,userPassword);
-                            MSP.getInstance(SplashActivity.this).setStringData(AppStrings.userName,operatorName);
-                            MSP.getInstance(SplashActivity.this).setStringData(AppStrings.userMobile,operatorMobile);
-                            MSP.getInstance(SplashActivity.this).setStringData(AppStrings.userAddress,operatorAddress);
-                            MSP.getInstance(SplashActivity.this).setStringData(AppStrings.userID,operatorID);
-                            MSP.getInstance(SplashActivity.this).setStringData(AppStrings.userCbwtfID,operatorCbwtfID);
-                            MSP.getInstance(SplashActivity.this).setStringData(AppStrings.loginAs,"hcf");
-                            MSP.getInstance(SplashActivity.this).setStringData(AppStrings.hcfCode,hcfCode);
+                        MSP.getInstance(SplashActivity.this).setStringData(AppStrings.userPassword,userPassword);
+                        MSP.getInstance(SplashActivity.this).setStringData(AppStrings.userName,operatorName);
+                        MSP.getInstance(SplashActivity.this).setStringData(AppStrings.userMobile,operatorMobile);
+                        MSP.getInstance(SplashActivity.this).setStringData(AppStrings.userAddress,operatorAddress);
+                        MSP.getInstance(SplashActivity.this).setStringData(AppStrings.userID,operatorID);
+                        MSP.getInstance(SplashActivity.this).setStringData(AppStrings.userCbwtfID,operatorCbwtfID);
+                        MSP.getInstance(SplashActivity.this).setStringData(AppStrings.loginAs,"hcf");
+                        MSP.getInstance(SplashActivity.this).setStringData(AppStrings.hcfCode,hcfCode);
 
-                        }
-
-                        navigateToNext(new Intent(SplashActivity.this, CbwtfDashboardActivity.class));
-
-                    }else {
-                        Snackbar.make(splash_image,"Your account is banned or removed",1000).show();
-                        navigateToNext(new Intent(SplashActivity.this, LoginActivity.class));
                     }
 
-                }catch (Exception e){
-                    e.printStackTrace();
-                    Toast.makeText(SplashActivity.this, "Something went wrong try again", Toast.LENGTH_SHORT).show();
+                    navigateToNext(new Intent(SplashActivity.this, CbwtfDashboardActivity.class));
+
+                }else {
+                    Snackbar.make(splash_image,"Your account is banned or removed",1000).show();
                     navigateToNext(new Intent(SplashActivity.this, LoginActivity.class));
                 }
 
-            }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                VolleySingleton.logVolleyError("SplashActivity", error);
+            }catch (Exception e){
+                e.printStackTrace();
                 Toast.makeText(SplashActivity.this, "Something went wrong try again", Toast.LENGTH_SHORT).show();
                 navigateToNext(new Intent(SplashActivity.this, LoginActivity.class));
             }
+
+        }, error -> {
+            VolleySingleton.logVolleyError("SplashActivity", error);
+            Toast.makeText(SplashActivity.this, "Something went wrong try again", Toast.LENGTH_SHORT).show();
+            navigateToNext(new Intent(SplashActivity.this, LoginActivity.class));
         }){
             @Nullable
             @Override
@@ -254,15 +250,12 @@ public class SplashActivity extends AppCompatActivity {
                     }
 
                 }catch (Exception e){
-                    e.printStackTrace();
+                    Log.d(TAG, "Exception "+e.getMessage());
                 }
 
             }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
+        }, error -> {
 
-            }
         });
 
         VolleySingleton.getInstance(this).addToRequestQueue(appVersionRequest);

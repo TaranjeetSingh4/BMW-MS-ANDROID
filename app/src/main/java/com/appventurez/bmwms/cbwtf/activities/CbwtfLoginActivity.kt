@@ -8,12 +8,12 @@ import android.os.Bundle
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.mutableStateOf
 import com.android.volley.AuthFailureError
-import com.android.volley.Request
 import com.android.volley.Response
 import com.android.volley.toolbox.StringRequest
 import com.appventurez.bmwms.activities.PdfViewActivity
@@ -25,7 +25,7 @@ import org.json.JSONObject
 import java.util.HashMap
 
 class CbwtfLoginActivity : AppCompatActivity() {
-
+    private var TAG = "CbwtfLoginActivity"
     private var vibrator: Vibrator? = null
     private var loginAs = 0
     private var isLoading = mutableStateOf(false)
@@ -66,6 +66,7 @@ class CbwtfLoginActivity : AppCompatActivity() {
         try {
             startActivity(appIntent)
         } catch (ex: ActivityNotFoundException) {
+            Log.d(TAG, "ActivityNotFoundException "+ ex.message)
             startActivity(webIntent)
         }
     }
