@@ -52,7 +52,6 @@ import com.android.volley.toolbox.StringRequest;
 
 import com.bumptech.glide.Glide;
 import com.github.douglasjunior.bluetoothclassiclibrary.BluetoothStatus;
-import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.ResolvableApiException;
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -262,35 +261,24 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
             bluetoothDevicesAdapter = new BluetoothDevicesAdapter(getContext(),bluetoothDevicesModel, this::onClickBluetoothDevice);
 
             Glide.with(getContext()).load(R.drawable.weight_scale).fitCenter().into(weight_img);
-            weight_close.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    weightView.setVisibility(View.GONE);
-                    isWeightAdded = true;
-                }
+            weight_close.setOnClickListener(view -> {
+                weightView.setVisibility(View.GONE);
+                isWeightAdded = true;
             });
             //Bluetooth
 
-            backButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    getActivity().finish();
+            backButton.setOnClickListener(view -> getActivity().finish());
+
+            switchMaterial.setOnCheckedChangeListener((compoundButton, b) -> {
+
+                if (b){
+                    appbar_tv.setText("Auto");
+                    scanMode = 1;
+                }else {
+                    appbar_tv.setText("Manual");
+                    scanMode = 0;
                 }
-            });
 
-            switchMaterial.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-                @Override
-                public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-
-                    if (b){
-                        appbar_tv.setText("Auto");
-                        scanMode = 1;
-                    }else {
-                        appbar_tv.setText("Manual");
-                        scanMode = 0;
-                    }
-
-                }
             });
 
 
