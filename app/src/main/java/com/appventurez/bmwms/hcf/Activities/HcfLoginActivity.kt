@@ -102,11 +102,7 @@ class HcfLoginActivity : AppCompatActivity() {
     }
 
     fun networkRequest(url: String, map: Map<String, String>) {
-        Log.d("HcfLoginActivity", "Network Request URL: $url")
-        Log.d("HcfLoginActivity", "Network Request Params: $map")
-
         val request = object : StringRequest(Request.Method.POST, url, Response.Listener { response ->
-            Log.d("HcfLoginActivity", "Network Response: $response")
             try {
                 val jsonObject = JSONObject(response)
                 if (jsonObject.get("status").toString().equals("success", ignoreCase = true)) {
@@ -149,7 +145,7 @@ class HcfLoginActivity : AppCompatActivity() {
                 Toast.makeText(this, "Something went wrong try again", Toast.LENGTH_SHORT).show()
             }
         }, Response.ErrorListener {
-            Log.e("HcfLoginActivity", "Network Error: ${it.message}")
+            VolleySingleton.logVolleyError("HcfLoginActivity", it)
             isLoading.value = false
             Toast.makeText(this, "Something went wrong try again", Toast.LENGTH_SHORT).show()
         }) {

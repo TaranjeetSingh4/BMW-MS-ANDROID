@@ -687,7 +687,7 @@ public class CbwtfDashboardActivity extends AppCompatActivity {
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-
+                VolleySingleton.logVolleyError("CbwtfDashboardActivity", error);
             }
         }){
             @Nullable
@@ -734,7 +734,7 @@ public class CbwtfDashboardActivity extends AppCompatActivity {
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-
+                VolleySingleton.logVolleyError("CbwtfDashboardActivity", error);
             }
         }){
             @Nullable
@@ -915,6 +915,7 @@ public class CbwtfDashboardActivity extends AppCompatActivity {
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
+                VolleySingleton.logVolleyError("CbwtfDashboardActivity", error);
                 generateOtp();
             }
         }){

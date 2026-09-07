@@ -101,11 +101,7 @@ class CbwtfLoginActivity : AppCompatActivity() {
     }
 
     fun networkRequest(url: String, map: Map<String, String>) {
-        Log.d("CbwtfLoginActivity", "Network Request URL: $url")
-        Log.d("CbwtfLoginActivity", "Network Request Params: $map")
-
         val request = object : StringRequest(Request.Method.POST, url, Response.Listener { response ->
-            Log.d("CbwtfLoginActivity", "Network Response: $response")
             try {
                 val jsonObject = JSONObject(response)
                 if (jsonObject.get("status").toString().equals("success", ignoreCase = true)) {
@@ -148,7 +144,7 @@ class CbwtfLoginActivity : AppCompatActivity() {
                 Toast.makeText(this, "Something went wrong try again", Toast.LENGTH_SHORT).show()
             }
         }, Response.ErrorListener {
-            Log.e("CbwtfLoginActivity", "Network Error: ${it.message}")
+            VolleySingleton.logVolleyError("CbwtfLoginActivity", it)
             isLoading.value = false
             Toast.makeText(this, "Something went wrong try again", Toast.LENGTH_SHORT).show()
         }) {

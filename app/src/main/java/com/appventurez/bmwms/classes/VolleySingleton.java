@@ -41,7 +41,12 @@ public class VolleySingleton {
             HttpLoggingInterceptor logging = new HttpLoggingInterceptor(new HttpLoggingInterceptor.Logger() {
                 @Override
                 public void log(String message) {
-                    Log.d("API_LOG", message);
+                    // Use a unified tag and check for JSON to potentially pretty print
+                    if (message.startsWith("{") || message.startsWith("[")) {
+                        Log.d("API_NETWORK", "JSON: " + message);
+                    } else {
+                        Log.d("API_NETWORK", message);
+                    }
                 }
             });
             logging.setLevel(HttpLoggingInterceptor.Level.BODY);
@@ -53,6 +58,35 @@ public class VolleySingleton {
             requestQueue = Volley.newRequestQueue(ctx, new OkHttpStack(okHttpClient));
         }
         return requestQueue;
+    }
+
+    public static void logVolleyError(String tag, com.android.volley.VolleyError error) {
+        if (error == null) return;
+        
+        StringBuilder sb = new StringBuilder();
+        sb.append("Volley Error: ").append(error.toString()).append("\n");
+        
+        if (error.networkResponse != null) {
+            sb.append("Status Code: ").append(error.networkResponse.statusCode).append("\n");
+            if (error.networkResponse.data != null) {
+                try {
+                    String body = new String(error.networkResponse.data, "UTF-8");
+                    sb.append("Error Body: ").append(body).append("\n");
+                } catch (Exception e) {
+                    // ignore
+                }
+            }
+        }
+        
+        if (error.getMessage() != null) {
+            sb.append("Message: ").append(error.getMessage()).append("\n");
+        }
+        
+        Log.e(tag, sb.toString());
+        
+        if (error.getCause() != null) {
+            Log.e(tag, "Cause: ", error.getCause());
+        }
     }
 
     private OkHttpClient.Builder getUnsafeOkHttpClient() {

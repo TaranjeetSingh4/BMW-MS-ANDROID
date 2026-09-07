@@ -219,6 +219,7 @@ public class SplashActivity extends AppCompatActivity {
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
+                VolleySingleton.logVolleyError("SplashActivity", error);
                 Toast.makeText(SplashActivity.this, "Something went wrong try again", Toast.LENGTH_SHORT).show();
                 navigateToNext(new Intent(SplashActivity.this, LoginActivity.class));
             }

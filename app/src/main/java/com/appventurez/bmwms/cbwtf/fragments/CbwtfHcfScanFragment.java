@@ -944,15 +944,6 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
 
     public void cbwtfScanSubmitRequest(String url, Map<String,String> map){
         Log.d("TAG", "cbwtfScanSubmitRequest: "+"SCAN");
-
-
-        for (Map.Entry<String, String> entry : map.entrySet()) {
-            String k = entry.getKey();
-            String v = entry.getValue();
-            Log.d("TAG", "cbwtfScanSubmitRequest: "+"Key: " + k + ", Value: " + v);
-
-        }
-
         StringRequest request = new StringRequest(Request.Method.POST, url, new Response.Listener<String>() {
             @Override
             public void onResponse(String response) {
@@ -1036,7 +1027,7 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-                Log.i("res_p","err: "+error.getMessage());
+                VolleySingleton.logVolleyError("CbwtfHcfScanFragment", error);
                 if (loading_ll != null) loading_ll.setVisibility(View.GONE);
             }
         }){
@@ -1084,7 +1075,7 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-
+                VolleySingleton.logVolleyError("CbwtfHcfScanFragment", error);
             }
         });
 
@@ -1113,7 +1104,7 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-
+                VolleySingleton.logVolleyError("CbwtfHcfScanFragment", error);
             }
         }){
             @Nullable
