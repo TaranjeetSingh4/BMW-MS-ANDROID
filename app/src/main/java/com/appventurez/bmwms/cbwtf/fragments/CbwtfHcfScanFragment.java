@@ -118,6 +118,7 @@ import me.aflak.bluetooth.Bluetooth;
 
 public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAdapter.EventListener, MyBluetoothService.MyEventListener,HospitalAdapter.MyHospitalEventListener{
 
+    private static final String TAG = "CbwtfHcfScanFragment";
     View view;
 
     int loginAs = 0;
@@ -512,7 +513,7 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
 //                    checkAttendance(hcfCode,hospitalName);
 
                 }catch (Exception e){
-                    e.printStackTrace();
+                    Log.e(TAG, "Exception: ", e);
                     Log.d("TAG", "onActivityResult:2 "+e.getMessage());
                     showToast("Wrong QR Code 7");
                 }
@@ -610,7 +611,7 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
                     }
 
                 }catch (Exception e){
-                    e.printStackTrace();
+                    Log.e(TAG, "Exception: ", e);
                 }
 
             }
@@ -734,7 +735,7 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
                                         location_tv.setText(addresses.get(0).getAddressLine(0));
                                     }
                                 } catch (Exception e) {
-                                    e.printStackTrace();
+                                    Log.e(TAG, "Exception: ", e);
                                 }
                             }
                         }
@@ -1018,7 +1019,7 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
                     }
 
                 }catch (Exception e){
-                    e.printStackTrace();
+                    Log.e(TAG, "Exception: ", e);
                     if (loading_ll != null) loading_ll.setVisibility(View.GONE);
                     Log.i("res_p","e: "+e.getMessage());
                 }
@@ -1068,7 +1069,7 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
 
                     }
                 }catch (Exception e){
-                    e.printStackTrace();
+                    Log.e(TAG, "Exception: ", e);
                 }
 
             }
@@ -1097,7 +1098,7 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
                         cbwtfScanSubmitRequest(AppStrings.hcf_scan_submit,map);
                     }
                 }catch (Exception e){
-                    e.printStackTrace();
+                    Log.e(TAG, "Exception: ", e);
                 }
 
             }
@@ -1149,7 +1150,7 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
                     }
 
                 }catch (Exception e){
-                    e.printStackTrace();
+                    Log.e(TAG, "Exception: ", e);
                 }
 
             }
@@ -1224,7 +1225,7 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
                         otpAlertDialog.show();
                     }
                 }catch (Exception e){
-                    e.printStackTrace();
+                    Log.e(TAG, "Exception: ", e);
                 }
 
             }
@@ -1273,7 +1274,7 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
                     }
 
                 }catch (Exception e){
-                    e.printStackTrace();
+                    Log.e(TAG, "Exception: ", e);
                 }
 
             }
@@ -1324,7 +1325,7 @@ public class CbwtfHcfScanFragment extends Fragment implements BluetoothDevicesAd
                     }
 
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    Log.e(TAG, "Exception: ", e);
                 }
 
             }

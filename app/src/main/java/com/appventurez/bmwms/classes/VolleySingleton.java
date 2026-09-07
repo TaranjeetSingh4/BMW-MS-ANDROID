@@ -38,15 +38,12 @@ public class VolleySingleton {
 
     public RequestQueue getRequestQueue() {
         if (requestQueue == null) {
-            HttpLoggingInterceptor logging = new HttpLoggingInterceptor(new HttpLoggingInterceptor.Logger() {
-                @Override
-                public void log(String message) {
-                    // Use a unified tag and check for JSON to potentially pretty print
-                    if (message.startsWith("{") || message.startsWith("[")) {
-                        Log.d("API_NETWORK", "JSON: " + message);
-                    } else {
-                        Log.d("API_NETWORK", message);
-                    }
+            HttpLoggingInterceptor logging = new HttpLoggingInterceptor(message -> {
+                // Use a unified tag and check for JSON to potentially pretty print
+                if (message.startsWith("{") || message.startsWith("[")) {
+                    Log.d("API_NETWORK", "JSON: " + message);
+                } else {
+                    Log.d("API_NETWORK", message);
                 }
             });
             logging.setLevel(HttpLoggingInterceptor.Level.BODY);
@@ -64,7 +61,7 @@ public class VolleySingleton {
         if (error == null) return;
         
         StringBuilder sb = new StringBuilder();
-        sb.append("Volley Error: ").append(error.toString()).append("\n");
+        sb.append("Volley Error: ").append(error).append("\n");
         
         if (error.networkResponse != null) {
             sb.append("Status Code: ").append(error.networkResponse.statusCode).append("\n");

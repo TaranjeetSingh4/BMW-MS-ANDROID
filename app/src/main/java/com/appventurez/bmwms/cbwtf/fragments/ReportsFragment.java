@@ -69,6 +69,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class ReportsFragment extends Fragment{
+    private static final String TAG = "ReportsFragment";
     View view;
     RecyclerView reportsRV;
     List<ReportsModel> reportsModels = new ArrayList<>();
@@ -828,7 +829,7 @@ public class ReportsFragment extends Fragment{
                     inputStream.close();
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                Log.e(TAG, "Exception: ", e);
             }
 
             File finalPdfFile = pdfFile;
@@ -873,7 +874,7 @@ public class ReportsFragment extends Fragment{
                         showToast("Failed to send email: " + jsonObject.optString("message"));
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    Log.e(TAG, "Exception: ", e);
                 }
             }
         }, new Response.ErrorListener() {

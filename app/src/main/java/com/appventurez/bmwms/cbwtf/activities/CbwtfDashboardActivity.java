@@ -9,7 +9,6 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
 import android.content.DialogInterface;
@@ -39,7 +38,6 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.bumptech.glide.Glide;
-import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.ResolvableApiException;
 import com.google.android.gms.location.LocationRequest;
@@ -82,6 +80,7 @@ import java.util.Set;
 
 public class CbwtfDashboardActivity extends AppCompatActivity {
 
+    private static final String TAG = "CbwtfDashboardActivity";
     TextView guideline_tv,youtube_tv,header_tv,today_attempted,today_collected,otp_tv;
     ImageView bottom_img,hcf_img,report_img,profile_img,logout_img,header_logo_img,scanner_img,rescan_img;
     MaterialCardView hcf_card,report_card,profile_card,logout_card,rescan_card;
@@ -156,14 +155,14 @@ public class CbwtfDashboardActivity extends AppCompatActivity {
                     }
 
                 }catch (Exception e){
-                    e.printStackTrace();
+                    Log.e(TAG, "Exception: ", e);
                 }
 
             }
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-
+                Log.e(TAG, "VolleyError: ", error);
             }
         });
 
@@ -244,91 +243,55 @@ public class CbwtfDashboardActivity extends AppCompatActivity {
 
     public void clickListeners(){
 
-        profile_card.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                startActivity(1);
-            }
-        });
+        profile_card.setOnClickListener(view -> startActivity(1));
 
-        report_card.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                startActivity(10);
-            }
-        });
+        report_card.setOnClickListener(view -> startActivity(10));
 
 
 
-        scanner_img.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (getCameraPermission()  ){
-                    startScanner();
-                }else {
-                    cameraPermissionAlertDialog();
-
-                }
-            }
-        });
-
-        hcf_card.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (!getBluethoothPermission()){
-
-                    new AlertDialog.Builder(CbwtfDashboardActivity.this).setMessage("Grant camera permission to continue\nApp permissions > Camera > Allow").setPositiveButton("Setting", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialogInterface, int i) {
-                            Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                            Uri uri = Uri.fromParts("package", getPackageName(), null);
-                            intent.setData(uri);
-                            startActivity(intent);
-                        }
-                    }).show();
-                }
-
-                if (isLocationGranted){
-                    startActivity(0);
-                }else {
-                    checkLocationPermission();
-                }
-            }
-        });
-
-        rescan_card.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (isLocationGranted){
-                    startActivity(9);
-                }else {
-                    checkLocationPermission();
-                }
-            }
-        });
-
-        logout_card.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-
-                onLogout();
+        scanner_img.setOnClickListener(view -> {
+            if (getCameraPermission()  ){
+                startScanner();
+            }else {
+                cameraPermissionAlertDialog();
 
             }
         });
 
-        guideline_tv.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                openGuidelines();
+        hcf_card.setOnClickListener(view -> {
+            if (!getBluethoothPermission()){
+
+                new AlertDialog.Builder(CbwtfDashboardActivity.this).setMessage("Grant camera permission to continue\nApp permissions > Camera > Allow").setPositiveButton("Setting", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                        Uri uri = Uri.fromParts("package", getPackageName(), null);
+                        intent.setData(uri);
+                        startActivity(intent);
+                    }
+                }).show();
+            }
+
+            if (isLocationGranted){
+                startActivity(0);
+            }else {
+                checkLocationPermission();
             }
         });
 
-        youtube_tv.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                openYoutubeLink();
+        rescan_card.setOnClickListener(v -> {
+            if (isLocationGranted){
+                startActivity(9);
+            }else {
+                checkLocationPermission();
             }
         });
+
+        logout_card.setOnClickListener(view -> onLogout());
+
+        guideline_tv.setOnClickListener(view -> openGuidelines());
+
+        youtube_tv.setOnClickListener(view -> openYoutubeLink());
 
     }
 
@@ -414,26 +377,20 @@ public class CbwtfDashboardActivity extends AppCompatActivity {
     }
 
     public void cameraPermissionAlertDialog(){
-        new AlertDialog.Builder(CbwtfDashboardActivity.this).setMessage("Grant camera permission to continue\nApp permissions > Camera > Allow").setPositiveButton("Setting", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                Uri uri = Uri.fromParts("package", getPackageName(), null);
-                intent.setData(uri);
-                startActivity(intent);
-            }
+        new AlertDialog.Builder(CbwtfDashboardActivity.this).setMessage("Grant camera permission to continue\nApp permissions > Camera > Allow").setPositiveButton("Setting", (dialogInterface, i) -> {
+            Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+            Uri uri = Uri.fromParts("package", getPackageName(), null);
+            intent.setData(uri);
+            startActivity(intent);
         }).show();
     }
 
     public void blueThoothPermissionAlertDialog(){
-        new AlertDialog.Builder(CbwtfDashboardActivity.this).setMessage("Grant camera permission to continue\nApp permissions > Bluetooth/Near By > Allow").setPositiveButton("Setting", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                Uri uri = Uri.fromParts("package", getPackageName(), null);
-                intent.setData(uri);
-                startActivity(intent);
-            }
+        new AlertDialog.Builder(CbwtfDashboardActivity.this).setMessage("Grant camera permission to continue\nApp permissions > Bluetooth/Near By > Allow").setPositiveButton("Setting", (dialogInterface, i) -> {
+            Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+            Uri uri = Uri.fromParts("package", getPackageName(), null);
+            intent.setData(uri);
+            startActivity(intent);
         }).show();
     }
 
@@ -493,14 +450,11 @@ public class CbwtfDashboardActivity extends AppCompatActivity {
 
             @Override
             public void onPermissionDenied(PermissionDeniedResponse permissionDeniedResponse) {
-                new AlertDialog.Builder(CbwtfDashboardActivity.this).setMessage("Grant location permission to continue\nApp permissions > Location > Allow").setPositiveButton("Setting", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                        Uri uri = Uri.fromParts("package", getPackageName(), null);
-                        intent.setData(uri);
-                        startActivity(intent);
-                    }
+                new AlertDialog.Builder(CbwtfDashboardActivity.this).setMessage("Grant location permission to continue\nApp permissions > Location > Allow").setPositiveButton("Setting", (dialogInterface, i) -> {
+                    Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                    Uri uri = Uri.fromParts("package", getPackageName(), null);
+                    intent.setData(uri);
+                    startActivity(intent);
                 }).show();
             }
 
@@ -555,39 +509,36 @@ public class CbwtfDashboardActivity extends AppCompatActivity {
         Task<LocationSettingsResponse> task = LocationServices.getSettingsClient(this)
                 .checkLocationSettings(builder.build());
 
-        task.addOnCompleteListener(new OnCompleteListener<LocationSettingsResponse>() {
-            @Override
-            public void onComplete(@NonNull Task<LocationSettingsResponse> task) {
-                try {
-                    LocationSettingsResponse response = task.getResult(ApiException.class);
-                    // All location settings are satisfied. The client can initialize
-                    // location requests here.
-                    isLocationGranted = true;
-                    Log.d("LocationCheck", "Location settings satisfied.");
-                } catch (ApiException exception) {
-                    switch (exception.getStatusCode()) {
-                        case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
-                            // Location settings are not satisfied. But could be fixed by showing the
-                            // user a dialog.
-                            try {
-                                // Cast to a resolvable exception.
-                                ResolvableApiException resolvable = (ResolvableApiException) exception;
-                                // Show the dialog by calling startResolutionForResult(),
-                                // and check the result in onActivityResult().
-                                resolvable.startResolutionForResult(
-                                        CbwtfDashboardActivity.this,
-                                        1000);
-                            } catch (IntentSender.SendIntentException e) {
-                                // Ignore the error.
-                            } catch (ClassCastException e) {
-                                // Ignore, should be an impossible error.
-                            }
-                            break;
-                        case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
-                            // Location settings are not satisfied. However, we have no way to fix the
-                            // settings so we won't show the dialog.
-                            break;
-                    }
+        task.addOnCompleteListener(task1 -> {
+            try {
+                LocationSettingsResponse response = task1.getResult(ApiException.class);
+                // All location settings are satisfied. The client can initialize
+                // location requests here.
+                isLocationGranted = true;
+                Log.d("LocationCheck", "Location settings satisfied.");
+            } catch (ApiException exception) {
+                switch (exception.getStatusCode()) {
+                    case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
+                        // Location settings are not satisfied. But could be fixed by showing the
+                        // user a dialog.
+                        try {
+                            // Cast to a resolvable exception.
+                            ResolvableApiException resolvable = (ResolvableApiException) exception;
+                            // Show the dialog by calling startResolutionForResult(),
+                            // and check the result in onActivityResult().
+                            resolvable.startResolutionForResult(
+                                    CbwtfDashboardActivity.this,
+                                    1000);
+                        } catch (IntentSender.SendIntentException e) {
+                            // Ignore the error.
+                        } catch (ClassCastException e) {
+                            // Ignore, should be an impossible error.
+                        }
+                        break;
+                    case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
+                        // Location settings are not satisfied. However, we have no way to fix the
+                        // settings so we won't show the dialog.
+                        break;
                 }
             }
         });
@@ -619,9 +570,9 @@ public class CbwtfDashboardActivity extends AppCompatActivity {
 
                     hospitalDataRequest(AppStrings.hospital_data,map);
 
-                }catch (Exception e){
-                    e.printStackTrace();
-                    Log.d("TAG", "onActivityResult: "+e.getMessage());
+                } catch (Exception e) {
+                    Log.e(TAG, "Exception: ", e);
+                    Log.d("TAG", "onActivityResult: " + e.getMessage());
                     Toast.makeText(CbwtfDashboardActivity.this, "Wrong QR Code", Toast.LENGTH_SHORT).show();
                 }
             }
@@ -840,9 +791,9 @@ public class CbwtfDashboardActivity extends AppCompatActivity {
 
                                     try {
                                         totalWeight += Double.parseDouble(weightStr);
-                                    } catch (NumberFormatException e) {
-                                        Log.e("parse_error", "Invalid weight: " + weightStr);
-                                    }
+                        } catch (NumberFormatException e) {
+                            Log.e(TAG, "Invalid weight: " + weightStr, e);
+                        }
 
                                     // Create custom map for persistence
                                     Map<String, String> dataMap = new HashMap<>();
@@ -908,7 +859,7 @@ public class CbwtfDashboardActivity extends AppCompatActivity {
                     }
 
                 }catch (Exception e){
-                    e.printStackTrace();
+                    Log.e(TAG, "Exception: ", e);
                 }
 
             }

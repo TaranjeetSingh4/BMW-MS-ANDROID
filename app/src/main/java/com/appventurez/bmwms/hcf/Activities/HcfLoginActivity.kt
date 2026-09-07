@@ -7,7 +7,6 @@ import android.os.Bundle
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
@@ -102,7 +101,7 @@ class HcfLoginActivity : AppCompatActivity() {
     }
 
     fun networkRequest(url: String, map: Map<String, String>) {
-        val request = object : StringRequest(Request.Method.POST, url, Response.Listener { response ->
+        val request = object : StringRequest(Method.POST, url, Response.Listener { response ->
             try {
                 val jsonObject = JSONObject(response)
                 if (jsonObject.get("status").toString().equals("success", ignoreCase = true)) {
