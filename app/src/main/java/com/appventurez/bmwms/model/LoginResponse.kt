@@ -15,5 +15,6 @@ data class UserData(
     @SerializedName("address") val address: String?,
     @SerializedName("operator_id") val operatorId: String?,
     @SerializedName("hospital_code") val hospitalCode: String?,
-    @SerializedName("cbwtf_id") val cbwtfId: String?
+    @SerializedName("cbwtf_id") val cbwtfId: String?,
+    @SerializedName("mobile") val mobile: String?
 )
