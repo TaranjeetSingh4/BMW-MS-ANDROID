@@ -19,4 +19,19 @@
 
         <item name="otpViewStyle">@style/OtpWidget.OtpView</item>
     </style>
+
+    <style name="DatePickerTheme" parent="Theme.MaterialComponents.Light.Dialog">
+        <item name="colorPrimary">@color/app_color_dark_alpha</item>
+        <item name="colorAccent">@color/app_color_dark_alpha</item>
+        <item name="android:colorAccent">@color/app_color_dark_alpha</item>
+        <item name="buttonBarPositiveButtonStyle">@style/DatePickerButtonStyle</item>
+        <item name="buttonBarNegativeButtonStyle">@style/DatePickerButtonStyle</item>
+        <item name="android:buttonBarPositiveButtonStyle">@style/DatePickerButtonStyle</item>
+        <item name="android:buttonBarNegativeButtonStyle">@style/DatePickerButtonStyle</item>
+    </style>
+
+    <style name="DatePickerButtonStyle" parent="Widget.MaterialComponents.Button.TextButton.Dialog">
+        <item name="android:textColor">@color/app_color_dark_alpha</item>
+        <item name="color">@color/app_color_dark_alpha</item>
+    </style>
 </resources>

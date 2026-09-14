@@ -336,6 +336,7 @@ class ReportsFragment : Fragment() {
         val calendar = Calendar.getInstance()
         val datePickerDialog = DatePickerDialog(
             requireContext(),
+            R.style.DatePickerTheme,
             { _, year, month, dayOfMonth ->
                 val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
                 val selectedDateCalendar = Calendar.getInstance()
