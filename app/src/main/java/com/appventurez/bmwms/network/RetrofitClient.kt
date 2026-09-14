@@ -16,7 +16,11 @@ object RetrofitClient {
     private const val BASE_URL = BuildConfig.BASE_URL
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
-        level = HttpLoggingInterceptor.Level.BODY
+        if (BuildConfig.DEBUG) {
+            level = HttpLoggingInterceptor.Level.BODY
+        } else {
+            level = HttpLoggingInterceptor.Level.NONE
+        }
     }
 
     private fun getUnsafeOkHttpClient(): OkHttpClient {

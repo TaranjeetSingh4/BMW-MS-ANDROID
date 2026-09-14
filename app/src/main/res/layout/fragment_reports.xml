@@ -6,7 +6,7 @@
     android:background="@color/app_color"
     android:fitsSystemWindows="true"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    tools:context=".fragments.ReportsFragment">
+    tools:context="com.appventurez.bmwms.cbwtf.fragments.ReportsFragment">
 
     <LinearLayout
         android:orientation="horizontal"

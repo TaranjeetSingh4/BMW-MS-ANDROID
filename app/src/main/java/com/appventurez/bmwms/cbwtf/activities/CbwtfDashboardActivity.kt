@@ -1,869 +1,478 @@
-package com.appventurez.bmwms.cbwtf.activities;
+package com.appventurez.bmwms.cbwtf.activities
 
-import androidx.activity.result.ActivityResultCallback;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
+import android.Manifest
+import android.annotation.SuppressLint
+import android.app.AlertDialog
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.*
+import android.provider.Settings
+import android.text.format.DateFormat
+import android.util.Log
+import android.view.MotionEvent
+import android.view.View
+import android.view.ViewGroup
+import android.webkit.WebView
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.viewModels
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import com.appventurez.bmwms.R
+import com.appventurez.bmwms.activities.LoginActivity
+import com.appventurez.bmwms.activities.PdfViewActivity
+import com.appventurez.bmwms.classes.AppStrings
+import com.appventurez.bmwms.classes.MSP
+import com.appventurez.bmwms.network.RetrofitClient
+import com.appventurez.bmwms.repository.DashboardRepository
+import com.appventurez.bmwms.viewmodel.DashboardViewModel
+import com.bumptech.glide.Glide
+import com.google.android.gms.common.api.ApiException
+import com.google.android.gms.common.api.ResolvableApiException
+import com.google.android.gms.location.*
+import com.google.android.material.card.MaterialCardView
+import com.google.gson.Gson
+import com.journeyapps.barcodescanner.ScanContract
+import com.journeyapps.barcodescanner.ScanOptions
+import com.karumi.dexter.Dexter
+import com.karumi.dexter.PermissionToken
+import com.karumi.dexter.listener.PermissionDeniedResponse
+import com.karumi.dexter.listener.PermissionGrantedResponse
+import com.karumi.dexter.listener.PermissionRequest
+import com.karumi.dexter.listener.single.PermissionListener
+import java.text.DecimalFormat
+import java.util.*
 
-import android.Manifest;
-import android.app.AlertDialog;
-import android.content.ActivityNotFoundException;
-import android.content.DialogInterface;
-import android.content.Intent;
-import android.content.IntentSender;
-import android.content.pm.PackageManager;
-import android.net.Uri;
-import android.os.Build;
-import android.os.Bundle;
-import android.os.VibrationEffect;
-import android.os.Vibrator;
-import android.os.VibratorManager;
-import android.provider.Settings;
-import android.text.format.DateFormat;
-import android.util.Log;
-import android.view.View;
-import android.view.ViewGroup;
-import android.webkit.WebView;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.TextView;
-import android.widget.Toast;
+class CbwtfDashboardActivity : AppCompatActivity() {
 
-import com.android.volley.AuthFailureError;
-import com.android.volley.Request;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.StringRequest;
-import com.bumptech.glide.Glide;
-import com.google.android.gms.common.api.ApiException;
-import com.google.android.gms.common.api.ResolvableApiException;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.location.LocationSettingsRequest;
-import com.google.android.gms.location.LocationSettingsResponse;
-import com.google.android.gms.location.LocationSettingsStatusCodes;
-import com.google.android.gms.tasks.Task;
-import com.google.android.material.card.MaterialCardView;
-import com.journeyapps.barcodescanner.ScanContract;
-import com.journeyapps.barcodescanner.ScanIntentResult;
-import com.journeyapps.barcodescanner.ScanOptions;
-import com.karumi.dexter.Dexter;
-import com.karumi.dexter.PermissionToken;
-import com.karumi.dexter.listener.PermissionDeniedResponse;
-import com.karumi.dexter.listener.PermissionGrantedResponse;
-import com.karumi.dexter.listener.PermissionRequest;
-import com.karumi.dexter.listener.single.PermissionListener;
-import com.appventurez.bmwms.R;
-import com.appventurez.bmwms.activities.LoginActivity;
-import com.appventurez.bmwms.activities.PdfViewActivity;
-import com.appventurez.bmwms.classes.AppStrings;
-import com.appventurez.bmwms.classes.MSP;
-import com.appventurez.bmwms.classes.VolleySingleton;
+    companion object {
+        private const val TAG = "CbwtfDashboardActivity"
+        private const val CAMERA_PERMISSION_REQUEST_CODE = 100
+    }
 
-import org.json.JSONArray;
-import org.json.JSONObject;
+    private lateinit var guidelineTv: TextView
+    private lateinit var youtubeTv: TextView
+    private lateinit var headerTv: TextView
+    private lateinit var todayAttempted: TextView
+    private lateinit var todayCollected: TextView
+    private lateinit var otpTv: TextView
+    private lateinit var bottomImg: ImageView
+    private lateinit var hcfImg: ImageView
+    private lateinit var reportImg: ImageView
+    private lateinit var profileImg: ImageView
+    private lateinit var logoutImg: ImageView
+    private lateinit var headerLogoImg: ImageView
+    private lateinit var scannerImg: ImageView
+    private lateinit var rescanImg: ImageView
+    private lateinit var hcfCard: MaterialCardView
+    private lateinit var reportCard: MaterialCardView
+    private lateinit var profileCard: MaterialCardView
+    private lateinit var logoutCard: MaterialCardView
+    private lateinit var rescanCard: MaterialCardView
+    private lateinit var llToday: LinearLayout
+    private lateinit var otpLl: LinearLayout
+    private lateinit var view0: View
 
-import com.google.gson.Gson;
-import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
+    private var isLocationGranted = false
+    private var isCameraPermissionGranted = false
+    private var isBluetoothGranted = false
+    private var vibrator: Vibrator? = null
+    private var fId = 0
+    private var isFromScan = false
 
-public class CbwtfDashboardActivity extends AppCompatActivity {
+    private val viewModel: DashboardViewModel by viewModels {
+        object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return DashboardViewModel(DashboardRepository(RetrofitClient.apiService)) as T
+            }
+        }
+    }
 
-    private static final String TAG = "CbwtfDashboardActivity";
-    TextView guideline_tv,youtube_tv,header_tv,today_attempted,today_collected,otp_tv;
-    ImageView bottom_img,hcf_img,report_img,profile_img,logout_img,header_logo_img,scanner_img,rescan_img;
-    MaterialCardView hcf_card,report_card,profile_card,logout_card,rescan_card;
-    LinearLayout ll_today,otp_ll;
-    View view0;
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_dashboard)
 
-    boolean isLocationGranted = false;
-    boolean isCameraPermissionGranted = false;
-    boolean isbluetoothGranted = false;
-    boolean isHCFLogin = false;
+        initVibrator()
+        viewBinding()
+        loadImages()
+        clickListeners()
+        setupObservers()
 
-    Vibrator vibrator;
-    private static final int CAMERA_PERMISSION_REQUEST_CODE = 100;
+        viewModel.getNotice(AppStrings.get_app_notice)
 
+        if (!checkCameraPermission()) {
+            requestCameraPermission()
+        }
+    }
 
-    private int f_Id = 0;
-
-    private Boolean isFromScan = false;
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_dashboard);
-
-        init();
-        viewBinding();
-        loadImages();
-        clickListeners();
-
-        getNotice();
-        if (checkCameraPermission()) {
-
+    private fun initVibrator() {
+        vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val vibratorManager = getSystemService(VIBRATOR_MANAGER_SERVICE) as VibratorManager
+            vibratorManager.defaultVibrator
         } else {
-            requestCameraPermission();
-        }
-
-       // getTodayData();
-
-    }
-
-    private  void getNotice(){
-        StringRequest appNoticeRequest = new StringRequest(Request.Method.POST, AppStrings.get_app_notice, response -> {
-            try {
-
-                JSONObject noticeObject = new JSONObject(response);
-
-                if (noticeObject.get("status").toString().equalsIgnoreCase("success")){
-
-                    String url = noticeObject.getJSONArray("data").getJSONObject(0).get("notice_url").toString();
-                    String noticeStatus = noticeObject.getJSONArray("data").getJSONObject(0).get("notice_status").toString();
-
-                    if (noticeStatus.equalsIgnoreCase("1")){
-
-                        WebView webView = new WebView(CbwtfDashboardActivity.this);
-
-                        webView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-
-                        webView.loadUrl(url);
-
-                        new AlertDialog.Builder(CbwtfDashboardActivity.this).setView(webView).show();
-
-                    }else if (noticeStatus.equalsIgnoreCase("2")){
-                        WebView webView = new WebView(CbwtfDashboardActivity.this);
-
-                        webView.loadUrl(url);
-
-                        new AlertDialog.Builder(CbwtfDashboardActivity.this).setCancelable(false).setView(webView).show();
-                    }
-
-                }
-
-            }catch (Exception e){
-                Log.e(TAG, "Exception: ", e);
-            }
-
-        }, error -> Log.e(TAG, "VolleyError: ", error));
-
-        VolleySingleton.getInstance(this).addToRequestQueue(appNoticeRequest);
-
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        checkLocationPermission();
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        //checkLocationPermission();
-        getCbwtfName();
-        getTodayData();
-        if (MSP.getInstance(this).getStringData(AppStrings.loginAs).equals("hcf")){
-            generateOtp();
+            @Suppress("DEPRECATION")
+            getSystemService(VIBRATOR_SERVICE) as Vibrator
         }
     }
 
-    public void getCbwtfName(){
-        if (MSP.getInstance(this).getStringData(AppStrings.loginAs).equals("hcf")){
-            header_tv.setText(MSP.getInstance(this).getStringData(AppStrings.userName));
-        }else {
-            Map<String,String> map = new HashMap<>();
-            map.put("cbwtf_id",MSP.getInstance(this).getStringData(AppStrings.userCbwtfID));
-            networkRequest(AppStrings.cbwtf_data,map);
+    private fun viewBinding() {
+        guidelineTv = findViewById(R.id.cbwtf_dashboard_guideline_link_tv)
+        youtubeTv = findViewById(R.id.cbwtf_dashboard_youtube_link_tv)
+        headerTv = findViewById(R.id.cbwtf_dashboard_header_tv)
+        todayAttempted = findViewById(R.id.cbwtf_dashboard_attempted_tv)
+        todayCollected = findViewById(R.id.cbwtf_dashboard_waste_collected_tv)
+        scannerImg = findViewById(R.id.cbwtf_dashboard_header_scan_img)
+        bottomImg = findViewById(R.id.cbwtf_dashboard_bottom_img)
+        hcfImg = findViewById(R.id.cbwtf_dashboard_hcf_scan_img)
+        reportImg = findViewById(R.id.cbwtf_dashboard_reports_img)
+        profileImg = findViewById(R.id.cbwtf_dashboard_profile_img)
+        logoutImg = findViewById(R.id.cbwtf_dashboard_logout_img)
+        headerLogoImg = findViewById(R.id.cbwtf_dashboard_header_logo_img)
+        rescanImg = findViewById(R.id.cbwtf_dashboard_rescan_img)
+        hcfCard = findViewById(R.id.cbwtf_dashboard_hcf_scan_card)
+        reportCard = findViewById(R.id.cbwtf_dashboard_reports_card)
+        profileCard = findViewById(R.id.cbwtf_dashboard_profile_card)
+        logoutCard = findViewById(R.id.cbwtf_dashboard_logout_card)
+        rescanCard = findViewById(R.id.cbwtf_dashboard_rescan_card)
+        llToday = findViewById(R.id.today_collected_ll)
+        view0 = findViewById(R.id.view_0)
+        otpLl = findViewById(R.id.otp_ll)
+        otpTv = findViewById(R.id.otp_tv)
+
+        if (MSP.getInstance(this).getStringData(AppStrings.loginAs) == "hcf") {
+            rescanCard.visibility = View.GONE
+            logoutCard.visibility = View.VISIBLE
+            llToday.visibility = View.GONE
+            view0.visibility = View.GONE
         }
     }
 
-    public void getTodayData(){
-
-        String date = DateFormat.format("yyyy-MM-dd",new Date().getTime()).toString();
-
-        if (MSP.getInstance(this).getStringData(AppStrings.loginAs).equals("hcf")){
-            Map<String,String> map = new HashMap<>();
-            map.put("hospital_id",MSP.getInstance(this).getStringData(AppStrings.userID));
-            map.put("date",date);
-            todayDataRequest(AppStrings.get_today_data_hcf,map);
-            scan_otp_status(true);
-
-        }else {
-            Map<String,String> map = new HashMap<>();
-            map.put("operator_id",MSP.getInstance(this).getStringData(AppStrings.userID));
-            map.put("date",date);
-            todayDataRequest(AppStrings.get_today_data,map);
-            scan_otp_status(false);
-
-        }
+    private fun loadImages() {
+        Glide.with(this).load(R.drawable.img_011).into(bottomImg)
+        Glide.with(this).load(R.drawable.qr_code).into(hcfImg)
+        Glide.with(this).load(R.drawable.user_profile).into(profileImg)
+        Glide.with(this).load(R.drawable.user_report).into(reportImg)
+        Glide.with(this).load(R.drawable.exit_img).into(logoutImg)
+        Glide.with(this).load(R.drawable.uplogogpb).into(headerLogoImg)
+        Glide.with(this).load(R.drawable.qr_scan).into(rescanImg)
     }
 
-    public boolean getBluethoothPermission(){
-        Dexter.withContext(this).withPermission(Manifest.permission.BLUETOOTH).withListener(new PermissionListener() {
-            @Override
-            public void onPermissionGranted(PermissionGrantedResponse permissionGrantedResponse) {
-
-                isbluetoothGranted = true;
-
-            }
-
-            @Override
-            public void onPermissionDenied(PermissionDeniedResponse permissionDeniedResponse) {
-                isbluetoothGranted = false;
-            }
-
-            @Override
-            public void onPermissionRationaleShouldBeShown(PermissionRequest permissionRequest, PermissionToken permissionToken) {
-                permissionToken.continuePermissionRequest();
-            }
-        }).check();
-
-        return isbluetoothGranted;
-    }
-
-    public void clickListeners(){
-
-        profile_card.setOnClickListener(view -> startActivity(1));
-
-        report_card.setOnClickListener(view -> startActivity(10));
-
-
-
-        scanner_img.setOnClickListener(view -> {
-            if (getCameraPermission()  ){
-                startScanner();
-            }else {
-                cameraPermissionAlertDialog();
-
-            }
-        });
-
-        hcf_card.setOnClickListener(view -> {
-            if (!getBluethoothPermission()){
-
-                new AlertDialog.Builder(CbwtfDashboardActivity.this).setMessage("Grant camera permission to continue\nApp permissions > Camera > Allow").setPositiveButton("Setting", (dialogInterface, i) -> {
-                    Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                    Uri uri = Uri.fromParts("package", getPackageName(), null);
-                    intent.setData(uri);
-                    startActivity(intent);
-                }).show();
-            }
-
-            if (isLocationGranted){
-                startActivity(0);
-            }else {
-                checkLocationPermission();
-            }
-        });
-
-        rescan_card.setOnClickListener(v -> {
-            if (isLocationGranted){
-                startActivity(9);
-            }else {
-                checkLocationPermission();
-            }
-        });
-
-        logout_card.setOnClickListener(view -> onLogout());
-
-        guideline_tv.setOnClickListener(view -> openGuidelines());
-
-        youtube_tv.setOnClickListener(view -> openYoutubeLink());
-
-    }
-
-    public void init(){
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            VibratorManager vibratorManager = (VibratorManager) getSystemService(VIBRATOR_MANAGER_SERVICE);
-            vibrator = vibratorManager.getDefaultVibrator();
-        } else {
-            vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
-        }
-    }
-
-    private void vibrate(long duration) {
-        if (vibrator == null) return;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            vibrator.vibrate(VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE));
-        } else {
-            vibrator.vibrate(duration);
-        }
-    }
-
-    public void loadImages(){
-
-        Glide.with(this).load(R.drawable.img_011).into(bottom_img);
-        Glide.with(this).load(R.drawable.qr_code).into(hcf_img);
-        Glide.with(this).load(R.drawable.user_profile).into(profile_img);
-        Glide.with(this).load(R.drawable.user_report).into(report_img);
-        Glide.with(this).load(R.drawable.exit_img).into(logout_img);
-        Glide.with(this).load(R.drawable.uplogogpb).into(header_logo_img);
-        Glide.with(this).load(R.drawable.qr_scan).into(rescan_img);
-
-    }
-
-    public void viewBinding(){
-
-        guideline_tv = findViewById(R.id.cbwtf_dashboard_guideline_link_tv);
-        youtube_tv = findViewById(R.id.cbwtf_dashboard_youtube_link_tv);
-        header_tv = findViewById(R.id.cbwtf_dashboard_header_tv);
-        today_attempted = findViewById(R.id.cbwtf_dashboard_attempted_tv);
-        today_collected = findViewById(R.id.cbwtf_dashboard_waste_collected_tv);
-
-        scanner_img = findViewById(R.id.cbwtf_dashboard_header_scan_img);
-        bottom_img = findViewById(R.id.cbwtf_dashboard_bottom_img);
-        hcf_img = findViewById(R.id.cbwtf_dashboard_hcf_scan_img);
-        report_img = findViewById(R.id.cbwtf_dashboard_reports_img);
-        profile_img = findViewById(R.id.cbwtf_dashboard_profile_img);
-        logout_img = findViewById(R.id.cbwtf_dashboard_logout_img);
-        header_logo_img = findViewById(R.id.cbwtf_dashboard_header_logo_img);
-        rescan_img = findViewById(R.id.cbwtf_dashboard_rescan_img);
-
-        hcf_card = findViewById(R.id.cbwtf_dashboard_hcf_scan_card);
-        report_card = findViewById(R.id.cbwtf_dashboard_reports_card);
-        profile_card = findViewById(R.id.cbwtf_dashboard_profile_card);
-        logout_card = findViewById(R.id.cbwtf_dashboard_logout_card);
-        rescan_card = findViewById(R.id.cbwtf_dashboard_rescan_card);
-
-        ll_today = findViewById(R.id.today_collected_ll);
-        view0 = findViewById(R.id.view_0);
-        otp_ll = findViewById(R.id.otp_ll);
-        otp_tv = findViewById(R.id.otp_tv);
-
-        if (MSP.getInstance(this).getStringData(AppStrings.loginAs).equals("hcf")){
-            rescan_card.setVisibility(View.GONE);
-            logout_card.setVisibility(View.VISIBLE);
-            ll_today.setVisibility(View.GONE);
-            view0.setVisibility(View.GONE);
-
-
-        }
-
-    }
-
-    private void scan_otp_status(Boolean isHCFLogin){
-        if(isHCFLogin){
-            hcf_card.setVisibility(View.GONE);
-            otp_ll.setVisibility(View.GONE);
-            scanner_img.setVisibility(View.GONE);
-        }else{
-            hcf_card.setVisibility(View.VISIBLE);
-            otp_ll.setVisibility(View.GONE);
-            scanner_img.setVisibility(View.VISIBLE);
-        }
-    }
-
-    public void cameraPermissionAlertDialog(){
-        new AlertDialog.Builder(CbwtfDashboardActivity.this).setMessage("Grant camera permission to continue\nApp permissions > Camera > Allow").setPositiveButton("Setting", (dialogInterface, i) -> {
-            Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-            Uri uri = Uri.fromParts("package", getPackageName(), null);
-            intent.setData(uri);
-            startActivity(intent);
-        }).show();
-    }
-
-    public void blueThoothPermissionAlertDialog(){
-        new AlertDialog.Builder(CbwtfDashboardActivity.this).setMessage("Grant camera permission to continue\nApp permissions > Bluetooth/Near By > Allow").setPositiveButton("Setting", (dialogInterface, i) -> {
-            Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-            Uri uri = Uri.fromParts("package", getPackageName(), null);
-            intent.setData(uri);
-            startActivity(intent);
-        }).show();
-    }
-
-    public void startScanner(){
-        ScanOptions scanOptions = new ScanOptions();
-        scanOptions.setOrientationLocked(true);
-        scanOptions.setBarcodeImageEnabled(true);
-        scanOptions.setPrompt("Scan Waste Barcode");
-        launcher.launch(scanOptions);
-    }
-
-
-    public void startActivity(int value){
-        f_Id = value;
-        isFromScan = true;
-        Log.d("TAG", "startActivity: "+f_Id);
-        if (checkCameraPermission()) {
-            Intent intent = new Intent(CbwtfDashboardActivity.this,CbwtfFragmentContainerActivity.class);
-            intent.putExtra("f_id",value);
-            startActivity(intent);
-        } else {
-            requestCameraPermission();
-        }
-
-    }
-
-    public void onLogout(){
-        MSP.getInstance(this).removeAll();
-        Intent intent = new Intent(this, LoginActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        startActivity(intent);
-        finish();
-    }
-
-    public void openGuidelines(){
-        startActivity(new Intent(CbwtfDashboardActivity.this, PdfViewActivity.class));
-    }
-
-    public void openYoutubeLink(){
-        Intent appIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("vnd.youtube:OcrMGvRdjaY"));
-        Intent webIntent = new Intent(Intent.ACTION_VIEW,
-                Uri.parse("http://www.youtube.com/watch?v=OcrMGvRdjaY"));
-        try {
-            startActivity(appIntent);
-        } catch (ActivityNotFoundException ex) {
-            startActivity(webIntent);
-        }
-    }
-
-    public void checkLocationPermission(){
-
-        Dexter.withContext(this).withPermission(Manifest.permission.ACCESS_FINE_LOCATION).withListener(new PermissionListener() {
-            @Override
-            public void onPermissionGranted(PermissionGrantedResponse permissionGrantedResponse) {
-                checkLocationSetting();
-            }
-
-            @Override
-            public void onPermissionDenied(PermissionDeniedResponse permissionDeniedResponse) {
-                new AlertDialog.Builder(CbwtfDashboardActivity.this).setMessage("Grant location permission to continue\nApp permissions > Location > Allow").setPositiveButton("Setting", (dialogInterface, i) -> {
-                    Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                    Uri uri = Uri.fromParts("package", getPackageName(), null);
-                    intent.setData(uri);
-                    startActivity(intent);
-                }).show();
-            }
-
-            @Override
-            public void onPermissionRationaleShouldBeShown(PermissionRequest permissionRequest, PermissionToken permissionToken) {
-//                permissionToken.cancelPermissionRequest();
-                permissionToken.continuePermissionRequest();
-            }
-        }).check();
-
-//        Dexter.withContext(this).withPermissions(Manifest.permission.ACCESS_FINE_LOCATION).withListener(new MultiplePermissionsListener() {
-//            @Override
-//            public void onPermissionsChecked(MultiplePermissionsReport multiplePermissionsReport) {
-//
-//                if (multiplePermissionsReport.areAllPermissionsGranted()){
-//                    checkLocationSetting();
-//                }else{
-//                    vibrate(100);
-//                    //Toast.makeText(CbwtfDashboardActivity.this, "Grant location permission", Toast.LENGTH_SHORT).show();
-//                    new AlertDialog.Builder(CbwtfDashboardActivity.this).setMessage("Grant location permission to continue\nApp permissions > Location > Allow").setPositiveButton("Setting", new DialogInterface.OnClickListener() {
-//                        @Override
-//                        public void onClick(DialogInterface dialogInterface, int i) {
-//                            Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-//                            Uri uri = Uri.fromParts("package", getPackageName(), null);
-//                            intent.setData(uri);
-//                            startActivity(intent);
-//                        }
-//                    }).show();
-//                }
-//
-//            }
-//
-//            @Override
-//            public void onPermissionRationaleShouldBeShown(List<PermissionRequest> list, PermissionToken permissionToken) {
-//                //permissionToken.continuePermissionRequest():
-//            }
-//
-//        }).check();
-
-    }
-
-    public void checkLocationSetting() {
-        LocationRequest locationRequest = LocationRequest.create();
-        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-        locationRequest.setInterval(30 * 1000);
-        locationRequest.setFastestInterval(5 * 1000);
-        
-        LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder()
-                .addLocationRequest(locationRequest);
-        builder.setAlwaysShow(true);
-
-        Task<LocationSettingsResponse> task = LocationServices.getSettingsClient(this)
-                .checkLocationSettings(builder.build());
-
-        task.addOnCompleteListener(task1 -> {
-            try {
-                LocationSettingsResponse response = task1.getResult(ApiException.class);
-                // All location settings are satisfied. The client can initialize
-                // location requests here.
-                isLocationGranted = true;
-                Log.d("LocationCheck", "Location settings satisfied.");
-            } catch (ApiException exception) {
-                switch (exception.getStatusCode()) {
-                    case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
-                        // Location settings are not satisfied. But could be fixed by showing the
-                        // user a dialog.
-                        try {
-                            // Cast to a resolvable exception.
-                            ResolvableApiException resolvable = (ResolvableApiException) exception;
-                            // Show the dialog by calling startResolutionForResult(),
-                            // and check the result in onActivityResult().
-                            resolvable.startResolutionForResult(
-                                    CbwtfDashboardActivity.this,
-                                    1000);
-                        } catch (IntentSender.SendIntentException e) {
-                            // Ignore the error.
-                        } catch (ClassCastException e) {
-                            // Ignore, should be an impossible error.
-                        }
-                        break;
-                    case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
-                        // Location settings are not satisfied. However, we have no way to fix the
-                        // settings so we won't show the dialog.
-                        break;
-                }
-            }
-        });
-    }
-
-    ActivityResultLauncher<ScanOptions> launcher = registerForActivityResult(new ScanContract(), result -> {
-
-        if (result.getContents() != null){
-            try {
-                String[] data = result.getContents().split("&",2);
-
-                String hcfCode = data[0];
-
-                String[] data1 = data[1].split("/",3);
-
-                String hospitalName = data1[1];
-                String qrCbwtfId = data1[2];
-
-                String[] data2 = data1[0].split("-",2);
-
-                String qrCode = data2[0];
-                String qrColor = data2[1];
-
-                Map<String,String> map = new HashMap<>();
-
-                map.put("hospital_code",hcfCode);
-
-                hospitalDataRequest(AppStrings.hospital_data,map);
-
-            } catch (Exception e) {
-                Log.e(TAG, "Exception: ", e);
-                Log.d("TAG", "onActivityResult: " + e.getMessage());
-                Toast.makeText(CbwtfDashboardActivity.this, "Wrong QR Code", Toast.LENGTH_SHORT).show();
-            }
-        }
-
-    });
-
-
-    public boolean getCameraPermission(){
-        Dexter.withContext(this).withPermission(Manifest.permission.CAMERA).withListener(new PermissionListener() {
-            @Override
-            public void onPermissionGranted(PermissionGrantedResponse permissionGrantedResponse) {
-
-                isCameraPermissionGranted = true;
-
-            }
-
-            @Override
-            public void onPermissionDenied(PermissionDeniedResponse permissionDeniedResponse) {
-                isCameraPermissionGranted = false;
-            }
-
-            @Override
-            public void onPermissionRationaleShouldBeShown(PermissionRequest permissionRequest, PermissionToken permissionToken) {
-                permissionToken.continuePermissionRequest();
-            }
-        }).check();
-
-        return isCameraPermissionGranted;
-    }
-
-
-    public void networkRequest(String url, Map<String,String> map){
-        StringRequest request = new StringRequest(Request.Method.POST, url, response -> {
-
-            try {
-
-                JSONObject jsonObject = new JSONObject(response);
-
-                if (jsonObject.get("status").toString().equalsIgnoreCase("success")){
-
-                    String cbwtfName = "";
-                    String attendace_compulsory = "";
-
-                    for (int i=0;i<jsonObject.getJSONArray("data").length();i++){
-                        cbwtfName = jsonObject.getJSONArray("data").getJSONObject(i).get("name").toString();
-                        attendace_compulsory = jsonObject.getJSONArray("data").getJSONObject(i).get("attendace_compulsory").toString();
-                        MSP.getInstance(CbwtfDashboardActivity.this).setStringData(AppStrings.attendance_compulsory,attendace_compulsory);
-                    }
-
-                    header_tv.setText(cbwtfName);
-
-                }
-
-            }catch (Exception e){
-                e.printStackTrace();
-
-            }
-
-        }, error -> VolleySingleton.logVolleyError("CbwtfDashboardActivity", error)){
-            @Nullable
-            @Override
-            protected Map<String, String> getParams() throws AuthFailureError {
-                return map;
-            }
-        };
-
-        VolleySingleton.getInstance(this).addToRequestQueue(request);
-    }
-
-    public void hospitalDataRequest(String url, Map<String,String> map){
-        StringRequest request = new StringRequest(Request.Method.POST, url, response -> {
-
-            try {
-
-                JSONObject jsonObject = new JSONObject(response);
-
-                if (jsonObject.get("status").toString().equalsIgnoreCase("success")){
-
-                    String hospitalName = "";
-                    String hospitalAddress = "";
-
-                    for (int i=0;i<jsonObject.getJSONArray("data").length();i++){
-                        hospitalName = jsonObject.getJSONArray("data").getJSONObject(i).get("name").toString();
-                        hospitalAddress = jsonObject.getJSONArray("data").getJSONObject(i).get("address").toString();
-                    }
-
-                    new AlertDialog.Builder(CbwtfDashboardActivity.this).setMessage(
-                            "Hospital name: "+hospitalName.concat("\n\n").concat("Hospital address: "+hospitalAddress)
-                    ).show();
-
-                }
-
-            }catch (Exception e){
-                Log.d(TAG, "Exception "+e);
-            }
-
-        }, error -> VolleySingleton.logVolleyError("CbwtfDashboardActivity", error)){
-            @Nullable
-            @Override
-            protected Map<String, String> getParams() throws AuthFailureError {
-                return map;
-            }
-        };
-
-        VolleySingleton.getInstance(this).addToRequestQueue(request);
-    }
-
-//    public void todayDataRequest(String url, Map<String,String> map){
-//        StringRequest request = new StringRequest(Request.Method.POST, url, new Response.Listener<String>() {
-//            @Override
-//            public void onResponse(String response) {
-//                Log.i("res_p",response);
-//                try {
-//
-//                    JSONObject jsonObject = new JSONObject(response);
-//
-//                    if (jsonObject.get("status").toString().equalsIgnoreCase("success")){
-//
-//                        String hospitalCode = "";
-//                        String weight = "";
-//
-//                        double w_weight = 0;
-//                        int count = 0;
-//
-//                        for (int i=0;i<jsonObject.getJSONArray("data").length();i++){
-//
-//                            if (hospitalCode.isEmpty()){
-//
-//                                hospitalCode = jsonObject.getJSONArray("data").getJSONObject(i).get("hospital_code").toString();
-//                                count++;
-//
-//                                weight = jsonObject.getJSONArray("data").getJSONObject(i).get("hcf_weight").toString();
-//                                w_weight = w_weight+Double.parseDouble(weight.trim());
-//
-//                            }else if (hospitalCode.equalsIgnoreCase(jsonObject.getJSONArray("data").getJSONObject(i).get("hospital_code").toString())){
-//                                hospitalCode = jsonObject.getJSONArray("data").getJSONObject(i).get("hospital_code").toString();
-//                                weight = jsonObject.getJSONArray("data").getJSONObject(i).get("hcf_weight").toString();
-//                                w_weight = w_weight+Double.parseDouble(weight.trim());
-//                            }else if (!hospitalCode.equalsIgnoreCase(jsonObject.getJSONArray("data").getJSONObject(i).get("hospital_code").toString())){
-//                                hospitalCode = jsonObject.getJSONArray("data").getJSONObject(i).get("hospital_code").toString();
-//                                count++;
-//
-//                                weight = jsonObject.getJSONArray("data").getJSONObject(i).get("hcf_weight").toString();
-//                                w_weight = w_weight+Double.parseDouble(weight.trim());
-//                            }
-//
-//                        }
-//
-//                        today_attempted.setText(""+count);
-//                        today_collected.setText(new DecimalFormat("000.000").format(w_weight));
-//
-//                    }
-//
-//                }catch (Exception e){
-//                    e.printStackTrace();
-//
-//                }
-//
-//            }
-//        }, new Response.ErrorListener() {
-//            @Override
-//            public void onErrorResponse(VolleyError error) {
-//
-//            }
-//        }){
-//            @Nullable
-//            @Override
-//            protected Map<String, String> getParams() throws AuthFailureError {
-//                return map;
-//            }
-//        };
-//
-//        VolleySingleton.getInstance(this).addToRequestQueue(request);
-//    }
-
-    public void todayDataRequest(String url, Map<String,String> map){
-        StringRequest request = new StringRequest(Request.Method.POST, url,
-                response -> {
-                    Log.i("res_p", response);
-                    try {
-                        JSONObject jsonObject = new JSONObject(response);
-
-                        if (jsonObject.getString("status").equalsIgnoreCase("success")) {
-
-                            Set<String> uniqueHospitals = new HashSet<>();
-                            double totalWeight = 0;
-                            List<Map<String, String>> customDataList = new ArrayList<>();
-
-                            JSONArray dataArray = jsonObject.getJSONArray("data");
-                            for (int i = 0; i < dataArray.length(); i++) {
-                                JSONObject item = dataArray.getJSONObject(i);
-                                String hospitalCode = item.getString("hospital_code").trim();
-                                String weightStr = item.getString("hcf_weight").trim();
-
-                                uniqueHospitals.add(hospitalCode);
-
-                                try {
-                                    totalWeight += Double.parseDouble(weightStr);
-                    } catch (NumberFormatException e) {
-                        Log.e(TAG, "Invalid weight: " + weightStr, e);
-                    }
-
-                                // Create custom map for persistence
-                                Map<String, String> dataMap = new HashMap<>();
-                                dataMap.put("qr_data_id", item.optString("qr_data_id"));
-                                dataMap.put("qr_id", item.optString("qr_id"));
-                                dataMap.put("hospital_code", hospitalCode);
-                                dataMap.put("operator_id", item.optString("operator_id"));
-                                dataMap.put("cbwtf_weight", item.optString("cbwtf_weight"));
-                                dataMap.put("hcf_weight", weightStr);
-                                customDataList.add(dataMap);
-                            }
-
-                            // Store in SharedPreferences using Gson
-                            String jsonCustomData = new Gson().toJson(customDataList);
-                            MSP.getInstance(CbwtfDashboardActivity.this).setStringData("today_qr_custom_data", jsonCustomData);
-
-                            today_attempted.setText(String.valueOf(uniqueHospitals.size()));
-                            today_collected.setText(new DecimalFormat("000.000").format(totalWeight));
-                        }
-
-                    } catch (Exception e) {
-                        Log.d(TAG, "Exception "+e);
-                    }
-                },
-                error -> Log.e("Volley", "Error: " + error.getMessage())) {
-            @Nullable
-            @Override
-            protected Map<String, String> getParams() throws AuthFailureError {
-                return map;
-            }
-        };
-
-        VolleySingleton.getInstance(this).addToRequestQueue(request);
-    }
-
-    public void generateOtp()
-    {
-        String otpValue = String.format("%04d",new Random().nextInt(10000));
-        String date = String.valueOf(DateFormat.format("yyyy-MM-dd",new Date().getTime()));
-
-        StringRequest generateOtpRequest = new StringRequest(Request.Method.POST, AppStrings.generate_otp, response -> {
-
-            try {
-
-                JSONObject otpObject = new JSONObject(response);
-
-                if (otpObject.get("status").toString().equalsIgnoreCase("success")){
-
-                    String otp = otpObject.getJSONArray("data").getJSONObject(0).get("otp").toString();
-
-                    otp_tv.setText(otp);
-
-                }else {
-
-                }
-
-            }catch (Exception e){
-                Log.e(TAG, "Exception: ", e);
-            }
-
-        }, error -> {
-            VolleySingleton.logVolleyError("CbwtfDashboardActivity", error);
-            generateOtp();
-        }){
-            @Nullable
-            @Override
-            protected Map<String, String> getParams() throws AuthFailureError {
-                Map<String,String> otp = new HashMap<>();
-                otp.put("hcf_code",MSP.getInstance(CbwtfDashboardActivity.this).getStringData(AppStrings.userID));
-                otp.put("hcf_name",MSP.getInstance(CbwtfDashboardActivity.this).getStringData(AppStrings.userName));
-                otp.put("hcf_contact",MSP.getInstance(CbwtfDashboardActivity.this).getStringData(AppStrings.userMobile));
-                otp.put("otp",otpValue);
-                otp.put("date",date);
-                return otp;
-            }
-        };
-
-        VolleySingleton.getInstance(this).addToRequestQueue(generateOtpRequest);
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == CAMERA_PERMISSION_REQUEST_CODE) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Permission granted, start the fragment
-
-                if (isFromScan){
-                    Intent intent = new Intent(CbwtfDashboardActivity.this,CbwtfFragmentContainerActivity.class);
-                    intent.putExtra("f_id",f_Id);
-                    startActivity(intent);
-                }
-
+    private fun clickListeners() {
+        profileCard.setOnClickListener { startContainerActivity(1) }
+        reportCard.setOnClickListener { startContainerActivity(10) }
+        scannerImg.setOnClickListener {
+            if (getCameraPermission()) {
+                startScanner()
             } else {
-                // Permission denied, handle accordingly (e.g., show a message)
+                cameraPermissionAlertDialog()
+            }
+        }
+        hcfCard.setOnClickListener {
+            if (!getBluetoothPermission()) {
+                Toast.makeText(this, "Bluetooth permission needed", Toast.LENGTH_SHORT).show()
+            }
+            if (isLocationGranted) {
+                startContainerActivity(0)
+            } else {
+                checkLocationPermission()
+            }
+        }
+        rescanCard.setOnClickListener {
+            if (isLocationGranted) {
+                startContainerActivity(9)
+            } else {
+                checkLocationPermission()
+            }
+        }
+        logoutCard.setOnClickListener { onLogout() }
+        guidelineTv.setOnClickListener { openGuidelines() }
+        youtubeTv.setOnClickListener { openYoutubeLink() }
+    }
+
+    private fun setupObservers() {
+        viewModel.noticeResponse.observe(this) { response ->
+            if (response.isSuccessful) {
+                response.body()?.data?.getOrNull(0)?.let { notice ->
+                    if (notice.noticeStatus == "1") {
+                        showNoticeDialog(notice.noticeUrl ?: "", false)
+                    } else if (notice.noticeStatus == "2") {
+                        showNoticeDialog(notice.noticeUrl ?: "", true)
+                    }
+                }
+            }
+        }
+
+        viewModel.cbwtfDataResponse.observe(this) { response ->
+            if (response.isSuccessful) {
+                response.body()?.data?.getOrNull(0)?.let { data ->
+                    MSP.getInstance(this).setStringData(AppStrings.attendance_compulsory, data.attendanceCompulsory)
+                    headerTv.text = data.name
+                }
+            }
+        }
+
+        viewModel.todayDataResponse.observe(this) { response ->
+            if (response.isSuccessful) {
+                val dataList = response.body()?.data ?: emptyList()
+                val uniqueHospitals = dataList.mapNotNull { it.hospitalCode }.toSet()
+                var totalWeight = 0.0
+                dataList.forEach {
+                    totalWeight += it.hcfWeight?.toDoubleOrNull() ?: 0.0
+                }
+
+                val jsonCustomData = Gson().toJson(dataList)
+                MSP.getInstance(this).setStringData("today_qr_custom_data", jsonCustomData)
+
+                todayAttempted.text = uniqueHospitals.size.toString()
+                todayCollected.text = DecimalFormat("000.000").format(totalWeight)
+            }
+        }
+
+        viewModel.hospitalDataResponse.observe(this) { response ->
+            if (response.isSuccessful) {
+                response.body()?.data?.getOrNull(0)?.let { data ->
+                    AlertDialog.Builder(this)
+                        .setMessage("Hospital name: ${data.name}\n\nHospital address: ${data.address}")
+                        .show()
+                }
+            }
+        }
+
+        viewModel.otpResponse.observe(this) { response ->
+            if (response.isSuccessful) {
+                response.body()?.data?.getOrNull(0)?.let { data ->
+                    otpTv.text = data.otp
+                }
             }
         }
     }
 
-    private boolean checkCameraPermission() {
-        return ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED;
+    @SuppressLint("ClickableViewAccessibility")
+    private fun showNoticeDialog(url: String, cancelable: Boolean) {
+        val webView = WebView(this)
+        webView.layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+        webView.loadUrl(url)
+        
+        val dialog = AlertDialog.Builder(this)
+            .setCancelable(true) // Force cancelable to true to allow clicking outside
+            .setView(webView)
+            .create()
+
+        // Dismiss when clicking inside the WebView
+        webView.setOnTouchListener { _, event ->
+            if (event.action == MotionEvent.ACTION_UP) {
+                dialog.dismiss()
+            }
+            false
+        }
+
+        dialog.show()
     }
 
-    private void requestCameraPermission() {
-        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, CAMERA_PERMISSION_REQUEST_CODE);
+    override fun onResume() {
+        super.onResume()
+        loadDashboardData()
+    }
+
+    private fun loadDashboardData() {
+        val msp = MSP.getInstance(this)
+        val loginAs = msp.getStringData(AppStrings.loginAs)
+        val date = DateFormat.format("yyyy-MM-dd", Date().time).toString()
+
+        if (loginAs == "hcf") {
+            headerTv.text = msp.getStringData(AppStrings.userName)
+            val map = mapOf(
+                "hospital_id" to msp.getStringData(AppStrings.userID),
+                "date" to date
+            )
+            viewModel.getTodayData(AppStrings.get_today_data_hcf, map)
+            generateOtp()
+            scanOtpStatus(true)
+        } else {
+            val cbwtfMap = mapOf("cbwtf_id" to msp.getStringData(AppStrings.userCbwtfID))
+            viewModel.getCbwtfData(AppStrings.cbwtf_data, cbwtfMap)
+
+            val todayMap = mapOf(
+                "operator_id" to msp.getStringData(AppStrings.userID),
+                "date" to date
+            )
+            viewModel.getTodayData(AppStrings.get_today_data, todayMap)
+            scanOtpStatus(false)
+        }
+    }
+
+    private fun generateOtp() {
+        val msp = MSP.getInstance(this)
+        val otpValue = String.format("%04d", Random().nextInt(10000))
+        val date = DateFormat.format("yyyy-MM-dd", Date().time).toString()
+        val map = mapOf(
+            "hcf_code" to msp.getStringData(AppStrings.userID),
+            "hcf_name" to msp.getStringData(AppStrings.userName),
+            "hcf_contact" to msp.getStringData(AppStrings.userMobile),
+            "otp" to otpValue,
+            "date" to date
+        )
+        viewModel.generateOtp(AppStrings.generate_otp, map)
+    }
+
+    private fun scanOtpStatus(isHCF: Boolean) {
+        if (isHCF) {
+            hcfCard.visibility = View.GONE
+            otpLl.visibility = View.GONE
+            scannerImg.visibility = View.GONE
+        } else {
+            hcfCard.visibility = View.VISIBLE
+            otpLl.visibility = View.GONE
+            scannerImg.visibility = View.VISIBLE
+        }
+    }
+
+    private fun startContainerActivity(value: Int) {
+        fId = value
+        isFromScan = true
+        if (checkCameraPermission()) {
+            val intent = Intent(this, CbwtfFragmentContainerActivity::class.java)
+            intent.putExtra("f_id", value)
+            startActivity(intent)
+        } else {
+            requestCameraPermission()
+        }
+    }
+
+    private fun onLogout() {
+        MSP.getInstance(this).removeAll()
+        val intent = Intent(this, LoginActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        startActivity(intent)
+        finish()
+    }
+
+    private fun openGuidelines() {
+        startActivity(Intent(this, PdfViewActivity::class.java))
+    }
+
+    private fun openYoutubeLink() {
+        val appIntent = Intent(Intent.ACTION_VIEW, Uri.parse("vnd.youtube:OcrMGvRdjaY"))
+        val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("http://www.youtube.com/watch?v=OcrMGvRdjaY"))
+        try {
+            startActivity(appIntent)
+        } catch (ex: ActivityNotFoundException) {
+            startActivity(webIntent)
+        }
+    }
+
+    private fun getCameraPermission(): Boolean {
+        Dexter.withContext(this).withPermission(Manifest.permission.CAMERA).withListener(object : PermissionListener {
+            override fun onPermissionGranted(response: PermissionGrantedResponse) { isCameraPermissionGranted = true }
+            override fun onPermissionDenied(response: PermissionDeniedResponse) { isCameraPermissionGranted = false }
+            override fun onPermissionRationaleShouldBeShown(request: PermissionRequest, token: PermissionToken) { token.continuePermissionRequest() }
+        }).check()
+        return isCameraPermissionGranted
+    }
+
+    private fun getBluetoothPermission(): Boolean {
+        Dexter.withContext(this).withPermission(Manifest.permission.BLUETOOTH).withListener(object : PermissionListener {
+            override fun onPermissionGranted(response: PermissionGrantedResponse) { isBluetoothGranted = true }
+            override fun onPermissionDenied(response: PermissionDeniedResponse) { isBluetoothGranted = false }
+            override fun onPermissionRationaleShouldBeShown(request: PermissionRequest, token: PermissionToken) { token.continuePermissionRequest() }
+        }).check()
+        return isBluetoothGranted
+    }
+
+    private fun checkLocationPermission() {
+        Dexter.withContext(this).withPermission(Manifest.permission.ACCESS_FINE_LOCATION).withListener(object : PermissionListener {
+            override fun onPermissionGranted(response: PermissionGrantedResponse) { checkLocationSetting() }
+            override fun onPermissionDenied(response: PermissionDeniedResponse) {
+                AlertDialog.Builder(this@CbwtfDashboardActivity)
+                    .setMessage("Grant location permission to continue\nApp permissions > Location > Allow")
+                    .setPositiveButton("Setting") { _, _ ->
+                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                        intent.data = Uri.fromParts("package", packageName, null)
+                        startActivity(intent)
+                    }.show()
+            }
+            override fun onPermissionRationaleShouldBeShown(request: PermissionRequest, token: PermissionToken) { token.continuePermissionRequest() }
+        }).check()
+    }
+
+    private fun checkLocationSetting() {
+        val locationRequest = LocationRequest.create().apply {
+            priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+            interval = 30000
+            fastestInterval = 5000
+        }
+        val builder = LocationSettingsRequest.Builder().addLocationRequest(locationRequest).setAlwaysShow(true)
+        val task = LocationServices.getSettingsClient(this).checkLocationSettings(builder.build())
+
+        task.addOnCompleteListener { taskResult ->
+            try {
+                taskResult.getResult(ApiException::class.java)
+                isLocationGranted = true
+            } catch (exception: ApiException) {
+                if (exception.statusCode == LocationSettingsStatusCodes.RESOLUTION_REQUIRED) {
+                    try {
+                        (exception as ResolvableApiException).startResolutionForResult(this, 1000)
+                    } catch (e: Exception) { }
+                }
+            }
+        }
+    }
+
+    private val launcher = registerForActivityResult(ScanContract()) { result ->
+        result.contents?.let { contents ->
+            try {
+                val data = contents.split("&", limit = 2)
+                val hcfCode = data[0]
+                viewModel.getHospitalData(AppStrings.hospital_data, mapOf("hospital_code" to hcfCode))
+            } catch (e: Exception) {
+                Toast.makeText(this, "Wrong QR Code", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun startScanner() {
+        val scanOptions = ScanOptions().apply {
+            setOrientationLocked(true)
+            setBarcodeImageEnabled(true)
+            setPrompt("Scan Waste Barcode")
+        }
+        launcher.launch(scanOptions)
+    }
+
+    private fun cameraPermissionAlertDialog() {
+        AlertDialog.Builder(this)
+            .setMessage("Grant camera permission to continue\nApp permissions > Camera > Allow")
+            .setPositiveButton("Setting") { _, _ ->
+                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                intent.data = Uri.fromParts("package", packageName, null)
+                startActivity(intent)
+            }.show()
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == CAMERA_PERMISSION_REQUEST_CODE) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                if (isFromScan) {
+                    startContainerActivity(fId)
+                }
+            }
+        }
+    }
+
+    private fun checkCameraPermission(): Boolean {
+        return ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun requestCameraPermission() {
+        ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CAMERA), CAMERA_PERMISSION_REQUEST_CODE)
     }
 }

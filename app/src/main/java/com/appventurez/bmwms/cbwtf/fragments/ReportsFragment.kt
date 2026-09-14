@@ -1,841 +1,402 @@
-package com.appventurez.bmwms.cbwtf.fragments;
+package com.appventurez.bmwms.cbwtf.fragments
 
-import android.Manifest;
-import android.annotation.SuppressLint;
-import android.app.DatePickerDialog;
-import android.content.ActivityNotFoundException;
-import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.net.Uri;
-import android.os.Bundle;
-import android.os.Environment;
-import android.os.Handler;
-import android.os.Looper;
-import android.util.Log;
+import android.app.DatePickerDialog
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.net.Uri
+import android.os.Bundle
+import android.util.Log
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.Button
+import android.widget.ImageView
+import android.widget.TextView
+import android.widget.Toast
+import androidx.appcompat.widget.SearchView
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.appventurez.bmwms.R
+import com.appventurez.bmwms.cbwtf.adapters.ReportsAdapter
+import com.appventurez.bmwms.cbwtf.models.ReportsModel
+import com.appventurez.bmwms.classes.AppStrings
+import com.appventurez.bmwms.classes.MSP
+import com.appventurez.bmwms.network.RetrofitClient
+import com.appventurez.bmwms.repository.ReportRepository
+import com.appventurez.bmwms.viewmodel.ReportViewModel
+import com.facebook.shimmer.ShimmerFrameLayout
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.appcompat.widget.SearchView;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-import androidx.core.content.FileProvider;
-import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.DatePicker;
-import android.widget.ImageView;
-import android.widget.TextView;
-import android.widget.Toast;
+class ReportsFragment : Fragment() {
 
-import com.android.volley.AuthFailureError;
-import com.android.volley.Request;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.StringRequest;
-
-
-import com.facebook.shimmer.ShimmerFrameLayout;
-import com.appventurez.bmwms.BuildConfig;
-import com.appventurez.bmwms.R;
-import com.appventurez.bmwms.cbwtf.adapters.GetCbwtfReportsAdapter;
-import com.appventurez.bmwms.cbwtf.adapters.ReportsAdapter;
-import com.appventurez.bmwms.cbwtf.models.ReportsModel;
-import com.appventurez.bmwms.cbwtf.models.getCbwtfReportsModel.DataItem;
-import com.appventurez.bmwms.classes.AppStrings;
-import com.appventurez.bmwms.classes.MSP;
-import com.appventurez.bmwms.classes.VolleySingleton;
-
-import org.json.JSONObject;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-public class ReportsFragment extends Fragment{
-    private static final String TAG = "ReportsFragment";
-    View view;
-    RecyclerView reportsRV;
-    List<ReportsModel> reportsModels = new ArrayList<>();
-    List<DataItem> reportsCbwtfModels = new ArrayList<>();
-    ReportsAdapter reportsAdapter;
-    GetCbwtfReportsAdapter getCbwtfReportsAdapter;
-    ImageView backButton;
-
-    TextView empty_view, txtFromDate,txtToDate;
-    ShimmerFrameLayout shimmerFrameLayout;
-
-    SearchView searchView;
-    Button btGetPDF;
-    String cHCode = "";
-    ImageView imgFromDate,imgToDate;
-    private static final int REQUEST_PERMISSIONS = 123;
-
-    ImageView imgSend;
-
-    @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        if (view == null){
-
-            view = inflater.inflate(R.layout.fragment_reports, container, false);
-
-            imgSend = view.findViewById(R.id.imgSend);
-            reportsRV = view.findViewById(R.id.report_rv_1);
-            backButton = view.findViewById(R.id.report_back_button);
-            shimmerFrameLayout = view.findViewById(R.id.shimmer_report);
-            empty_view = view.findViewById(R.id.report_empty_tv);
-            searchView = view.findViewById(R.id.report_search_bar);
-            txtFromDate=view.findViewById(R.id.txtFromDate);
-            txtToDate=view.findViewById(R.id.txtToDate);
-            btGetPDF=view.findViewById(R.id.btGetPDF);
-            imgFromDate= view.findViewById(R.id.imgFromDate);
-            imgToDate= view.findViewById(R.id.imgToDate);
-
-            txtFromDate.setOnClickListener(view -> openDatePicker(0));
-
-            imgFromDate.setOnClickListener(view -> openDatePicker(0));
-
-            txtToDate.setOnClickListener(view -> openDatePicker(1));
-
-            imgToDate.setOnClickListener(view -> openDatePicker(1));
-
-            imgSend.setOnClickListener(view -> sendMail());
-
-            btGetPDF.setOnClickListener(view -> downloadPDF());
-
-            backButton.setOnClickListener(view -> Objects.requireNonNull(getActivity()).finish());
-
-            reportsAdapter = new ReportsAdapter(getContext(),reportsModels);
-            reportsRV.setLayoutManager(new LinearLayoutManager(getContext(),RecyclerView.VERTICAL,false));
-            reportsRV.setAdapter(reportsAdapter);
-            Map<String,String> map = new HashMap<>();
-
-            if (MSP.getInstance(getContext()).getStringData(AppStrings.loginAs).equals("hcf")){
-                searchView.setVisibility(View.GONE);
-
-                Log.d("TAG", "onCreateView: "+1);
-                map.put("hospital_id", MSP.getInstance(getContext()).getStringData(AppStrings.userID));
-
-                getData(AppStrings.get_report_hcf,map);
-            }else{
-                Log.d("TAG", "onCreateView: "+2);
-                map.put("operator_id", MSP.getInstance(getContext()).getStringData(AppStrings.userID));
-                imgSend.setVisibility(View.GONE);
-                txtFromDate.setVisibility(View.GONE);
-                imgFromDate.setVisibility(View.GONE);
-                imgToDate.setVisibility(View.GONE);
-                txtToDate.setVisibility(View.GONE);
-                btGetPDF.setVisibility(View.GONE);
-                getData(AppStrings.get_report,map);
+    private val viewModel: ReportViewModel by viewModels {
+        object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return ReportViewModel(ReportRepository(RetrofitClient.apiService)) as T
             }
-            shimmerFrameLayout.stopShimmer();
-            shimmerFrameLayout.setVisibility(View.GONE);
-
-            searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-                @Override
-                public boolean onQueryTextSubmit(String query) {
-
-                    if (!query.trim().isEmpty()){
-                        searchQuery(query);
-                    }else {
-                        reportsAdapter.onUpdate(reportsModels);
-                    }
-                    return true;
-                }
-
-                @Override
-                public boolean onQueryTextChange(String newText) {
-
-                    if (!newText.trim().isEmpty()){
-                        searchQuery(newText);
-                    }else {
-                        reportsAdapter.onUpdate(reportsModels);
-                    }
-
-                    return true;
-                }
-            });
-
-        }
-
-        return view;
-    }
-
-    private void checkPermissionsAndDownloadPDF() {
-        if (ContextCompat.checkSelfPermission(requireContext(),
-                Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(requireActivity(),
-                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                    REQUEST_PERMISSIONS);
-        } else {
-            // Permission already granted, proceed with download
-            downloadPDF();
         }
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        if (requestCode == REQUEST_PERMISSIONS) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Permission granted, proceed with download
-                downloadPDF();
+    private lateinit var reportsRV: RecyclerView
+    private var reportsModels = ArrayList<ReportsModel>()
+    private var originalAggregatedModels = ArrayList<ReportsModel>()
+    private lateinit var reportsAdapter: ReportsAdapter
+    private lateinit var backButton: ImageView
+    private lateinit var emptyView: TextView
+    private lateinit var txtFromDate: TextView
+    private lateinit var txtToDate: TextView
+    private lateinit var btGetPDF: Button
+    private lateinit var shimmerFrameLayout: ShimmerFrameLayout
+    private lateinit var searchView: SearchView
+    private lateinit var imgFromDate: ImageView
+    private lateinit var imgToDate: ImageView
+    private lateinit var imgSend: ImageView
+
+    private var cHCode = ""
+
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        val view = inflater.inflate(R.layout.fragment_reports, container, false)
+
+        initViews(view)
+        setupRecyclerView()
+        setupListeners()
+        observeViewModel()
+        loadData()
+
+        return view
+    }
+
+    private fun initViews(view: View) {
+        imgSend = view.findViewById(R.id.imgSend)
+        reportsRV = view.findViewById(R.id.report_rv_1)
+        backButton = view.findViewById(R.id.report_back_button)
+        shimmerFrameLayout = view.findViewById(R.id.shimmer_report)
+        emptyView = view.findViewById(R.id.report_empty_tv)
+        searchView = view.findViewById(R.id.report_search_bar)
+        txtFromDate = view.findViewById(R.id.txtFromDate)
+        txtToDate = view.findViewById(R.id.txtToDate)
+        btGetPDF = view.findViewById(R.id.btGetPDF)
+        imgFromDate = view.findViewById(R.id.imgFromDate)
+        imgToDate = view.findViewById(R.id.imgToDate)
+    }
+
+    private fun setupRecyclerView() {
+        reportsAdapter = ReportsAdapter(requireContext(), reportsModels)
+        reportsRV.layoutManager = LinearLayoutManager(requireContext(), RecyclerView.VERTICAL, false)
+        reportsRV.adapter = reportsAdapter
+    }
+
+    private fun setupListeners() {
+        txtFromDate.setOnClickListener { openDatePicker(0) }
+        imgFromDate.setOnClickListener { openDatePicker(0) }
+        txtToDate.setOnClickListener { openDatePicker(1) }
+        imgToDate.setOnClickListener { openDatePicker(1) }
+        imgSend.setOnClickListener { sendMail() }
+        btGetPDF.setOnClickListener { downloadPDF() }
+        backButton.setOnClickListener { requireActivity().finish() }
+
+        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                filterReports(query)
+                return true
+            }
+
+            override fun onQueryTextChange(newText: String?): Boolean {
+                filterReports(newText)
+                return true
+            }
+        })
+    }
+
+    private fun observeViewModel() {
+        viewModel.reportResponse.observe(viewLifecycleOwner) { response ->
+            if (response.isSuccessful) {
+                val rawList = response.body()?.data
+                if (!rawList.isNullOrEmpty()) {
+                    aggregateData(rawList)
+                } else {
+                    shimmerFrameLayout.stopShimmer()
+                    shimmerFrameLayout.visibility = View.GONE
+                    emptyView.visibility = View.VISIBLE
+                }
             } else {
-                // Permission denied, handle accordingly
-                // You can show a message explaining that the app needs this permission to work
+                shimmerFrameLayout.stopShimmer()
+                shimmerFrameLayout.visibility = View.GONE
+                emptyView.visibility = View.VISIBLE
+            }
+        }
+
+        viewModel.sendMailResponse.observe(viewLifecycleOwner) { response ->
+            if (response.isSuccessful) {
+                val body = response.body()
+                if (body?.status?.equals("success", ignoreCase = true) == true) {
+                    showToast("Email Sent Successfully")
+                } else {
+                    showToast("Failed to send email: ${body?.message}")
+                }
+            } else {
+                showToast("Error sending email")
+            }
+        }
+
+        viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
+            if (isLoading) {
+                shimmerFrameLayout.startShimmer()
+                shimmerFrameLayout.visibility = View.VISIBLE
+            } else {
+                shimmerFrameLayout.stopShimmer()
+                shimmerFrameLayout.visibility = View.GONE
             }
         }
     }
 
-    private void downloadPDF() {
-        String fromDate = txtFromDate.getText().toString().trim();
-        String toDate = txtToDate.getText().toString().trim();
-        String hospitalCode = cHCode;
+    private fun loadData() {
+        val map = HashMap<String, String>()
+        val loginAs = MSP.getInstance(requireContext()).getStringData(AppStrings.loginAs)
+        val userID = MSP.getInstance(requireContext()).getStringData(AppStrings.userID)
 
-        String baseUrl = AppStrings.getGet_report_PDF + "/";
-        String pdfUrl = baseUrl + hospitalCode + "/" + fromDate + "/" + toDate;
+        if (loginAs == "hcf") {
+            searchView.visibility = View.GONE
+            map["hospital_id"] = userID ?: ""
+            viewModel.getReports(AppStrings.get_report_hcf, map)
+        } else {
+            imgSend.visibility = View.GONE
+            txtFromDate.visibility = View.GONE
+            imgFromDate.visibility = View.GONE
+            imgToDate.visibility = View.GONE
+            txtToDate.visibility = View.GONE
+            btGetPDF.visibility = View.GONE
+            map["operator_id"] = userID ?: ""
+            viewModel.getReports(AppStrings.get_report, map)
+        }
+    }
 
-      /*  DownloadPDFTask downloadTask = new DownloadPDFTask();
-        Log.d("TAG", "downloadPDF: "+pdfUrl);
-        downloadTask.execute(pdfUrl);
-*/
+    private fun aggregateData(rawList: List<ReportsModel>) {
+        reportsModels.clear()
+        originalAggregatedModels.clear()
+        
+        var currentHCode = ""
+        var currentDate = ""
+        var packets = 0
+        
+        var redCount = 0
+        var blueCount = 0
+        var yellowCount = 0
+        var whiteCount = 0
 
-        Log.d("TAG", "downloadPDF: "+pdfUrl);
+        var redCountCbwtf = 0
+        var blueCountCbwtf = 0
+        var yellowCountCbwtf = 0
+        var whiteCountCbwtf = 0
 
-        Uri uri = Uri.parse(pdfUrl);
-        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-        intent.setPackage("com.android.chrome"); // Package name for Chrome
+        var hWeight = 0.0
+        var cWeight = 0.0
+        
+        var currentModel: ReportsModel? = null
+
+        for (item in rawList) {
+            val hospitalCode = item.hospitalCode?.trim() ?: ""
+            val handoverDate = item.handoverDate?.trim() ?: ""
+
+            if (currentHCode.isEmpty()) {
+                currentHCode = hospitalCode
+                currentDate = handoverDate
+                cHCode = hospitalCode // Store first one found for other uses
+                packets = 1
+                currentModel = createNewAggregatedModel(item)
+            } else if (currentHCode == hospitalCode && currentDate == handoverDate) {
+                packets++
+            } else {
+                // Finalize previous model
+                currentModel?.let {
+                    finalizeAggregatedModel(it, packets, redCount, blueCount, yellowCount, whiteCount, 
+                        redCountCbwtf, blueCountCbwtf, yellowCountCbwtf, whiteCountCbwtf, hWeight, cWeight)
+                    originalAggregatedModels.add(it)
+                }
+
+                // Reset for new group
+                currentHCode = hospitalCode
+                currentDate = handoverDate
+                packets = 1
+                redCount = 0
+                blueCount = 0
+                yellowCount = 0
+                whiteCount = 0
+                redCountCbwtf = 0
+                blueCountCbwtf = 0
+                yellowCountCbwtf = 0
+                whiteCountCbwtf = 0
+                hWeight = 0.0
+                cWeight = 0.0
+                currentModel = createNewAggregatedModel(item)
+            }
+
+            // Aggregation logic
+            val colorHcf = item.colorTypeHcf?.lowercase() ?: ""
+            val colorCbwtf = item.colorTypeCbwtf?.lowercase() ?: ""
+            
+            hWeight += item.hcfWeight?.toDoubleOrNull() ?: 0.0
+            cWeight += item.cbwtfWeight?.toDoubleOrNull() ?: 0.0
+
+            if (colorHcf.contains("red")) redCount++
+            if (colorHcf.contains("blue")) blueCount++
+            if (colorHcf.contains("yellow")) yellowCount++
+            if (colorHcf.contains("white")) whiteCount++
+
+            if (colorCbwtf.contains("red")) redCountCbwtf++
+            if (colorCbwtf.contains("blue")) blueCountCbwtf++
+            if (colorCbwtf.contains("yellow")) yellowCountCbwtf++
+            if (colorCbwtf.contains("white")) whiteCountCbwtf++
+        }
+
+        // Add last model
+        currentModel?.let {
+            finalizeAggregatedModel(it, packets, redCount, blueCount, yellowCount, whiteCount, 
+                redCountCbwtf, blueCountCbwtf, yellowCountCbwtf, whiteCountCbwtf, hWeight, cWeight)
+            originalAggregatedModels.add(it)
+        }
+
+        reportsModels.addAll(originalAggregatedModels)
+        reportsAdapter.notifyDataSetChanged()
+        
+        if (reportsModels.isEmpty()) {
+            emptyView.visibility = View.VISIBLE
+        } else {
+            emptyView.visibility = View.GONE
+        }
+    }
+
+    private fun createNewAggregatedModel(item: ReportsModel): ReportsModel {
+        val model = ReportsModel()
+        model.name = item.name
+        model.address = item.address
+        model.cbwtfId = item.cbwtfId
+        model.colorTypeHcf = item.colorTypeHcf
+        model.disposeDate = item.disposeDate
+        model.disposeOperatorName = item.disposeOperatorName
+        model.colorTypeCbwtf = item.colorTypeCbwtf
+        model.district = item.district
+        model.handoverDate = item.handoverDate
+        model.hcfLatLong = item.hcfLatLong
+        model.hcfType = item.hcfType
+        model.hospitalCode = item.hospitalCode
+        model.hospitalType = item.hospitalType
+        model.latLongCbwtf = item.latLongCbwtf
+        model.operatorId = item.operatorId
+        model.operatorIdCbwtf = item.operatorIdCbwtf
+        model.operatorName = item.operatorName
+        model.qrDataId = item.qrDataId
+        model.qrId = item.qrId
+        model.route = item.route
+        model.type = item.type
+        model.type1 = item.type1
+        model.createdOn = item.createdOn
+        return model
+    }
+
+    private fun finalizeAggregatedModel(
+        model: ReportsModel, packets: Int, red: Int, blue: Int, yellow: Int, white: Int,
+        redC: Int, blueC: Int, yellowC: Int, whiteC: Int, hW: Double, cW: Double
+    ) {
+        model.totalPackets = packets.toString()
+        model.red = red.toString()
+        model.blue = blue.toString()
+        model.yellow = yellow.toString()
+        model.white = white.toString()
+        model.redCbwtf = redC.toString()
+        model.blueCbwtf = blueC.toString()
+        model.yellowCbwtf = yellowC.toString()
+        model.whiteCbwtf = whiteC.toString()
+        model.hcfWeight = hW.toString()
+        model.cbwtfWeight = cW.toString()
+    }
+
+    private fun filterReports(text: String?) {
+        val query = text?.trim()?.lowercase() ?: ""
+        val filteredList = if (query.isEmpty()) {
+            originalAggregatedModels
+        } else {
+            originalAggregatedModels.filter {
+                it.name?.trim()?.lowercase()?.contains(query) == true
+            }
+        }
+        reportsAdapter.onUpdate(filteredList)
+    }
+
+    private fun openDatePicker(type: Int) {
+        val calendar = Calendar.getInstance()
+        val datePickerDialog = DatePickerDialog(
+            requireContext(),
+            { _, year, month, dayOfMonth ->
+                val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                val selectedDateCalendar = Calendar.getInstance()
+                selectedDateCalendar.set(Calendar.YEAR, year)
+                selectedDateCalendar.set(Calendar.MONTH, month)
+                selectedDateCalendar.set(Calendar.DAY_OF_MONTH, dayOfMonth)
+
+                val formattedDate = dateFormat.format(selectedDateCalendar.time)
+
+                if (type == 0) {
+                    txtFromDate.text = formattedDate
+                } else {
+                    txtToDate.text = formattedDate
+                }
+
+                if (txtFromDate.text.toString().trim() != "from date" && 
+                    txtToDate.text.toString().trim() != "To date") {
+                    btGetPDF.isEnabled = true
+                }
+            },
+            calendar.get(Calendar.YEAR),
+            calendar.get(Calendar.MONTH),
+            calendar.get(Calendar.DAY_OF_MONTH)
+        )
+        datePickerDialog.datePicker.maxDate = System.currentTimeMillis()
+        datePickerDialog.show()
+    }
+
+    private fun downloadPDF() {
+        val fromDate = txtFromDate.text.toString().trim()
+        val toDate = txtToDate.text.toString().trim()
+        val hospitalCode = cHCode
+
+        val baseUrl = AppStrings.getGet_report_PDF + "/"
+        val pdfUrl = "$baseUrl$hospitalCode/$fromDate/$toDate"
+
+        Log.d("TAG", "downloadPDF: $pdfUrl")
+
+        val uri = Uri.parse(pdfUrl)
+        val intent = Intent(Intent.ACTION_VIEW, uri)
+        intent.setPackage("com.android.chrome")
 
         try {
-            startActivity(intent);
-        } catch (ActivityNotFoundException ex) {
-            // Chrome is not installed or the intent failed
-            // You can try to open the URL with a different browser here
-        }
-
-
-      /*  Map<String,String> map = new HashMap<>();
-        map.put("from_date",txtFromDate.getText().toString().trim());
-        map.put("to_date", txtToDate.getText().toString().trim());
-        map.put("hospital_code",cHCode);
-        getPDF(AppStrings.getGet_report_PDF,map);
-*/
-    }
-
-    private void openDatePicker(int type) {
-        Calendar calendar = Calendar.getInstance();
-        DatePickerDialog datePickerDialog = new DatePickerDialog(
-                requireContext(),
-                (view, year, month, dayOfMonth) -> {
-                    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-                    Calendar selectedDateCalendar = Calendar.getInstance();
-                    selectedDateCalendar.set(Calendar.YEAR, year);
-                    selectedDateCalendar.set(Calendar.MONTH, month);
-                    selectedDateCalendar.set(Calendar.DAY_OF_MONTH, dayOfMonth);
-
-                    String formattedDate = dateFormat.format(selectedDateCalendar.getTime());
-
-                  if (type == 0){
-                      txtFromDate.setText(formattedDate);
-                  }else {
-                      txtToDate.setText(formattedDate);
-                  }
-
-                  if (!txtFromDate.getText().toString().trim().equals("from date") && !txtToDate.getText().toString().trim().equals("To date")){
-                      btGetPDF.setEnabled(true);
-                  }
-                },
-                calendar.get(Calendar.YEAR),
-                calendar.get(Calendar.MONTH),
-                calendar.get(Calendar.DAY_OF_MONTH)
-        );
-        datePickerDialog.getDatePicker().setMaxDate(System.currentTimeMillis());
-        datePickerDialog.show();
-    }
-
-
-    public void getPDF(String url, Map<String,String> map){
-        StringRequest request = new StringRequest(Request.Method.POST, url, response -> {
-            String pdfUrl = "https://example.com/sample.pdf";
-
-            downloadPDF(response);
-            try {
-                JSONObject jsonObject = new JSONObject(response);
-
-                if (jsonObject.get("status").toString().equalsIgnoreCase("success")){
-
-                }else {
-
-                }
-            }catch (Exception e){
-                Log.d(TAG, "Exception "+e);
-            }
-
-        }, error -> Log.d("TAG", "onResponse: "+error.getMessage())){
-            @Nullable
-            @Override
-            protected Map<String, String> getParams() throws AuthFailureError {
-                return map;
-            }
-        };
-
-        VolleySingleton.getInstance(getContext()).addToRequestQueue(request);
-    }
-
-    public void getData(String url, Map<String,String> map){
-        reportsModels.clear();
-        StringRequest request = new StringRequest(Request.Method.POST, url, response -> {
-            try {
-                JSONObject jsonObject = new JSONObject(response);
-
-                Log.d("TAG", "onResponse: "+response);
-                if (jsonObject.get("status").toString().equalsIgnoreCase("success")){
-
-                    shimmerFrameLayout.stopShimmer();
-                    shimmerFrameLayout.setVisibility(View.GONE);
-
-                    ReportsModel model = new ReportsModel();
-
-                    int size = jsonObject.getJSONArray("data").length();
-
-
-                    String cDate = "";
-                    boolean firstData = false;
-                    boolean sameData = false;
-
-                    int redCount = 0;
-                    int blueCount = 0;
-                    int yellowCount = 0;
-                    int whiteCount = 0;
-
-                    int redCountCbwtf = 0;
-                    int blueCountCbwtf = 0;
-                    int yellowCountCbwtf = 0;
-                    int whiteCountCbwtf = 0;
-
-                    double hWeight = 0;
-                    double cWeight = 0;
-
-                    int packets = 0;
-
-                    for (int i=0;i<size;i++){
-                        JSONObject jsonObject1 = jsonObject.getJSONArray("data").getJSONObject(i);
-
-                       // extractDate()
-                        if (cHCode.isEmpty()){
-                            cHCode = jsonObject1.get("hospital_code").toString().trim();
-                            cDate = jsonObject1.get("handover_date").toString().trim();
-                            firstData = true;
-                            packets++;
-                        }else if (cHCode.equals(jsonObject1.get("hospital_code").toString().trim()) && cDate.equals(jsonObject1.get("handover_date").toString().trim())){
-                            sameData = true;
-                            firstData = false;
-                            packets++;
-                        }else {
-                            firstData = false;
-                            sameData = false;
-                            cHCode = jsonObject1.get("hospital_code").toString().trim();
-                            cDate = jsonObject1.get("handover_date").toString().trim();
-                            packets = 1;
-                        }
-
-                        if (firstData){
-                            Log.d("TAG", "onResponse: "+22222);
-                            model.setName(jsonObject1.get("name").toString());
-                            model.setAddress(jsonObject1.get("address").toString());
-                            model.setCbwtfId(jsonObject1.get("cbwtf_id").toString());
-                            model.setColorTypeHcf(jsonObject1.get("color_type_hcf").toString());
-                            model.setDisposeDate(jsonObject1.get("dispose_date").toString());
-                            //model.setCbwtfWeight(jsonObject1.get("cbwtf_weight").toString());
-                            model.setDisposeOperatorName(jsonObject1.get("dispose_operator_name").toString());
-                            model.setColorTypeCbwtf(jsonObject1.get("color_type_cbwtf").toString());
-                            model.setDistrict(jsonObject1.get("district").toString());
-                            model.setHandoverDate(jsonObject1.get("handover_date").toString());
-                            model.setHcfLatLong(jsonObject1.get("hcf_lat_long").toString());
-                            model.setHcfType(jsonObject1.get("hcf_type").toString());
-                            //model.setHcfWeight(jsonObject1.get("hcf_weight").toString());
-                            model.setHospitalCode(jsonObject1.get("hospital_code").toString());
-                            model.setHospitalType(jsonObject1.get("hospital_type").toString());
-                            if (jsonObject1.get("lat_long_cbwtf").toString().trim().length() > 0){
-                                model.setLatLongCbwtf(jsonObject1.get("lat_long_cbwtf").toString());
-                            }
-                            model.setOperatorId(jsonObject1.get("operator_id").toString());
-                            model.setOperatorIdCbwtf(jsonObject1.get("operator_id_cbwtf").toString());
-                            model.setOperatorName(jsonObject1.get("operator_name").toString());
-                            model.setQrDataId(jsonObject1.get("qr_data_id").toString());
-                            model.setQrId(jsonObject1.get("qr_id").toString());
-                            model.setRoute(jsonObject1.get("route").toString());
-                            model.setType(jsonObject1.get("type").toString());
-                            model.setType1(jsonObject1.get("type1").toString());
-                            model.setCreatedOn(jsonObject1.optString("created_on"));
-
-                            model.setTotalPackets(String.valueOf(packets));
-
-                            if (jsonObject1.get("color_type_hcf").toString().toLowerCase().contains("red")){
-                                redCount++;
-                                model.setRed(String.valueOf(redCount));
-                                model.setBlue(String.valueOf(blueCount));
-                                model.setYellow(String.valueOf(yellowCount));
-                                model.setWhite(String.valueOf(whiteCount));
-                                hWeight = hWeight+Double.parseDouble(jsonObject1.get("hcf_weight").toString().trim());
-                                cWeight = cWeight+Double.parseDouble(jsonObject1.get("cbwtf_weight").toString().trim());
-                                model.setHcfWeight(String.valueOf(hWeight));
-                                model.setCbwtfWeight(String.valueOf(cWeight));
-
-                                if (jsonObject1.get("color_type_cbwtf").toString().toLowerCase().contains("red")){
-                                    redCountCbwtf++;
-                                    model.setRedCbwtf(String.valueOf(redCountCbwtf));
-                                    model.setBlueCbwtf(String.valueOf(blueCountCbwtf));
-                                    model.setYellowCbwtf(String.valueOf(yellowCountCbwtf));
-                                    model.setWhiteCbwtf(String.valueOf(whiteCountCbwtf));
-                                }
-                            }
-                            if (jsonObject1.get("color_type_hcf").toString().toLowerCase().contains("blue")){
-                                blueCount++;
-                                model.setRed(String.valueOf(redCount));
-                                model.setBlue(String.valueOf(blueCount));
-                                model.setYellow(String.valueOf(yellowCount));
-                                model.setWhite(String.valueOf(whiteCount));
-                                hWeight = hWeight+Double.parseDouble(jsonObject1.get("hcf_weight").toString().trim());
-                                cWeight = cWeight+Double.parseDouble(jsonObject1.get("cbwtf_weight").toString().trim());
-                                model.setHcfWeight(String.valueOf(hWeight));
-                                model.setCbwtfWeight(String.valueOf(cWeight));
-
-                                if (jsonObject1.get("color_type_cbwtf").toString().toLowerCase().contains("blue")){
-                                    blueCountCbwtf++;
-                                    model.setRedCbwtf(String.valueOf(redCountCbwtf));
-                                    model.setBlueCbwtf(String.valueOf(blueCountCbwtf));
-                                    model.setYellowCbwtf(String.valueOf(yellowCountCbwtf));
-                                    model.setWhiteCbwtf(String.valueOf(whiteCountCbwtf));
-                                }
-                            }
-                            if (jsonObject1.get("color_type_hcf").toString().toLowerCase().contains("yellow")){
-                                yellowCount++;
-                                model.setRed(String.valueOf(redCount));
-                                model.setBlue(String.valueOf(blueCount));
-                                model.setYellow(String.valueOf(yellowCount));
-                                model.setWhite(String.valueOf(whiteCount));
-                                hWeight = hWeight+Double.parseDouble(jsonObject1.get("hcf_weight").toString().trim());
-                                cWeight = cWeight+Double.parseDouble(jsonObject1.get("cbwtf_weight").toString().trim());
-                                model.setHcfWeight(String.valueOf(hWeight));
-                                model.setCbwtfWeight(String.valueOf(cWeight));
-
-                                if (jsonObject1.get("color_type_cbwtf").toString().toLowerCase().contains("yellow")){
-                                    yellowCountCbwtf++;
-                                    model.setRedCbwtf(String.valueOf(redCountCbwtf));
-                                    model.setBlueCbwtf(String.valueOf(blueCountCbwtf));
-                                    model.setYellowCbwtf(String.valueOf(yellowCountCbwtf));
-                                    model.setWhiteCbwtf(String.valueOf(whiteCountCbwtf));
-                                }
-                            }
-                            if (jsonObject1.get("color_type_hcf").toString().toLowerCase().contains("white")){
-                                whiteCount++;
-                                model.setRed(String.valueOf(redCount));
-                                model.setBlue(String.valueOf(blueCount));
-                                model.setYellow(String.valueOf(yellowCount));
-                                model.setWhite(String.valueOf(whiteCount));
-                                hWeight = hWeight+Double.parseDouble(jsonObject1.get("hcf_weight").toString().trim());
-                                cWeight = cWeight+Double.parseDouble(jsonObject1.get("cbwtf_weight").toString().trim());
-                                model.setHcfWeight(String.valueOf(hWeight));
-                                model.setCbwtfWeight(String.valueOf(cWeight));
-
-                                if (jsonObject1.get("color_type_cbwtf").toString().toLowerCase().contains("white")){
-                                    whiteCountCbwtf++;
-                                    model.setRedCbwtf(String.valueOf(redCountCbwtf));
-                                    model.setBlueCbwtf(String.valueOf(blueCountCbwtf));
-                                    model.setYellowCbwtf(String.valueOf(yellowCountCbwtf));
-                                    model.setWhiteCbwtf(String.valueOf(whiteCountCbwtf));
-                                }
-                            }
-
-                        }else if (sameData){
-
-                            model.setName(jsonObject1.get("name").toString());
-                            model.setAddress(jsonObject1.get("address").toString());
-                            model.setCbwtfId(jsonObject1.get("cbwtf_id").toString());
-                            model.setColorTypeHcf(jsonObject1.get("color_type_hcf").toString());
-                            model.setDisposeDate(jsonObject1.get("dispose_date").toString());
-                            //model.setCbwtfWeight(jsonObject1.get("cbwtf_weight").toString());
-                            model.setDisposeOperatorName(jsonObject1.get("dispose_operator_name").toString());
-                            model.setColorTypeCbwtf(jsonObject1.get("color_type_cbwtf").toString());
-                            model.setDistrict(jsonObject1.get("district").toString());
-                            model.setHandoverDate(jsonObject1.get("handover_date").toString());
-                            model.setHcfLatLong(jsonObject1.get("hcf_lat_long").toString());
-                            model.setHcfType(jsonObject1.get("hcf_type").toString());
-                            //model.setHcfWeight(jsonObject1.get("hcf_weight").toString());
-                            model.setHospitalCode(jsonObject1.get("hospital_code").toString());
-                            model.setHospitalType(jsonObject1.get("hospital_type").toString());
-                            if (jsonObject1.get("lat_long_cbwtf").toString().trim().length() > 0){
-                                model.setLatLongCbwtf(jsonObject1.get("lat_long_cbwtf").toString());
-                            }
-                            model.setOperatorId(jsonObject1.get("operator_id").toString());
-                            model.setOperatorIdCbwtf(jsonObject1.get("operator_id_cbwtf").toString());
-                            model.setOperatorName(jsonObject1.get("operator_name").toString());
-                            model.setQrDataId(jsonObject1.get("qr_data_id").toString());
-                            model.setQrId(jsonObject1.get("qr_id").toString());
-                            model.setRoute(jsonObject1.get("route").toString());
-                            model.setType(jsonObject1.get("type").toString());
-                            model.setType1(jsonObject1.get("type1").toString());
-                            model.setCreatedOn(jsonObject1.optString("created_on"));
-
-                            model.setTotalPackets(String.valueOf(packets));
-
-                            if (jsonObject1.get("color_type_hcf").toString().toLowerCase().contains("red")){
-                                redCount++;
-                                model.setRed(String.valueOf(redCount));
-                                model.setBlue(String.valueOf(blueCount));
-                                model.setYellow(String.valueOf(yellowCount));
-                                model.setWhite(String.valueOf(whiteCount));
-                                hWeight = hWeight+Double.parseDouble(jsonObject1.get("hcf_weight").toString().trim());
-                                cWeight = cWeight+Double.parseDouble(jsonObject1.get("cbwtf_weight").toString().trim());
-                                model.setHcfWeight(String.valueOf(hWeight));
-                                model.setCbwtfWeight(String.valueOf(cWeight));
-
-                                if (jsonObject1.get("color_type_cbwtf").toString().toLowerCase().contains("red")){
-                                    redCountCbwtf++;
-                                    model.setRedCbwtf(String.valueOf(redCountCbwtf));
-                                    model.setBlueCbwtf(String.valueOf(blueCountCbwtf));
-                                    model.setYellowCbwtf(String.valueOf(yellowCountCbwtf));
-                                    model.setWhiteCbwtf(String.valueOf(whiteCountCbwtf));
-                                }
-                            }
-                            if (jsonObject1.get("color_type_hcf").toString().toLowerCase().contains("blue")){
-                                blueCount++;
-                                model.setRed(String.valueOf(redCount));
-                                model.setBlue(String.valueOf(blueCount));
-                                model.setYellow(String.valueOf(yellowCount));
-                                model.setWhite(String.valueOf(whiteCount));
-                                hWeight = hWeight+Double.parseDouble(jsonObject1.get("hcf_weight").toString().trim());
-                                cWeight = cWeight+Double.parseDouble(jsonObject1.get("cbwtf_weight").toString().trim());
-                                model.setHcfWeight(String.valueOf(hWeight));
-                                model.setCbwtfWeight(String.valueOf(cWeight));
-
-                                if (jsonObject1.get("color_type_cbwtf").toString().toLowerCase().contains("blue")){
-                                    blueCountCbwtf++;
-                                    model.setRedCbwtf(String.valueOf(redCountCbwtf));
-                                    model.setBlueCbwtf(String.valueOf(blueCountCbwtf));
-                                    model.setYellowCbwtf(String.valueOf(yellowCountCbwtf));
-                                    model.setWhiteCbwtf(String.valueOf(whiteCountCbwtf));
-                                }
-                            }
-                            if (jsonObject1.get("color_type_hcf").toString().toLowerCase().contains("yellow")){
-                                yellowCount++;
-                                model.setRed(String.valueOf(redCount));
-                                model.setBlue(String.valueOf(blueCount));
-                                model.setYellow(String.valueOf(yellowCount));
-                                model.setWhite(String.valueOf(whiteCount));
-                                hWeight = hWeight+Double.parseDouble(jsonObject1.get("hcf_weight").toString().trim());
-                                cWeight = cWeight+Double.parseDouble(jsonObject1.get("cbwtf_weight").toString().trim());
-                                model.setHcfWeight(String.valueOf(hWeight));
-                                model.setCbwtfWeight(String.valueOf(cWeight));
-
-                                if (jsonObject1.get("color_type_cbwtf").toString().toLowerCase().contains("yellow")){
-                                    yellowCountCbwtf++;
-                                    model.setRedCbwtf(String.valueOf(redCountCbwtf));
-                                    model.setBlueCbwtf(String.valueOf(blueCountCbwtf));
-                                    model.setYellowCbwtf(String.valueOf(yellowCountCbwtf));
-                                    model.setWhiteCbwtf(String.valueOf(whiteCountCbwtf));
-                                }
-                            }
-                            if (jsonObject1.get("color_type_hcf").toString().toLowerCase().contains("white")){
-                                whiteCount++;
-                                model.setRed(String.valueOf(redCount));
-                                model.setBlue(String.valueOf(blueCount));
-                                model.setYellow(String.valueOf(yellowCount));
-                                model.setWhite(String.valueOf(whiteCount));
-                                hWeight = hWeight+Double.parseDouble(jsonObject1.get("hcf_weight").toString().trim());
-                                cWeight = cWeight+Double.parseDouble(jsonObject1.get("cbwtf_weight").toString().trim());
-                                model.setHcfWeight(String.valueOf(hWeight));
-                                model.setCbwtfWeight(String.valueOf(cWeight));
-
-                                if (jsonObject1.get("color_type_cbwtf").toString().toLowerCase().contains("white")){
-                                    whiteCountCbwtf++;
-                                    model.setRedCbwtf(String.valueOf(redCountCbwtf));
-                                    model.setBlueCbwtf(String.valueOf(blueCountCbwtf));
-                                    model.setYellowCbwtf(String.valueOf(yellowCountCbwtf));
-                                    model.setWhiteCbwtf(String.valueOf(whiteCountCbwtf));
-                                }
-                            }
-
-                        } else if (!sameData) {
-
-                            redCount = 0;
-                            blueCount = 0;
-                            yellowCount = 0;
-                            whiteCount = 0;
-
-                            redCountCbwtf = 0;
-                            blueCountCbwtf = 0;
-                            yellowCountCbwtf = 0;
-                            whiteCountCbwtf = 0;
-
-                            hWeight = 0;
-                            cWeight = 0;
-
-                            reportsModels.add(model);
-                            reportsAdapter.notifyItemInserted(i);
-
-                            model = new ReportsModel();
-
-                            model.setName(jsonObject1.get("name").toString());
-                            model.setAddress(jsonObject1.get("address").toString());
-                            model.setCbwtfId(jsonObject1.get("cbwtf_id").toString());
-                            model.setColorTypeHcf(jsonObject1.get("color_type_hcf").toString());
-                            model.setDisposeDate(jsonObject1.get("dispose_date").toString());
-                            //model.setCbwtfWeight(jsonObject1.get("cbwtf_weight").toString());
-                            model.setDisposeOperatorName(jsonObject1.get("dispose_operator_name").toString());
-                            model.setColorTypeCbwtf(jsonObject1.get("color_type_cbwtf").toString());
-                            model.setDistrict(jsonObject1.get("district").toString());
-                            model.setHandoverDate(jsonObject1.get("handover_date").toString());
-                            model.setHcfLatLong(jsonObject1.get("hcf_lat_long").toString());
-                            model.setHcfType(jsonObject1.get("hcf_type").toString());
-                            //model.setHcfWeight(jsonObject1.get("hcf_weight").toString());
-                            model.setHospitalCode(jsonObject1.get("hospital_code").toString());
-                            model.setHospitalType(jsonObject1.get("hospital_type").toString());
-                            if (jsonObject1.get("lat_long_cbwtf").toString().trim().length() > 0){
-                                model.setLatLongCbwtf(jsonObject1.get("lat_long_cbwtf").toString());
-                            }
-                            model.setOperatorId(jsonObject1.get("operator_id").toString());
-                            model.setOperatorIdCbwtf(jsonObject1.get("operator_id_cbwtf").toString());
-                            model.setOperatorName(jsonObject1.get("operator_name").toString());
-                            model.setQrDataId(jsonObject1.get("qr_data_id").toString());
-                            model.setQrId(jsonObject1.get("qr_id").toString());
-                            model.setRoute(jsonObject1.get("route").toString());
-                            model.setType(jsonObject1.get("type").toString());
-                            model.setType1(jsonObject1.get("type1").toString());
-                            model.setCreatedOn(jsonObject1.optString("created_on"));
-
-                            model.setTotalPackets(String.valueOf(packets));
-
-                            if (jsonObject1.get("color_type_hcf").toString().toLowerCase().contains("red")){
-                                redCount++;
-                                model.setRed(String.valueOf(redCount));
-                                model.setBlue(String.valueOf(blueCount));
-                                model.setYellow(String.valueOf(yellowCount));
-                                model.setWhite(String.valueOf(whiteCount));
-                                hWeight = hWeight+Double.parseDouble(jsonObject1.get("hcf_weight").toString().trim());
-                                cWeight = cWeight+Double.parseDouble(jsonObject1.get("cbwtf_weight").toString().trim());
-                                model.setHcfWeight(String.valueOf(hWeight));
-                                model.setCbwtfWeight(String.valueOf(cWeight));
-
-                                if (jsonObject1.get("color_type_cbwtf").toString().toLowerCase().contains("red")){
-                                    redCountCbwtf++;
-                                    model.setRedCbwtf(String.valueOf(redCountCbwtf));
-                                    model.setBlueCbwtf(String.valueOf(blueCountCbwtf));
-                                    model.setYellowCbwtf(String.valueOf(yellowCountCbwtf));
-                                    model.setWhiteCbwtf(String.valueOf(whiteCountCbwtf));
-                                }
-                            }
-                            if (jsonObject1.get("color_type_hcf").toString().toLowerCase().contains("blue")){
-                                blueCount++;
-                                model.setRed(String.valueOf(redCount));
-                                model.setBlue(String.valueOf(blueCount));
-                                model.setYellow(String.valueOf(yellowCount));
-                                model.setWhite(String.valueOf(whiteCount));
-                                hWeight = hWeight+Double.parseDouble(jsonObject1.get("hcf_weight").toString().trim());
-                                cWeight = cWeight+Double.parseDouble(jsonObject1.get("cbwtf_weight").toString().trim());
-                                model.setHcfWeight(String.valueOf(hWeight));
-                                model.setCbwtfWeight(String.valueOf(cWeight));
-
-                                if (jsonObject1.get("color_type_cbwtf").toString().toLowerCase().contains("blue")){
-                                    blueCountCbwtf++;
-                                    model.setRedCbwtf(String.valueOf(redCountCbwtf));
-                                    model.setBlueCbwtf(String.valueOf(blueCountCbwtf));
-                                    model.setYellowCbwtf(String.valueOf(yellowCountCbwtf));
-                                    model.setWhiteCbwtf(String.valueOf(whiteCountCbwtf));
-                                }
-                            }
-                            if (jsonObject1.get("color_type_hcf").toString().toLowerCase().contains("yellow")){
-                                yellowCount++;
-                                model.setRed(String.valueOf(redCount));
-                                model.setBlue(String.valueOf(blueCount));
-                                model.setYellow(String.valueOf(yellowCount));
-                                model.setWhite(String.valueOf(whiteCount));
-                                hWeight = hWeight+Double.parseDouble(jsonObject1.get("hcf_weight").toString().trim());
-                                cWeight = cWeight+Double.parseDouble(jsonObject1.get("cbwtf_weight").toString().trim());
-                                model.setHcfWeight(String.valueOf(hWeight));
-                                model.setCbwtfWeight(String.valueOf(cWeight));
-
-                                if (jsonObject1.get("color_type_cbwtf").toString().toLowerCase().contains("yellow")){
-                                    yellowCountCbwtf++;
-                                    model.setRedCbwtf(String.valueOf(redCountCbwtf));
-                                    model.setBlueCbwtf(String.valueOf(blueCountCbwtf));
-                                    model.setYellowCbwtf(String.valueOf(yellowCountCbwtf));
-                                    model.setWhiteCbwtf(String.valueOf(whiteCountCbwtf));
-                                }
-                            }
-                            if (jsonObject1.get("color_type_hcf").toString().toLowerCase().contains("white")){
-                                whiteCount++;
-                                model.setRed(String.valueOf(redCount));
-                                model.setBlue(String.valueOf(blueCount));
-                                model.setYellow(String.valueOf(yellowCount));
-                                model.setWhite(String.valueOf(whiteCount));
-                                hWeight = hWeight+Double.parseDouble(jsonObject1.get("hcf_weight").toString().trim());
-                                cWeight = cWeight+Double.parseDouble(jsonObject1.get("cbwtf_weight").toString().trim());
-                                model.setHcfWeight(String.valueOf(hWeight));
-                                model.setCbwtfWeight(String.valueOf(cWeight));
-
-                                if (jsonObject1.get("color_type_cbwtf").toString().toLowerCase().contains("white")){
-                                    whiteCountCbwtf++;
-                                    model.setRedCbwtf(String.valueOf(redCountCbwtf));
-                                    model.setBlueCbwtf(String.valueOf(blueCountCbwtf));
-                                    model.setYellowCbwtf(String.valueOf(yellowCountCbwtf));
-                                    model.setWhiteCbwtf(String.valueOf(whiteCountCbwtf));
-                                }
-                            }
-                        }
-
-                    }
-
-
-                    reportsModels.add(model);
-                    Log.d("TAG", "onResponse: "+reportsModels.size());
-                    reportsAdapter.notifyDataSetChanged();
-
-                    if (size < 1){
-                        empty_view.setVisibility(View.VISIBLE);
-                    }
-
-                }else {
-                    shimmerFrameLayout.stopShimmer();
-                    shimmerFrameLayout.setVisibility(View.GONE);
-                    empty_view.setVisibility(View.VISIBLE);
-                }
-            }catch (Exception e){
-                e.printStackTrace();
-            }
-
-        }, error -> {
-
-        }){
-            @Nullable
-            @Override
-            protected Map<String, String> getParams() throws AuthFailureError {
-                return map;
-            }
-        };
-
-        VolleySingleton.getInstance(getContext()).addToRequestQueue(request);
-    }
-
-    public void searchQuery(String text){
-        List<ReportsModel> list = new ArrayList<>();
-        for (ReportsModel reportsModel:reportsModels){
-            if (reportsModel.getName().trim().toLowerCase().contains(text.trim().toLowerCase())){
-                list.add(reportsModel);
-            }
-        }
-        reportsAdapter.onUpdate(list);
-    }
-
-    private void downloadPDF(String pdfUrl) {
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        Handler handler = new Handler(Looper.getMainLooper());
-
-        executor.execute(() -> {
-            File pdfFile = null;
-            try {
-                URL url = new URL(pdfUrl);
-                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                connection.setRequestMethod("GET");
-                connection.connect();
-
-                if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
-                    InputStream inputStream = connection.getInputStream();
-                    File storageDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-                    long currentTimeMillis = System.currentTimeMillis();
-                    String pdfFileName = "downloaded_file_" + currentTimeMillis + ".pdf";
-                    pdfFile = new File(storageDir, pdfFileName);
-
-                    FileOutputStream outputStream = new FileOutputStream(pdfFile);
-                    byte[] buffer = new byte[1024];
-                    int len;
-                    while ((len = inputStream.read(buffer)) != -1) {
-                        outputStream.write(buffer, 0, len);
-                    }
-                    outputStream.close();
-                    inputStream.close();
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "Exception: ", e);
-            }
-
-            File finalPdfFile = pdfFile;
-            handler.post(() -> {
-                if (finalPdfFile != null) {
-                    openPDFWithReader(finalPdfFile);
-                }
-            });
-        });
-    }
-
-    private void openPDFWithReader(File pdfFile) {
-        Uri pdfUri = FileProvider.getUriForFile(requireContext(), BuildConfig.APPLICATION_ID + ".provider", pdfFile);
-
-        Intent intent = new Intent(Intent.ACTION_VIEW);
-        intent.setDataAndType(pdfUri, "application/pdf");
-        intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-
-        try {
-            startActivity(intent);
-        } catch (ActivityNotFoundException e) {
-            // Handle exception if no PDF reader app is installed
+            startActivity(intent)
+        } catch (ex: ActivityNotFoundException) {
+            val browserIntent = Intent(Intent.ACTION_VIEW, uri)
+            startActivity(browserIntent)
         }
     }
 
-    private void showToast(String message) {
-        if (isAdded() && getContext() != null) {
-            Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+    private fun sendMail() {
+        val map = HashMap<String, String>()
+        map["hcf_code"] = cHCode
+        map["from_date"] = txtFromDate.text.toString().trim()
+        map["to_date"] = txtToDate.text.toString().trim()
+        viewModel.sendMail(AppStrings.send_mail, map)
+    }
+
+    private fun showToast(message: String) {
+        if (isAdded && context != null) {
+            Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
         }
     }
-
-    @SuppressLint("SimpleDateFormat")
-    public void sendMail() {
-        StringRequest sendMailRequest = new StringRequest(Request.Method.POST, AppStrings.send_mail, new Response.Listener<String>() {
-            @Override
-            public void onResponse(String response) {
-                try {
-                    JSONObject jsonObject = new JSONObject(response);
-                    if (jsonObject.optString("status").equalsIgnoreCase("success")) {
-                        showToast("Email Sent Successfully");
-                    } else {
-                        showToast("Failed to send email: " + jsonObject.optString("message"));
-                    }
-                } catch (Exception e) {
-                    Log.e(TAG, "Exception: ", e);
-                }
-            }
-        }, error -> {
-            Log.e("TAG", "sendMail Error: " + error.getMessage());
-            showToast("Error sending email");
-        }) {
-            @Nullable
-            @Override
-            protected Map<String, String> getParams() throws AuthFailureError {
-                Map<String, String> params = new HashMap<>();
-                params.put("hcf_code", cHCode);
-                params.put("from_date", txtFromDate.getText().toString().trim());
-                params.put("to_date", txtToDate.getText().toString().trim());
-                return params;
-            }
-        };
-
-        VolleySingleton.getInstance(getContext()).addToRequestQueue(sendMailRequest);
-    }
-
 }
