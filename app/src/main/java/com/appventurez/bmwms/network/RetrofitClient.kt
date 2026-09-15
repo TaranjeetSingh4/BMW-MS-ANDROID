@@ -3,6 +3,7 @@ package com.appventurez.bmwms.network
 import com.appventurez.bmwms.BuildConfig
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import com.google.gson.GsonBuilder
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.security.SecureRandom
@@ -54,10 +55,15 @@ object RetrofitClient {
 
     private val okHttpClient = getUnsafeOkHttpClient()
 
+    private val gson = GsonBuilder()
+        .registerTypeAdapter(String::class.java, FlexibleMessageDeserializer())
+        .registerTypeHierarchyAdapter(List::class.java, FlexibleListDeserializer())
+        .create()
+
     val apiService: ApiService by lazy {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create(gson))
             .client(okHttpClient)
             .build()
             .create(ApiService::class.java)

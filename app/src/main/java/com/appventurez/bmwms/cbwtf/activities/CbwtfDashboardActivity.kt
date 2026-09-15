@@ -327,7 +327,7 @@ class CbwtfDashboardActivity : AppCompatActivity() {
         if (isHCF) {
             hcfCard.visibility = View.GONE
             otpLl.visibility = View.GONE
-            scannerImg.visibility = View.GONE
+            scannerImg.visibility = View.INVISIBLE
         } else {
             hcfCard.visibility = View.VISIBLE
             otpLl.visibility = View.GONE

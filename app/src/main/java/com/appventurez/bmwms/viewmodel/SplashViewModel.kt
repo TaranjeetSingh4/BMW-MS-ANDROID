@@ -1,5 +1,6 @@
 package com.appventurez.bmwms.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -11,7 +12,7 @@ import kotlinx.coroutines.launch
 import retrofit2.Response
 
 class SplashViewModel(private val repository: SplashRepository) : ViewModel() {
-
+    private val TAG = "SplashViewModel"
     private val _loginResponse = MutableLiveData<Response<LoginResponse>>()
     val loginResponse: LiveData<Response<LoginResponse>> get() = _loginResponse
 
@@ -27,6 +28,7 @@ class SplashViewModel(private val repository: SplashRepository) : ViewModel() {
                 val response = repository.login(url, params)
                 _loginResponse.value = response
             } catch (e: Exception) {
+                Log.e(TAG, "Error: $error")
                 _error.value = e.message
             }
         }

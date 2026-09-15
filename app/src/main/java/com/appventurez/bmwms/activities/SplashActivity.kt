@@ -94,11 +94,28 @@ class SplashActivity : AppCompatActivity() {
                     saveUserData(userData)
                     navigateToNext(Intent(this, CbwtfDashboardActivity::class.java))
                 } else {
-                    Snackbar.make(splashImage, "Your account is banned or removed", 1000).show()
-                    navigateToNext(Intent(this, LoginActivity::class.java))
+                    val message = loginResponse?.message
+                    if (message?.contains("The Email field is required.") == true) {
+                        Log.e(TAG, "The Email field is required")
+                    } else {
+                        Snackbar.make(
+                            splashImage,
+                            "Your account is banned or removed",
+                            Snackbar.LENGTH_LONG
+                        ).show()
+                    }
+
+                    navigateToNext(
+                        Intent(this, LoginActivity::class.java)
+                    )
                 }
             } else {
-                showErrorAndLogin()
+                val errorMessage = extractErrorMessage(response.errorBody()?.string())
+
+                Log.e(TAG, "HTTP ${response.code()}")
+                Log.e(TAG, "Backend error: $errorMessage")
+
+                showErrorAndLogin(errorMessage)
             }
         }
 
@@ -113,8 +130,59 @@ class SplashActivity : AppCompatActivity() {
             }
         }
 
-        viewModel.error.observe(this) {
-            showErrorAndLogin()
+        viewModel.error.observe(this) { error ->
+            Log.e(TAG, "Login error: $error")
+            showErrorAndLogin("Something went wrong, please try again")
+        }
+    }
+
+    private fun extractErrorMessage(errorBody: String?): String {
+        if (errorBody.isNullOrBlank()) {
+            return "Something went wrong, please try again"
+        }
+
+        return try {
+            val jsonObject = com.google.gson.JsonParser
+                .parseString(errorBody)
+                .asJsonObject
+
+            val message = jsonObject.get("message")
+
+            when {
+                message == null || message.isJsonNull -> {
+                    "Something went wrong, please try again"
+                }
+
+                message.isJsonObject -> {
+                    // Example:
+                    // "message": {
+                    //     "email": "The Email field is required."
+                    // }
+
+                    val messageObject = message.asJsonObject
+
+                    messageObject.entrySet()
+                        .firstOrNull()
+                        ?.value
+                        ?.asString
+                        ?: "Something went wrong, please try again"
+                }
+
+                message.isJsonPrimitive -> {
+                    // Handles:
+                    // "message": "Something went wrong"
+
+                    message.asString
+                }
+
+                else -> {
+                    "Something went wrong, please try again"
+                }
+            }
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to parse error body: $errorBody", e)
+            "Something went wrong, please try again"
         }
     }
 
@@ -137,9 +205,17 @@ class SplashActivity : AppCompatActivity() {
         }
     }
 
-    private fun showErrorAndLogin() {
-        Toast.makeText(this, "Something went wrong try again", Toast.LENGTH_SHORT).show()
-        navigateToNext(Intent(this, LoginActivity::class.java))
+    private fun showErrorAndLogin(message: String) {
+
+        Toast.makeText(
+            this,
+            message,
+            Toast.LENGTH_SHORT
+        ).show()
+
+        navigateToNext(
+            Intent(this, LoginActivity::class.java)
+        )
     }
 
     private fun startTimer() {
