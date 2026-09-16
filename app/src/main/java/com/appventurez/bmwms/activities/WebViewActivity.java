@@ -14,6 +14,7 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import androidx.appcompat.app.AlertDialog;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 import com.appventurez.bmwms.R;
@@ -99,9 +100,31 @@ public class WebViewActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
-                Log.w(TAG, "Bypassing SSL Error: " + error.toString());
-                handler.proceed(); // Ignore SSL errors for this specific government site
+            public void onReceivedSslError(WebView view, final SslErrorHandler handler, SslError error) {
+                final AlertDialog.Builder builder = new AlertDialog.Builder(WebViewActivity.this);
+                String message = "SSL Certificate error.";
+                switch (error.getPrimaryError()) {
+                    case SslError.SSL_UNTRUSTED:
+                        message = "The certificate authority is not trusted.";
+                        break;
+                    case SslError.SSL_EXPIRED:
+                        message = "The certificate has expired.";
+                        break;
+                    case SslError.SSL_IDMISMATCH:
+                        message = "The certificate Hostname mismatch.";
+                        break;
+                    case SslError.SSL_NOTYETVALID:
+                        message = "The certificate is not yet valid.";
+                        break;
+                }
+                message += " Do you want to continue anyway?";
+
+                builder.setTitle("SSL Certificate Error");
+                builder.setMessage(message);
+                builder.setPositiveButton("Continue", (dialog, which) -> handler.proceed());
+                builder.setNegativeButton("Cancel", (dialog, which) -> handler.cancel());
+                final AlertDialog dialog = builder.create();
+                dialog.show();
             }
 
             @Override
