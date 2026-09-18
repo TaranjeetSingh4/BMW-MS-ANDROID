@@ -294,7 +294,7 @@ class CbwtfDashboardActivity : AppCompatActivity() {
                 "date" to date
             )
             viewModel.getTodayData(AppStrings.get_today_data_hcf, map)
-            generateOtp()
+//            generateOtp()
             scanOtpStatus(true)
         } else {
             val cbwtfMap = mapOf("cbwtf_id" to msp.getStringData(AppStrings.userCbwtfID))
