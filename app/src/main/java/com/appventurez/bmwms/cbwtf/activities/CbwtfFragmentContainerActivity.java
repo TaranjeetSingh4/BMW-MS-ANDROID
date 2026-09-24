@@ -2,6 +2,7 @@ package com.appventurez.bmwms.cbwtf.activities;
 
 import android.os.Bundle;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 
@@ -46,17 +47,19 @@ public class CbwtfFragmentContainerActivity extends AppCompatActivity {
                 startFragment(new ReportsFragment());
                 break;
         }
+
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                finish();
+            }
+        });
     }
 
     public void startFragment(Fragment fragment){
         getSupportFragmentManager().beginTransaction().replace(R.id.cbwtf_fragment_container,fragment).commit();
     }
 
-    @Override
-    public void onBackPressed() {
-        super.onBackPressed();
-
-    }
 
 
 

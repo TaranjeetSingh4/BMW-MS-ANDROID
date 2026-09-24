@@ -5,27 +5,32 @@ import android.util.Log;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.HurlStack;
 import com.android.volley.toolbox.Volley;
 
-import java.security.cert.CertificateException;
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.X509Certificate;
 
 import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-import okhttp3.OkHttpClient;
-import okhttp3.logging.HttpLoggingInterceptor;
-
 public class VolleySingleton {
     private static VolleySingleton instance;
     private RequestQueue requestQueue;
-    private final Context ctx;
+    private static Context ctx;
 
     private VolleySingleton(Context context) {
-        ctx = context.getApplicationContext();
+        ctx = context;
         requestQueue = getRequestQueue();
     }
 
@@ -38,39 +43,54 @@ public class VolleySingleton {
 
     public RequestQueue getRequestQueue() {
         if (requestQueue == null) {
-            HttpLoggingInterceptor logging = new HttpLoggingInterceptor(new HttpLoggingInterceptor.Logger() {
+            // WARNING: Trusting all certificates is insecure and should only be used for debugging or staging.
+            // For production, use a proper SSL certificate or certificate pinning.
+            HurlStack hurlStack = new HurlStack() {
                 @Override
-                public void log(String message) {
-                    Log.d("API_LOG", message);
+                protected HttpURLConnection createConnection(URL url) throws IOException {
+                    HttpURLConnection connection = super.createConnection(url);
+                    if (connection instanceof HttpsURLConnection) {
+                        HttpsURLConnection httpsConnection = (HttpsURLConnection) connection;
+                        httpsConnection.setSSLSocketFactory(getUnsafeSSLSocketFactory());
+                        httpsConnection.setHostnameVerifier(getUnsafeHostnameVerifier());
+                    }
+                    return connection;
                 }
-            });
-            logging.setLevel(HttpLoggingInterceptor.Level.BODY);
-
-            OkHttpClient okHttpClient = getUnsafeOkHttpClient()
-                    .addInterceptor(logging)
-                    .build();
-
-            requestQueue = Volley.newRequestQueue(ctx, new OkHttpStack(okHttpClient));
+            };
+            requestQueue = Volley.newRequestQueue(ctx.getApplicationContext(), hurlStack);
         }
         return requestQueue;
     }
 
-    private OkHttpClient.Builder getUnsafeOkHttpClient() {
+    public <T> void addToRequestQueue(Request<T> req) {
+        getRequestQueue().add(req);
+    }
+
+    public static void logVolleyError(String tag, VolleyError error) {
+        if (error != null && error.networkResponse != null) {
+            Log.e(tag, "Error response code: " + error.networkResponse.statusCode);
+            if (error.networkResponse.data != null) {
+                Log.e(tag, "Error data: " + new String(error.networkResponse.data));
+            }
+        } else if (error != null) {
+            Log.e(tag, "Volley Error: " + error.getMessage());
+        }
+    }
+
+    private SSLSocketFactory getUnsafeSSLSocketFactory() {
         try {
             // Create a trust manager that does not validate certificate chains
             final TrustManager[] trustAllCerts = new TrustManager[]{
                     new X509TrustManager() {
                         @Override
-                        public void checkClientTrusted(java.security.cert.X509Certificate[] chain, String authType) throws CertificateException {
-                        }
+                        public void checkClientTrusted(X509Certificate[] chain, String authType) {}
 
                         @Override
-                        public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType) throws CertificateException {
-                        }
+                        public void checkServerTrusted(X509Certificate[] chain, String authType) {}
 
                         @Override
-                        public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-                            return new java.security.cert.X509Certificate[]{};
+                        public X509Certificate[] getAcceptedIssuers() {
+                            return new X509Certificate[]{};
                         }
                     }
             };
@@ -78,25 +98,20 @@ public class VolleySingleton {
             // Install the all-trusting trust manager
             final SSLContext sslContext = SSLContext.getInstance("SSL");
             sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
-            // Create an ssl socket factory with our all-trusting manager
-            final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
 
-            OkHttpClient.Builder builder = new OkHttpClient.Builder();
-            builder.sslSocketFactory(sslSocketFactory, (X509TrustManager) trustAllCerts[0]);
-            builder.hostnameVerifier(new HostnameVerifier() {
-                @Override
-                public boolean verify(String hostname, SSLSession session) {
-                    return true;
-                }
-            });
+            return sslContext.getSocketFactory();
 
-            return builder;
-        } catch (Exception e) {
+        } catch (NoSuchAlgorithmException | KeyManagementException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public <T> void addToRequestQueue(Request<T> req) {
-        getRequestQueue().add(req);
+    private HostnameVerifier getUnsafeHostnameVerifier() {
+        return new HostnameVerifier() {
+            @Override
+            public boolean verify(String hostname, SSLSession session) {
+                return true;
+            }
+        };
     }
 }

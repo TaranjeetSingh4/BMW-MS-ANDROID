@@ -1,45 +1,104 @@
 package com.appventurez.bmwms.cbwtf.activities
 
-import android.app.ProgressDialog
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.VibrationEffect
 import android.os.Vibrator
+import android.os.VibratorManager
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import com.android.volley.AuthFailureError
-import com.android.volley.Request
-import com.android.volley.Response
-import com.android.volley.toolbox.StringRequest
+import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import com.appventurez.bmwms.activities.PdfViewActivity
 import com.appventurez.bmwms.cbwtf.compose.CbwtfLoginScreen
 import com.appventurez.bmwms.classes.AppStrings
 import com.appventurez.bmwms.classes.MSP
-import com.appventurez.bmwms.classes.VolleySingleton
-import org.json.JSONObject
+import com.appventurez.bmwms.network.RetrofitClient
+import com.appventurez.bmwms.repository.LoginRepository
+import com.appventurez.bmwms.viewmodel.LoginViewModel
 import java.util.HashMap
 
 class CbwtfLoginActivity : AppCompatActivity() {
-
+    private var TAG = "CbwtfLoginActivity"
     private var vibrator: Vibrator? = null
     private var loginAs = 0
-    private var progressDialog: ProgressDialog? = null
+
+    private val viewModel: LoginViewModel by viewModels {
+        object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return LoginViewModel(LoginRepository(RetrofitClient.apiService)) as T
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        vibrator = getSystemService(VIBRATOR_SERVICE) as Vibrator
-        progressDialog = ProgressDialog(this)
-        progressDialog?.setCancelable(false)
-        progressDialog?.setMessage("Please wait...")
+        vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val vibratorManager =
+                getSystemService(VIBRATOR_MANAGER_SERVICE) as VibratorManager
+            vibratorManager.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            getSystemService(VIBRATOR_SERVICE) as Vibrator
+        }
         
         loginAs = intent.getIntExtra("loginAs", 0)
 
         setContent {
+            val loginResponse = viewModel.loginResponse.value
+
+            LaunchedEffect(loginResponse) {
+                loginResponse?.let { response ->
+                    if (response.isSuccessful) {
+                        val body = response.body()
+                        if (body?.status.equals("success", ignoreCase = true) && !body?.data.isNullOrEmpty()) {
+                            val data = body!!.data!![0]
+                            val msp = MSP.getInstance(this@CbwtfLoginActivity)
+                            
+                            if (loginAs == 0) {
+                                msp.setStringData(AppStrings.userName, data.name)
+                                msp.setStringData(AppStrings.userMobile, data.mobile)
+                                msp.setStringData(AppStrings.userPassword, data.password)
+                                msp.setStringData(AppStrings.userAddress, data.address)
+                                msp.setStringData(AppStrings.userID, data.operatorId)
+                                msp.setStringData(AppStrings.userCbwtfID, data.cbwtfId)
+                                msp.setStringData(AppStrings.loginAs, "cbwtf")
+                            } else {
+                                msp.setStringData(AppStrings.userName, data.name)
+                                msp.setStringData(AppStrings.userMobile, data.mobile)
+                                msp.setStringData(AppStrings.userPassword, data.password)
+                                msp.setStringData(AppStrings.userAddress, data.address)
+                                msp.setStringData(AppStrings.userID, data.hospitalCode)
+                                msp.setStringData(AppStrings.userCbwtfID, data.cbwtfId)
+                                msp.setStringData(AppStrings.loginAs, "hcf")
+                            }
+
+                            val intent = Intent(this@CbwtfLoginActivity, CbwtfDashboardActivity::class.java)
+                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                            startActivity(intent)
+                            finish()
+                        } else {
+                            vibrate(100)
+                            Toast.makeText(this@CbwtfLoginActivity, "Wrong credential", Toast.LENGTH_SHORT).show()
+                            viewModel.resetLoginResponse()
+                        }
+                    } else {
+                        Toast.makeText(this@CbwtfLoginActivity, "Something went wrong try again", Toast.LENGTH_SHORT).show()
+                        viewModel.resetLoginResponse()
+                    }
+                }
+            }
+
             CbwtfLoginScreen(
+                isLoading = viewModel.isLoading.value,
                 onLoginClick = { mobile, password ->
                     onLoginClick(mobile, password)
                 },
@@ -59,88 +118,33 @@ class CbwtfLoginActivity : AppCompatActivity() {
         try {
             startActivity(appIntent)
         } catch (ex: ActivityNotFoundException) {
+            Log.d(TAG, "ActivityNotFoundException "+ ex.message)
             startActivity(webIntent)
+        }
+    }
+
+    private fun vibrate(duration: Long) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrator?.vibrate(VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE))
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator?.vibrate(duration)
         }
     }
 
     private fun onLoginClick(mobile: String, password: String) {
         if (mobile.trim().isEmpty()) {
-            vibrator?.vibrate(100)
+            vibrate(100)
             Toast.makeText(this, "Empty number", Toast.LENGTH_SHORT).show()
         } else if (password.trim().isEmpty()) {
-            vibrator?.vibrate(100)
+            vibrate(100)
             Toast.makeText(this, "Empty password", Toast.LENGTH_SHORT).show()
         } else {
-            progressDialog?.show()
             val map = HashMap<String, String>()
             map["mobile"] = mobile
             map["password"] = password
-            if (loginAs == 0) {
-                networkRequest(AppStrings.cbwtf_login, map)
-            } else {
-                networkRequest(AppStrings.hcf_login, map)
-            }
+            val url = if (loginAs == 0) AppStrings.cbwtf_login else AppStrings.hcf_login
+            viewModel.login(url, map)
         }
-    }
-
-    fun networkRequest(url: String, map: Map<String, String>) {
-        Log.d("CbwtfLoginActivity", "Network Request URL: $url")
-        Log.d("CbwtfLoginActivity", "Network Request Params: $map")
-
-        val request = object : StringRequest(Request.Method.POST, url, Response.Listener { response ->
-            Log.d("CbwtfLoginActivity", "Network Response: $response")
-            try {
-                val jsonObject = JSONObject(response)
-                if (jsonObject.get("status").toString().equals("success", ignoreCase = true)) {
-                    val data = jsonObject.getJSONArray("data").getJSONObject(0)
-                    if (loginAs == 0) {
-                        MSP.getInstance(this).apply {
-                            setStringData(AppStrings.userName, data.optString("name"))
-                            setStringData(AppStrings.userMobile, data.optString("mobile"))
-                            setStringData(AppStrings.userPassword, data.optString("password"))
-                            setStringData(AppStrings.userAddress, data.optString("address"))
-                            setStringData(AppStrings.userID, data.optString("operator_id"))
-                            setStringData(AppStrings.userCbwtfID, data.optString("cbwtf_id"))
-                            setStringData(AppStrings.loginAs, "cbwtf")
-                        }
-                    } else {
-                        MSP.getInstance(this).apply {
-                            setStringData(AppStrings.userName, data.optString("name"))
-                            setStringData(AppStrings.userMobile, data.optString("mobile"))
-                            setStringData(AppStrings.userPassword, data.optString("password"))
-                            setStringData(AppStrings.userAddress, data.optString("address"))
-                            setStringData(AppStrings.userID, data.optString("hospital_code"))
-                            setStringData(AppStrings.userCbwtfID, data.optString("cbwtf_id"))
-                            setStringData(AppStrings.loginAs, "hcf")
-                        }
-                    }
-
-                    progressDialog?.dismiss()
-                    val intent = Intent(this, CbwtfDashboardActivity::class.java)
-                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                    startActivity(intent)
-                    finish()
-                } else {
-                    progressDialog?.dismiss()
-                    vibrator?.vibrate(100)
-                    Toast.makeText(this, "Wrong credential", Toast.LENGTH_SHORT).show()
-                }
-            } catch (e: Exception) {
-                progressDialog?.dismiss()
-                e.printStackTrace()
-                Toast.makeText(this, "Something went wrong try again", Toast.LENGTH_SHORT).show()
-            }
-        }, Response.ErrorListener {
-            Log.e("CbwtfLoginActivity", "Network Error: ${it.message}")
-            progressDialog?.dismiss()
-            Toast.makeText(this, "Something went wrong try again", Toast.LENGTH_SHORT).show()
-        }) {
-            @Throws(AuthFailureError::class)
-            override fun getParams(): Map<String, String> {
-                return map
-            }
-        }
-
-        VolleySingleton.getInstance(this).addToRequestQueue(request)
     }
 }
