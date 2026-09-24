@@ -12,5 +12,6 @@ data class RescanData(
     @SerializedName("name") val name: String?,
     @SerializedName("color_type_hcf") val colorTypeHcf: String?,
     @SerializedName("cbwtf_weight") val cbwtfWeight: String?,
-    @SerializedName("hcf_weight") val hcfWeight: String?
+    @SerializedName("hcf_weight") val hcfWeight: String?,
+    @SerializedName("cbwtf_id") val cbwtfId: String?
 )
