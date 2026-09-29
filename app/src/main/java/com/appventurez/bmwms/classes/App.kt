@@ -1,19 +1,30 @@
-package com.appventurez.bmwms.classes;
+package com.appventurez.bmwms.classes
 
-import android.app.Application;
-import android.content.Context;
+import android.app.Application
+import android.content.Context
+import com.appventurez.bmwms.utils.CrashlyticsHelper
+import com.google.firebase.FirebaseApp
 
-public class App extends Application {
+class App : Application() {
 
-    public static Context ctx;
-
-    @Override
-    public void onCreate() {
-        super.onCreate();
-        ctx = this;
+    override fun onCreate() {
+        super.onCreate()
+        ctx = this
+        FirebaseApp.initializeApp(this)
+        CrashlyticsHelper.log("App onCreate initialized")
+        CrashlyticsHelper.updateCrashlyticsUserContext(this)
     }
 
-    public static Context getCtx() {
-        return ctx;
+    companion object {
+        @JvmField
+        var ctx: Context? = null
+
+        @JvmStatic
+        fun getCtx(): Context? = ctx
+
+        @JvmStatic
+        fun updateCrashlyticsUserContext(context: Context) {
+            CrashlyticsHelper.updateCrashlyticsUserContext(context)
+        }
     }
 }

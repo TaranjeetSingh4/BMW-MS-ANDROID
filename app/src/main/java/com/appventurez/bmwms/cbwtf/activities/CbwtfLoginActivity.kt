@@ -18,6 +18,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.appventurez.bmwms.activities.PdfViewActivity
 import com.appventurez.bmwms.cbwtf.compose.CbwtfLoginScreen
+import com.appventurez.bmwms.classes.App
 import com.appventurez.bmwms.classes.AppStrings
 import com.appventurez.bmwms.classes.MSP
 import com.appventurez.bmwms.network.RetrofitClient
@@ -80,6 +81,7 @@ class CbwtfLoginActivity : AppCompatActivity() {
                                 msp.setStringData(AppStrings.userCbwtfID, data.cbwtfId)
                                 msp.setStringData(AppStrings.loginAs, "hcf")
                             }
+                            App.updateCrashlyticsUserContext(this@CbwtfLoginActivity)
 
                             val intent = Intent(this@CbwtfLoginActivity, CbwtfDashboardActivity::class.java)
                             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK

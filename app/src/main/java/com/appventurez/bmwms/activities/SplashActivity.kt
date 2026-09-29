@@ -18,6 +18,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import com.appventurez.bmwms.BuildConfig
 import com.appventurez.bmwms.R
+import com.appventurez.bmwms.classes.App
 import com.appventurez.bmwms.cbwtf.activities.CbwtfDashboardActivity
 import com.appventurez.bmwms.classes.AppStrings
 import com.appventurez.bmwms.classes.MSP
@@ -27,6 +28,7 @@ import com.appventurez.bmwms.repository.SplashRepository
 import com.appventurez.bmwms.viewmodel.SplashViewModel
 import com.bumptech.glide.Glide
 import com.google.android.material.snackbar.Snackbar
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.karumi.dexter.Dexter
 import com.karumi.dexter.MultiplePermissionsReport
 import com.karumi.dexter.PermissionToken
@@ -65,7 +67,6 @@ class SplashActivity : AppCompatActivity() {
 
         initViews()
         setupObservers()
-
         startTimer()
         // viewModel.getAppVersion(AppStrings.get_app_version)
     }
@@ -203,6 +204,7 @@ class SplashActivity : AppCompatActivity() {
             msp.setStringData(AppStrings.loginAs, "hcf")
             msp.setStringData(AppStrings.hcfCode, userData.hospitalCode)
         }
+        App.updateCrashlyticsUserContext(this)
     }
 
     private fun showErrorAndLogin(message: String) {

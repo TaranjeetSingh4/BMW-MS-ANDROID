@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.appventurez.bmwms.model.*
 import com.appventurez.bmwms.repository.ScanRepository
+import com.appventurez.bmwms.utils.CrashlyticsHelper
 import kotlinx.coroutines.launch
 import retrofit2.Response
 
@@ -44,6 +45,8 @@ class ScanViewModel(private val repository: ScanRepository) : ViewModel() {
                 val response = repository.getHospitalData(url, params)
                 _hospitalDataResponse.value = response
             } catch (e: Exception) {
+                CrashlyticsHelper.log("getHospitalData error: ${e.message}")
+                CrashlyticsHelper.recordException(e)
                 _error.value = e.message
             }
         }
@@ -55,6 +58,8 @@ class ScanViewModel(private val repository: ScanRepository) : ViewModel() {
                 val response = repository.getQrData(url, params)
                 _qrDataResponse.value = response
             } catch (e: Exception) {
+                CrashlyticsHelper.log("getQrData error: ${e.message}")
+                CrashlyticsHelper.recordException(e)
                 _error.value = e.message
             }
         }
@@ -66,6 +71,8 @@ class ScanViewModel(private val repository: ScanRepository) : ViewModel() {
                 val response = repository.submitScan(url, params)
                 _submitResponse.value = response
             } catch (e: Exception) {
+                CrashlyticsHelper.log("submitScan error: ${e.message}")
+                CrashlyticsHelper.recordException(e)
                 _error.value = e.message
             }
         }
@@ -77,6 +84,8 @@ class ScanViewModel(private val repository: ScanRepository) : ViewModel() {
                 val response = repository.generateOtp(url, params)
                 _otpResponse.value = response
             } catch (e: Exception) {
+                CrashlyticsHelper.log("generateOtp error: ${e.message}")
+                CrashlyticsHelper.recordException(e)
                 _error.value = e.message
             }
         }
@@ -88,6 +97,8 @@ class ScanViewModel(private val repository: ScanRepository) : ViewModel() {
                 val response = repository.getOtp(url, params)
                 _otpResponse.value = response
             } catch (e: Exception) {
+                CrashlyticsHelper.log("getOtp error: ${e.message}")
+                CrashlyticsHelper.recordException(e)
                 _error.value = e.message
             }
         }
@@ -99,6 +110,8 @@ class ScanViewModel(private val repository: ScanRepository) : ViewModel() {
                 val response = repository.checkAttendance(url, params)
                 _attendanceResponse.value = response
             } catch (e: Exception) {
+                CrashlyticsHelper.log("checkAttendance error: ${e.message}")
+                CrashlyticsHelper.recordException(e)
                 _error.value = e.message
             }
         }
@@ -110,6 +123,8 @@ class ScanViewModel(private val repository: ScanRepository) : ViewModel() {
                 val response = repository.markAttendance(url, params)
                 _attendanceResponse.value = response
             } catch (e: Exception) {
+                CrashlyticsHelper.log("markAttendance error: ${e.message}")
+                CrashlyticsHelper.recordException(e)
                 _error.value = e.message
             }
         }
@@ -121,6 +136,8 @@ class ScanViewModel(private val repository: ScanRepository) : ViewModel() {
                 val response = repository.setHospitalLocation(url, params)
                 _locationResponse.value = response
             } catch (e: Exception) {
+                CrashlyticsHelper.log("setHospitalLocation error: ${e.message}")
+                CrashlyticsHelper.recordException(e)
                 _error.value = e.message
             }
         }
@@ -132,6 +149,8 @@ class ScanViewModel(private val repository: ScanRepository) : ViewModel() {
                 val response = repository.getRescanData(url, params)
                 _rescanResponse.value = response
             } catch (e: Exception) {
+                CrashlyticsHelper.log("getRescanData error: ${e.message}")
+                CrashlyticsHelper.recordException(e)
                 _error.value = e.message
             }
         }
@@ -143,6 +162,8 @@ class ScanViewModel(private val repository: ScanRepository) : ViewModel() {
                 val response = repository.deleteQrData(url, params)
                 _deleteResponse.value = response
             } catch (e: Exception) {
+                CrashlyticsHelper.log("deleteQrData error: ${e.message}")
+                CrashlyticsHelper.recordException(e)
                 _error.value = e.message
             }
         }

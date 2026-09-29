@@ -28,6 +28,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.appventurez.bmwms.R
 import com.appventurez.bmwms.activities.LoginActivity
+import com.appventurez.bmwms.utils.CrashlyticsHelper
 import com.appventurez.bmwms.activities.PdfViewActivity
 import com.appventurez.bmwms.classes.AppStrings
 import com.appventurez.bmwms.classes.MSP
@@ -349,6 +350,8 @@ class CbwtfDashboardActivity : AppCompatActivity() {
 
     private fun onLogout() {
         MSP.getInstance(this).removeAll()
+        CrashlyticsHelper.log("User logged out")
+        CrashlyticsHelper.setUserId("")
         val intent = Intent(this, LoginActivity::class.java)
         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         startActivity(intent)
