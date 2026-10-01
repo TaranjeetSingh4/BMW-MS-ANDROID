@@ -423,7 +423,9 @@ class CbwtfDashboardActivity : AppCompatActivity() {
                 if (exception.statusCode == LocationSettingsStatusCodes.RESOLUTION_REQUIRED) {
                     try {
                         (exception as ResolvableApiException).startResolutionForResult(this, 1000)
-                    } catch (e: Exception) { }
+                    } catch (e: Exception) {
+                        CrashlyticsHelper.recordException(e)
+                    }
                 }
             }
         }
@@ -436,6 +438,7 @@ class CbwtfDashboardActivity : AppCompatActivity() {
                 val hcfCode = data[0]
                 viewModel.getHospitalData(AppStrings.hospital_data, mapOf("hospital_code" to hcfCode))
             } catch (e: Exception) {
+                CrashlyticsHelper.recordException(e)
                 Toast.makeText(this, "Wrong QR Code", Toast.LENGTH_SHORT).show()
             }
         }

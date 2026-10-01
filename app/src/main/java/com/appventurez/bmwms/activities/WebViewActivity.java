@@ -96,11 +96,13 @@ public class WebViewActivity extends AppCompatActivity {
             @Override
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
                 super.onReceivedError(view, request, error);
+                com.appventurez.bmwms.utils.CrashlyticsHelper.INSTANCE.log("WebView error: " + error.toString());
                 Log.e(TAG, "Page Error: " + error.toString());
             }
 
             @Override
             public void onReceivedSslError(WebView view, final SslErrorHandler handler, SslError error) {
+                com.appventurez.bmwms.utils.CrashlyticsHelper.INSTANCE.log("WebView SSL error: " + error.toString());
                 final AlertDialog.Builder builder = new AlertDialog.Builder(WebViewActivity.this);
                 String message = "SSL Certificate error.";
                 switch (error.getPrimaryError()) {

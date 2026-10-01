@@ -20,6 +20,7 @@ import com.appventurez.bmwms.activities.PdfViewActivity
 import com.appventurez.bmwms.cbwtf.compose.CbwtfLoginScreen
 import com.appventurez.bmwms.classes.App
 import com.appventurez.bmwms.classes.AppStrings
+import com.appventurez.bmwms.utils.CrashlyticsHelper
 import com.appventurez.bmwms.classes.MSP
 import com.appventurez.bmwms.network.RetrofitClient
 import com.appventurez.bmwms.repository.LoginRepository
@@ -52,6 +53,7 @@ class CbwtfLoginActivity : AppCompatActivity() {
         }
         
         loginAs = intent.getIntExtra("loginAs", 0)
+        CrashlyticsHelper.log("CbwtfLoginActivity onCreate (loginAs=$loginAs)")
 
         setContent {
             val loginResponse = viewModel.loginResponse.value

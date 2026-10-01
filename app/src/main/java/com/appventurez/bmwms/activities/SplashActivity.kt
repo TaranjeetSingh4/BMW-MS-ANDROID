@@ -26,6 +26,7 @@ import com.appventurez.bmwms.model.UserData
 import com.appventurez.bmwms.network.RetrofitClient
 import com.appventurez.bmwms.repository.SplashRepository
 import com.appventurez.bmwms.viewmodel.SplashViewModel
+import com.appventurez.bmwms.utils.CrashlyticsHelper
 import com.bumptech.glide.Glide
 import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.crashlytics.FirebaseCrashlytics
@@ -63,6 +64,7 @@ class SplashActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_splash)
 
+        CrashlyticsHelper.log("SplashActivity onCreate")
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
 
         initViews()
@@ -182,6 +184,7 @@ class SplashActivity : AppCompatActivity() {
             }
 
         } catch (e: Exception) {
+            CrashlyticsHelper.recordException(e)
             Log.e(TAG, "Failed to parse error body: $errorBody", e)
             "Something went wrong, please try again"
         }

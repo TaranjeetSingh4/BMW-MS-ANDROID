@@ -25,6 +25,7 @@ import com.appventurez.bmwms.cbwtf.adapters.ReportsAdapter
 import com.appventurez.bmwms.cbwtf.models.ReportsModel
 import com.appventurez.bmwms.classes.AppStrings
 import com.appventurez.bmwms.classes.MSP
+import com.appventurez.bmwms.utils.CrashlyticsHelper
 import com.appventurez.bmwms.network.RetrofitClient
 import com.appventurez.bmwms.repository.ReportRepository
 import com.appventurez.bmwms.viewmodel.ReportViewModel
@@ -64,6 +65,7 @@ class ReportsFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
+        CrashlyticsHelper.log("ReportsFragment onCreateView")
         val view = inflater.inflate(R.layout.fragment_reports, container, false)
 
         initViews(view)
