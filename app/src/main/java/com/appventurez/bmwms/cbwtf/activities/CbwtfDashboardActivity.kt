@@ -19,7 +19,6 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -51,6 +50,7 @@ import com.karumi.dexter.listener.PermissionRequest
 import com.karumi.dexter.listener.single.PermissionListener
 import java.text.DecimalFormat
 import java.util.*
+import androidx.core.net.toUri
 
 class CbwtfDashboardActivity : AppCompatActivity() {
 
@@ -101,6 +101,7 @@ class CbwtfDashboardActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_dashboard)
 
+        CrashlyticsHelper.log("CbwtfDashboardActivity onCreate")
         initVibrator()
         viewBinding()
         loadImages()
@@ -363,7 +364,7 @@ class CbwtfDashboardActivity : AppCompatActivity() {
     }
 
     private fun openYoutubeLink() {
-        val appIntent = Intent(Intent.ACTION_VIEW, Uri.parse("vnd.youtube:OcrMGvRdjaY"))
+        val appIntent = Intent(Intent.ACTION_VIEW, "vnd.youtube:OcrMGvRdjaY".toUri())
         val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("http://www.youtube.com/watch?v=OcrMGvRdjaY"))
         try {
             startActivity(appIntent)

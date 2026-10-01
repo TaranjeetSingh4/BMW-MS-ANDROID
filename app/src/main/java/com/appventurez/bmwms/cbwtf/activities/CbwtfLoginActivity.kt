@@ -26,6 +26,7 @@ import com.appventurez.bmwms.network.RetrofitClient
 import com.appventurez.bmwms.repository.LoginRepository
 import com.appventurez.bmwms.viewmodel.LoginViewModel
 import java.util.HashMap
+import androidx.core.net.toUri
 
 class CbwtfLoginActivity : AppCompatActivity() {
     private var TAG = "CbwtfLoginActivity"
@@ -63,7 +64,7 @@ class CbwtfLoginActivity : AppCompatActivity() {
                     if (response.isSuccessful) {
                         val body = response.body()
                         if (body?.status.equals("success", ignoreCase = true) && !body?.data.isNullOrEmpty()) {
-                            val data = body!!.data!![0]
+                            val data = body.data[0]
                             val msp = MSP.getInstance(this@CbwtfLoginActivity)
                             
                             if (loginAs == 0) {
@@ -117,8 +118,9 @@ class CbwtfLoginActivity : AppCompatActivity() {
     }
 
     private fun openYoutube() {
-        val appIntent = Intent(Intent.ACTION_VIEW, Uri.parse("vnd.youtube:j46IAKw6rpI"))
-        val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("http://www.youtube.com/watch?v=j46IAKw6rpI"))
+        val appIntent = Intent(Intent.ACTION_VIEW, "vnd.youtube:j46IAKw6rpI".toUri())
+        val webIntent = Intent(Intent.ACTION_VIEW,
+            "http://www.youtube.com/watch?v=j46IAKw6rpI".toUri())
         try {
             startActivity(appIntent)
         } catch (ex: ActivityNotFoundException) {

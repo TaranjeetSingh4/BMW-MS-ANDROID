@@ -33,6 +33,7 @@ import com.facebook.shimmer.ShimmerFrameLayout
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import androidx.core.net.toUri
 
 class ReportsFragment : Fragment() {
 
@@ -377,7 +378,7 @@ class ReportsFragment : Fragment() {
 
         Log.d("TAG", "downloadPDF: $pdfUrl")
 
-        val uri = Uri.parse(pdfUrl)
+        val uri = pdfUrl.toUri()
         val intent = Intent(Intent.ACTION_VIEW, uri)
         intent.setPackage("com.android.chrome")
 

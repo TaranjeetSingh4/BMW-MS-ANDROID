@@ -97,7 +97,7 @@ public class WebViewActivity extends AppCompatActivity {
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
                 super.onReceivedError(view, request, error);
                 com.appventurez.bmwms.utils.CrashlyticsHelper.INSTANCE.log("WebView error: " + error.toString());
-                Log.e(TAG, "Page Error: " + error.toString());
+                Log.e(TAG, "Page Error: " + error);
             }
 
             @Override

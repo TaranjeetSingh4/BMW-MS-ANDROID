@@ -29,7 +29,6 @@ import com.appventurez.bmwms.viewmodel.SplashViewModel
 import com.appventurez.bmwms.utils.CrashlyticsHelper
 import com.bumptech.glide.Glide
 import com.google.android.material.snackbar.Snackbar
-import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.karumi.dexter.Dexter
 import com.karumi.dexter.MultiplePermissionsReport
 import com.karumi.dexter.PermissionToken
