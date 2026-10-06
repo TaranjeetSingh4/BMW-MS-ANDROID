@@ -62,8 +62,9 @@ class CbwtfLoginActivity : AppCompatActivity() {
                 loginResponse?.let { response ->
                     if (response.isSuccessful) {
                         val body = response.body()
-                        if (body?.status.equals("success", ignoreCase = true) && !body?.data.isNullOrEmpty()) {
-                            val data = body!!.data!![0]
+                        val userDataList = body?.data
+                        if (body?.status.equals("success", ignoreCase = true) && !userDataList.isNullOrEmpty()) {
+                            val data = userDataList[0]
                             val msp = MSP.getInstance(this@CbwtfLoginActivity)
                             
                             if (loginAs == 0) {
