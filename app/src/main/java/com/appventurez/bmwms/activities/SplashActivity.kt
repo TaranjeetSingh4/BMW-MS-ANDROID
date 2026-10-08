@@ -18,6 +18,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import com.appventurez.bmwms.BuildConfig
 import com.appventurez.bmwms.R
+import com.appventurez.bmwms.classes.App
 import com.appventurez.bmwms.cbwtf.activities.CbwtfDashboardActivity
 import com.appventurez.bmwms.classes.AppStrings
 import com.appventurez.bmwms.classes.MSP
@@ -25,6 +26,7 @@ import com.appventurez.bmwms.model.UserData
 import com.appventurez.bmwms.network.RetrofitClient
 import com.appventurez.bmwms.repository.SplashRepository
 import com.appventurez.bmwms.viewmodel.SplashViewModel
+import com.appventurez.bmwms.utils.CrashlyticsHelper
 import com.bumptech.glide.Glide
 import com.google.android.material.snackbar.Snackbar
 import com.karumi.dexter.Dexter
@@ -61,11 +63,11 @@ class SplashActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_splash)
 
+        CrashlyticsHelper.log("SplashActivity onCreate")
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
 
         initViews()
         setupObservers()
-
         startTimer()
         // viewModel.getAppVersion(AppStrings.get_app_version)
     }
@@ -181,6 +183,7 @@ class SplashActivity : AppCompatActivity() {
             }
 
         } catch (e: Exception) {
+            CrashlyticsHelper.recordException(e)
             Log.e(TAG, "Failed to parse error body: $errorBody", e)
             "Something went wrong, please try again"
         }
@@ -203,6 +206,7 @@ class SplashActivity : AppCompatActivity() {
             msp.setStringData(AppStrings.loginAs, "hcf")
             msp.setStringData(AppStrings.hcfCode, userData.hospitalCode)
         }
+        App.updateCrashlyticsUserContext(this)
     }
 
     private fun showErrorAndLogin(message: String) {
