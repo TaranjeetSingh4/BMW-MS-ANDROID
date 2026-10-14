@@ -43,10 +43,12 @@ import com.google.gson.Gson
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 import com.karumi.dexter.Dexter
+import com.karumi.dexter.MultiplePermissionsReport
 import com.karumi.dexter.PermissionToken
 import com.karumi.dexter.listener.PermissionDeniedResponse
 import com.karumi.dexter.listener.PermissionGrantedResponse
 import com.karumi.dexter.listener.PermissionRequest
+import com.karumi.dexter.listener.multi.MultiplePermissionsListener
 import com.karumi.dexter.listener.single.PermissionListener
 import java.text.DecimalFormat
 import java.util.*
@@ -383,11 +385,37 @@ class CbwtfDashboardActivity : AppCompatActivity() {
     }
 
     private fun getBluetoothPermission(): Boolean {
-        Dexter.withContext(this).withPermission(Manifest.permission.BLUETOOTH).withListener(object : PermissionListener {
-            override fun onPermissionGranted(response: PermissionGrantedResponse) { isBluetoothGranted = true }
-            override fun onPermissionDenied(response: PermissionDeniedResponse) { isBluetoothGranted = false }
-            override fun onPermissionRationaleShouldBeShown(request: PermissionRequest, token: PermissionToken) { token.continuePermissionRequest() }
-        }).check()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val connectGranted = ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
+            val scanGranted = ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED
+            if (connectGranted && scanGranted) {
+                isBluetoothGranted = true
+                return true
+            }
+            Dexter.withContext(this)
+                .withPermissions(
+                    Manifest.permission.BLUETOOTH_CONNECT,
+                    Manifest.permission.BLUETOOTH_SCAN
+                )
+                .withListener(object : MultiplePermissionsListener {
+                    override fun onPermissionsChecked(report: MultiplePermissionsReport?) {
+                        isBluetoothGranted = report?.areAllPermissionsGranted() == true
+                    }
+
+                    override fun onPermissionRationaleShouldBeShown(
+                        permissions: MutableList<PermissionRequest>?,
+                        token: PermissionToken?
+                    ) {
+                        token?.continuePermissionRequest()
+                    }
+                }).check()
+        } else {
+            Dexter.withContext(this).withPermission(Manifest.permission.BLUETOOTH).withListener(object : PermissionListener {
+                override fun onPermissionGranted(response: PermissionGrantedResponse) { isBluetoothGranted = true }
+                override fun onPermissionDenied(response: PermissionDeniedResponse) { isBluetoothGranted = false }
+                override fun onPermissionRationaleShouldBeShown(request: PermissionRequest, token: PermissionToken) { token.continuePermissionRequest() }
+            }).check()
+        }
         return isBluetoothGranted
     }
 

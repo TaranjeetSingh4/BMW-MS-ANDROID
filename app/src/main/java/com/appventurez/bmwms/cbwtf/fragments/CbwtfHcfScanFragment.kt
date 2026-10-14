@@ -6,7 +6,7 @@ import android.app.AlertDialog
 import android.bluetooth.BluetoothDevice
 import android.content.Context
 import android.content.Intent
-import android.content.IntentSender
+import android.content.pm.PackageManager
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
 import android.graphics.drawable.Drawable
@@ -15,6 +15,7 @@ import android.location.Geocoder
 import android.location.Location
 import android.location.LocationManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -150,8 +151,6 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
     private var bluetoothDevicesAdapter: BluetoothDevicesAdapter? = null
     private var weight_tv: TextView? = null
     private var weight_type: TextView? = null
-
-    private val permissions = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
 
     private var myBluetoothService: MyBluetoothService? = null
     private var weightView: ConstraintLayout? = null
@@ -628,42 +627,90 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
         }
     }
 
+    private fun getBluetoothPermissions(): Array<String> {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            arrayOf(
+                Manifest.permission.BLUETOOTH_CONNECT,
+                Manifest.permission.BLUETOOTH_SCAN,
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            )
+        } else {
+            arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            )
+        }
+    }
+
     fun getBluetoothDevices() {
-        bluetoothDevicesModel.clear()
-        bluetooth!!.onStart()
-
-        val bluetoothDevices = bluetooth!!.pairedDevices
-        alertDialog = AlertDialog.Builder(requireContext()).create()
-
-        val bl_view = LayoutInflater.from(requireContext()).inflate(R.layout.blutooth_view, null, false)
-        val closeAlert = bl_view.findViewById<ImageView>(R.id.alert_dismiss)
-        blRv = bl_view.findViewById(R.id.bluetooth_devices_rv)
-
-        alertDialog!!.setView(bl_view)
-        alertDialog!!.setCancelable(false)
-
-        blRv!!.layoutManager = LinearLayoutManager(requireContext(), RecyclerView.VERTICAL, false)
-        blRv!!.adapter = bluetoothDevicesAdapter
-
-        closeAlert.setOnClickListener {
-            barcodeView!!.resume()
-            alertDialog!!.dismiss()
+        val reqPermissions = getBluetoothPermissions()
+        val allGranted = reqPermissions.all { permission ->
+            ContextCompat.checkSelfPermission(requireContext(), permission) == PackageManager.PERMISSION_GRANTED
         }
 
-        alertDialog!!.show()
+        if (allGranted) {
+            showBluetoothDevicesDialog()
+        } else {
+            Dexter.withContext(requireContext())
+                .withPermissions(*reqPermissions)
+                .withListener(object : MultiplePermissionsListener {
+                    override fun onPermissionsChecked(multiplePermissionsReport: MultiplePermissionsReport) {
+                        if (multiplePermissionsReport.areAllPermissionsGranted()) {
+                            showBluetoothDevicesDialog()
+                        } else {
+                            showToast("Bluetooth permissions are required to scan for devices")
+                        }
+                    }
 
-        for (i in bluetoothDevices.indices) {
-            bluetoothDevicesModel.add(BluetoothDevicesModel(bluetoothDevices[i], 1))
-            bluetoothDevicesAdapter!!.notifyDataSetChanged()
+                    override fun onPermissionRationaleShouldBeShown(
+                        list: MutableList<PermissionRequest>?,
+                        permissionToken: PermissionToken?
+                    ) {
+                        permissionToken?.continuePermissionRequest()
+                    }
+                }).check()
         }
+    }
 
-        Dexter.withContext(requireContext()).withPermissions(*permissions).withListener(object : MultiplePermissionsListener {
-            override fun onPermissionsChecked(multiplePermissionsReport: MultiplePermissionsReport) {
-                statusCheck()
+    @SuppressLint("MissingPermission")
+    private fun showBluetoothDevicesDialog() {
+        try {
+            bluetoothDevicesModel.clear()
+            bluetooth!!.onStart()
+
+            val bluetoothDevices = bluetooth!!.pairedDevices ?: emptyList()
+            alertDialog = AlertDialog.Builder(requireContext()).create()
+
+            val bl_view = LayoutInflater.from(requireContext()).inflate(R.layout.blutooth_view, null, false)
+            val closeAlert = bl_view.findViewById<ImageView>(R.id.alert_dismiss)
+            blRv = bl_view.findViewById(R.id.bluetooth_devices_rv)
+
+            alertDialog!!.setView(bl_view)
+            alertDialog!!.setCancelable(false)
+
+            blRv!!.layoutManager = LinearLayoutManager(requireContext(), RecyclerView.VERTICAL, false)
+            blRv!!.adapter = bluetoothDevicesAdapter
+
+            closeAlert.setOnClickListener {
+                barcodeView!!.resume()
+                alertDialog!!.dismiss()
             }
 
-            override fun onPermissionRationaleShouldBeShown(list: MutableList<PermissionRequest>?, permissionToken: PermissionToken?) { }
-        }).check()
+            alertDialog!!.show()
+
+            for (i in bluetoothDevices.indices) {
+                bluetoothDevicesModel.add(BluetoothDevicesModel(bluetoothDevices[i], 1))
+            }
+            bluetoothDevicesAdapter!!.notifyDataSetChanged()
+
+            statusCheck()
+        } catch (e: SecurityException) {
+            Log.e(TAG, "SecurityException in showBluetoothDevicesDialog", e)
+            showToast("Bluetooth permission required: ${e.localizedMessage}")
+        } catch (e: Exception) {
+            Log.e(TAG, "Exception in showBluetoothDevicesDialog", e)
+        }
     }
 
     override fun getDevices(device: BluetoothDevice) {
@@ -703,18 +750,25 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
     }
 
     fun statusCheck() {
-        val manager = requireActivity().getSystemService(Context.LOCATION_SERVICE) as LocationManager
-        if (!manager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-            buildAlertMessageNoGps()
-        } else {
-            if (bluetooth!!.isEnabled) {
-                bluetooth!!.onStop()
-                myBluetoothService!!.startScanService()
+        try {
+            val manager = requireActivity().getSystemService(Context.LOCATION_SERVICE) as LocationManager
+            if (!manager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                buildAlertMessageNoGps()
             } else {
-                bluetooth!!.enable()
-                bluetooth!!.onStop()
-                myBluetoothService!!.startScanService()
+                if (bluetooth!!.isEnabled) {
+                    bluetooth!!.onStop()
+                    myBluetoothService!!.startScanService()
+                } else {
+                    bluetooth!!.enable()
+                    bluetooth!!.onStop()
+                    myBluetoothService!!.startScanService()
+                }
             }
+        } catch (e: SecurityException) {
+            Log.e(TAG, "SecurityException in statusCheck", e)
+            showToast("Bluetooth permission required: ${e.localizedMessage}")
+        } catch (e: Exception) {
+            Log.e(TAG, "Exception in statusCheck", e)
         }
     }
 
@@ -1223,17 +1277,22 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
 
     @SuppressLint("MissingPermission")
     override fun onClickBluetoothDevice(bluetoothDevice: BluetoothDevice, status: Int) {
-        if (bluetoothDevice.bondState == BluetoothDevice.BOND_NONE) {
-            bluetoothDevice.createBond()
-        } else {
-            myBluetoothService!!.startDisconnectService()
-            myBluetoothService!!.connectDevice(bluetoothDevice)
+        try {
+            if (bluetoothDevice.bondState == BluetoothDevice.BOND_NONE) {
+                bluetoothDevice.createBond()
+            } else {
+                myBluetoothService!!.startDisconnectService()
+                myBluetoothService!!.connectDevice(bluetoothDevice)
 
-            weightView!!.visibility = View.VISIBLE
-            alertDialog!!.dismiss()
+                weightView!!.visibility = View.VISIBLE
+                alertDialog!!.dismiss()
 
-            bluetoothConnected = true
-            MSP.getInstance(requireContext()).setStringData(AppStrings.bluetoothConnection, "1")
+                bluetoothConnected = true
+                MSP.getInstance(requireContext()).setStringData(AppStrings.bluetoothConnection, "1")
+            }
+        } catch (e: SecurityException) {
+            Log.e(TAG, "SecurityException in onClickBluetoothDevice", e)
+            showToast("Bluetooth permission required: ${e.localizedMessage}")
         }
     }
 
