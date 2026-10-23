@@ -454,7 +454,7 @@
                 android:layout_margin="5dp"
                 android:textSize="20sp"
                 android:textStyle="bold"
-                android:text="Waste bag colour:"
+                android:text="@string/waste_bag_colour"
                 app:layout_constraintTop_toBottomOf="@id/weight_view_header_bar"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"/>
@@ -484,7 +484,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             android:gravity="center"
-            android:text="0"
+            android:text="@string/_0"
             app:layout_constraintBottom_toTopOf="@id/weighing_img"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"/>
@@ -500,51 +500,65 @@
         <TextView
             android:layout_margin="20sp"
             android:gravity="center"
-            android:text="Important: Please do not turn off the bluetooth, keep your mobile close to the machine"
+            android:text="@string/important_please_do_not_turn_off_the_bluetooth_keep_your_mobile_close_to_the_machine"
             app:layout_constraintBottom_toTopOf="@id/weight_add_button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"/>
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/weight_add_button"
-            android:text="Add weight"
+            android:text="@string/add_weight"
             android:visibility="gone"
             android:layout_margin="10dp"
             app:layout_constraintBottom_toBottomOf="parent"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"/>
 
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <LinearLayout
+        android:id="@+id/loading_view_ll"
+        android:visibility="gone"
+        android:elevation="25dp"
+        android:background="#80000000"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center"
+        android:orientation="vertical"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
         <LinearLayout
-            android:id="@+id/loading_view_ll"
-            android:layout_margin="10dp"
-            app:layout_constraintTop_toBottomOf="@id/weighing_img"
             android:orientation="vertical"
-            android:layout_width="match_parent"
+            android:gravity="center"
+            android:padding="20dp"
+            android:layout_width="220dp"
             android:layout_height="wrap_content">
 
-            <com.google.android.material.progressindicator.LinearProgressIndicator
+            <ProgressBar
+                android:id="@+id/loading_progress"
+                android:indeterminateTint="@color/app_color_dark"
                 android:layout_margin="10dp"
-                app:trackColor="@color/app_color"
-                app:indicatorColor="@color/app_color_light"
-                android:indeterminate="true"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"/>
+                android:layout_width="48dp"
+                android:layout_height="48dp"/>
 
             <TextView
+                android:id="@+id/loading_tv"
                 android:textStyle="bold"
                 android:textSize="15sp"
                 android:textColor="@color/app_color_dark"
-                android:layout_margin="10dp"
+                android:layout_marginTop="10dp"
                 android:gravity="center"
-                android:text="Connecting to device"
-                android:layout_width="match_parent"
+                android:text="Please wait..."
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"/>
-
-
 
         </LinearLayout>
 
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

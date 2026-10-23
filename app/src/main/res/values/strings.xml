@@ -36,4 +36,9 @@
     <string name="weight_in_kilo">Weight in kilo</string>
     <string name="fill_waste_weight">Fill waste weight</string>
     <string name="red">RED</string>
+    <string name="connecting_to_device">Connecting to device</string>
+    <string name="add_weight">Add weight</string>
+    <string name="important_please_do_not_turn_off_the_bluetooth_keep_your_mobile_close_to_the_machine">Important: Please do not turn off the bluetooth, keep your mobile close to the machine</string>
+    <string name="_0">0</string>
+    <string name="waste_bag_colour">Waste bag colour:</string>
 </resources>
