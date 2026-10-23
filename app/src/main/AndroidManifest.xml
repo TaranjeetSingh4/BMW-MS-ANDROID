@@ -19,7 +19,7 @@
     <uses-permission android:name="android.permission.INTERNET"/>
     <!-- Add these 2 permissions below. -->
 
-    <uses-permissionl
+    <uses-permission
         android:name="android.permission.NEARBY_WIFI_DEVICES"
         android:usesPermissionFlags="neverForLocation" />
     <!-- Needed for Local Only Hotspot -->

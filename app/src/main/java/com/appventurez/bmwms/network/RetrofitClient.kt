@@ -48,7 +48,7 @@ object RetrofitClient {
             .build()
     }
 
-    private val okHttpClient = getUnsafeOkHttpClient()
+    val okHttpClient: OkHttpClient = getUnsafeOkHttpClient()
 
     private val gson = GsonBuilder()
         .registerTypeAdapter(String::class.java, FlexibleMessageDeserializer())

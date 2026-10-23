@@ -77,6 +77,32 @@
 
         </LinearLayout>
 
+        <LinearLayout
+            android:orientation="vertical"
+            android:gravity="center"
+            android:layout_margin="10dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <ImageView
+                android:id="@+id/manual_weight_photo_preview"
+                android:layout_width="120dp"
+                android:layout_height="120dp"
+                android:scaleType="centerCrop"
+                android:visibility="gone"
+                android:background="@drawable/bg_et"
+                android:layout_marginBottom="8dp"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/manual_weight_take_photo"
+                android:text="Take Weighing Scale Photo"
+                android:backgroundTint="@color/app_color"
+                android:textColor="@color/white"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+        </LinearLayout>
+
         <com.google.android.material.button.MaterialButton
             android:id="@+id/manual_weight_add"
             android:text="Add"

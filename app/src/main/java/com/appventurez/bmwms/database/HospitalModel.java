@@ -28,17 +28,33 @@ public class HospitalModel {
     @ColumnInfo(name = "qr_code")
     public String qr_code;
 
+    @ColumnInfo(name = "weighing_photo")
+    public String weighing_photo = "";
+
 
     public HospitalModel() {
     }
 
-    public HospitalModel(String hcf_code, String hcf_name, String waste_color, String waste_weight,String waste_weight_g,String qr_code) {
+    public HospitalModel(String hcf_code, String hcf_name, String waste_color, String waste_weight, String waste_weight_g, String qr_code) {
+        this(hcf_code, hcf_name, waste_color, waste_weight, waste_weight_g, qr_code, "");
+    }
+
+    public HospitalModel(String hcf_code, String hcf_name, String waste_color, String waste_weight, String waste_weight_g, String qr_code, String weighing_photo) {
         this.hcf_code = hcf_code;
         this.hcf_name = hcf_name;
         this.waste_color = waste_color;
         this.waste_weight = waste_weight;
         this.waste_weight_g = waste_weight_g;
         this.qr_code = qr_code;
+        this.weighing_photo = weighing_photo != null ? weighing_photo : "";
+    }
+
+    public String getWeighing_photo() {
+        return weighing_photo;
+    }
+
+    public void setWeighing_photo(String weighing_photo) {
+        this.weighing_photo = weighing_photo;
     }
 
     public String getQr_code() {
