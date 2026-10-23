@@ -32,7 +32,6 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.result.ActivityResultCallback
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -198,7 +197,6 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
     private var currentPhotoPath: String? = null
     private var currentDialogPhotoPreview: ImageView? = null
     private var currentDialogPhotoSize: TextView? = null
-    private var currentDialogCompressBtn: MaterialButton? = null
 
     private fun getFormattedFileSize(file: File): String {
         val bytes = file.length()
@@ -258,8 +256,7 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
     private fun updatePhotoUI(
         photoPath: String?,
         previewImageView: ImageView,
-        sizeTextView: TextView,
-        compressButton: MaterialButton
+        sizeTextView: TextView
     ) {
         if (!photoPath.isNullOrEmpty()) {
             val file = File(photoPath)
@@ -272,19 +269,12 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
                     val sizeText = getFormattedFileSize(file)
                     sizeTextView.text = sizeText
                     sizeTextView.visibility = View.VISIBLE
-
-                    if (file.length() >= 3 * 1024 * 1024) {
-                        compressButton.visibility = View.VISIBLE
-                    } else {
-                        compressButton.visibility = View.GONE
-                    }
                     return
                 }
             }
         }
         previewImageView.visibility = View.GONE
         sizeTextView.visibility = View.GONE
-        compressButton.visibility = View.GONE
     }
 
     private val takePhotoLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -292,8 +282,9 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
             if (!currentPhotoPath.isNullOrEmpty()) {
                 val file = File(currentPhotoPath!!)
                 if (file.exists()) {
-                    if (currentDialogPhotoPreview != null && currentDialogPhotoSize != null && currentDialogCompressBtn != null) {
-                        updatePhotoUI(currentPhotoPath, currentDialogPhotoPreview!!, currentDialogPhotoSize!!, currentDialogCompressBtn!!)
+                    compressImageFile(currentPhotoPath!!)
+                    if (currentDialogPhotoPreview != null && currentDialogPhotoSize != null) {
+                        updatePhotoUI(currentPhotoPath, currentDialogPhotoPreview!!, currentDialogPhotoSize!!)
                     }
                 }
             }
@@ -301,18 +292,15 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
             currentPhotoPath = null
             currentDialogPhotoPreview?.visibility = View.GONE
             currentDialogPhotoSize?.visibility = View.GONE
-            currentDialogCompressBtn?.visibility = View.GONE
         }
     }
 
     private fun dispatchTakePictureIntent(
         previewImageView: ImageView,
-        sizeTextView: TextView,
-        compressButton: MaterialButton
+        sizeTextView: TextView
     ) {
         currentDialogPhotoPreview = previewImageView
         currentDialogPhotoSize = sizeTextView
-        currentDialogCompressBtn = compressButton
 
         val takePictureIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
         if (takePictureIntent.resolveActivity(requireActivity().packageManager) != null) {
@@ -621,7 +609,6 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
         val manualWeightTakePhoto = manualWeightView.findViewById<MaterialButton>(R.id.manual_weight_take_photo)
         val manualWeightPhotoPreview = manualWeightView.findViewById<ImageView>(R.id.manual_weight_photo_preview)
         val manualWeightPhotoSize = manualWeightView.findViewById<TextView>(R.id.manual_weight_photo_size)
-        val manualWeightCompressBtn = manualWeightView.findViewById<MaterialButton>(R.id.manual_weight_compress_btn)
         val manualWeightAdd = manualWeightView.findViewById<MaterialButton>(R.id.manual_weight_add)
 
         manualWeightColor.text = w_color.uppercase()
@@ -645,24 +632,9 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
 
         manualWeightTakePhoto.setOnClickListener {
             if (getCameraPermission()) {
-                dispatchTakePictureIntent(manualWeightPhotoPreview, manualWeightPhotoSize, manualWeightCompressBtn)
+                dispatchTakePictureIntent(manualWeightPhotoPreview, manualWeightPhotoSize)
             } else {
                 showToast("Camera permission required to capture photo")
-            }
-        }
-
-        manualWeightCompressBtn.setOnClickListener {
-            if (!currentPhotoPath.isNullOrEmpty()) {
-                val file = File(currentPhotoPath!!)
-                if (file.exists()) {
-                    val success = compressImageFile(currentPhotoPath!!)
-                    if (success) {
-                        updatePhotoUI(currentPhotoPath, manualWeightPhotoPreview, manualWeightPhotoSize, manualWeightCompressBtn)
-                        showToast("Image compressed successfully")
-                    } else {
-                        showToast("Compression failed")
-                    }
-                }
             }
         }
 

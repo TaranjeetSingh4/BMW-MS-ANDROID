@@ -110,17 +110,6 @@
                 android:layout_height="wrap_content"/>
 
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/manual_weight_compress_btn"
-                android:text="@string/compress_image"
-                android:textSize="12sp"
-                android:visibility="gone"
-                android:backgroundTint="@color/app_color_dark"
-                android:textColor="@color/white"
-                android:layout_marginBottom="8dp"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
-
-            <com.google.android.material.button.MaterialButton
                 android:id="@+id/manual_weight_take_photo"
                 android:text="@string/take_weighing_scale_photo"
                 android:backgroundTint="@color/app_color_dark"

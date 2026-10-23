@@ -50,4 +50,15 @@
     <string name="wrong_otp">Wrong OTP</string>
     <string name="please_wait">Please wait&#8230;</string>
     <string name="zero_weight">000.000</string>
+    <string name="name_of_hcf">Name of HCF</string>
+    <string name="hcf_code">HCF Code</string>
+    <string name="location">Location</string>
+    <string name="hcf_location">HCF Location</string>
+    <string name="attendance">Attendance</string>
+    <string name="total_bags">Total bags</string>
+    <string name="total_weight_kg">Total weight (Kg)</string>
+    <string name="_000_000">000.000</string>
+    <string name="scan_and_add_weights">Scan and add weights</string>
+    <string name="scan">Scan</string>
+    <string name="waste_weight_kg">Waste Weight (Kg)</string>
 </resources>
