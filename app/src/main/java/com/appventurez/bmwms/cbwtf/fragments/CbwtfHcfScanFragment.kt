@@ -12,10 +12,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
-import android.graphics.drawable.Drawable
-import android.location.Address
 import android.location.Geocoder
-import android.location.Location
 import android.location.LocationManager
 import android.net.Uri
 import android.os.Build
@@ -38,8 +35,6 @@ import android.widget.Toast
 import androidx.activity.result.ActivityResultCallback
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.NonNull
-import androidx.annotation.Nullable
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
@@ -63,10 +58,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.room.Room
 
-import com.android.volley.AuthFailureError
 import com.android.volley.Request
 import com.android.volley.Response
-import com.android.volley.VolleyError
 import com.android.volley.toolbox.StringRequest
 
 import com.bumptech.glide.Glide
@@ -77,12 +70,8 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.LocationSettingsRequest
-import com.google.android.gms.location.LocationSettingsResponse
 import com.google.android.gms.location.LocationSettingsStatusCodes
-import com.google.android.gms.tasks.OnCompleteListener
-import com.google.android.gms.tasks.Task
 import com.google.android.gms.tasks.CancellationToken
-import com.google.android.gms.tasks.OnSuccessListener
 import com.google.android.gms.tasks.OnTokenCanceledListener
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
@@ -95,7 +84,6 @@ import com.journeyapps.barcodescanner.BarcodeResult
 import com.journeyapps.barcodescanner.DecoratedBarcodeView
 import com.journeyapps.barcodescanner.DefaultDecoderFactory
 import com.journeyapps.barcodescanner.ScanContract
-import com.journeyapps.barcodescanner.ScanIntentResult
 import com.journeyapps.barcodescanner.ScanOptions
 import com.journeyapps.barcodescanner.camera.CameraSettings
 import com.karumi.dexter.Dexter
@@ -106,7 +94,6 @@ import com.karumi.dexter.listener.PermissionGrantedResponse
 import com.karumi.dexter.listener.PermissionRequest
 import com.karumi.dexter.listener.multi.MultiplePermissionsListener
 import com.karumi.dexter.listener.single.PermissionListener
-import com.mukesh.OnOtpCompletionListener
 import com.mukesh.OtpView
 import com.appventurez.bmwms.R
 import com.appventurez.bmwms.adapters.BluetoothDevicesAdapter
@@ -434,16 +421,16 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
 
             switchMaterial!!.setOnCheckedChangeListener { _, b ->
                 if (b) {
-                    appbar_tv!!.text = "Auto"
+                    appbar_tv!!.text = resources.getString(R.string.auto)
                     scanMode = 1
                 } else {
-                    appbar_tv!!.text = "Manual"
+                    appbar_tv!!.text = resources.getString(R.string.manual)
                     scanMode = 0
                 }
             }
 
             switchMaterial!!.isChecked = false
-            appbar_tv!!.text = "Manual"
+            appbar_tv!!.text = resources.getString(R.string.manual)
             scanMode = 0
 
             scanButton!!.setOnClickListener {
@@ -527,10 +514,10 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
 
             hcf_reset_button!!.setOnClickListener {
                 MSP.getInstance(requireContext()).removeData(AppStrings.currentHcfCode)
-                codeTv!!.text = "HCF QR Code"
-                hcf_name!!.text = "HCF Name"
-                total_bags!!.text = "0"
-                total_waste_weight!!.text = "000.000"
+                codeTv!!.text = resources.getString(R.string.hcf_qr_code)
+                hcf_name!!.text = resources.getString(R.string.hcf_name)
+                total_bags!!.text = resources.getString(R.string._0)
+                total_waste_weight!!.text = resources.getString(R.string.zero_weight)
                 dataSize = 0
                 hospitalModels.clear()
                 hospitalAdapter!!.notifyDataSetChanged()
@@ -542,7 +529,7 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
                             scanButton!!.visibility = View.GONE
                             attendanceButton!!.visibility = View.VISIBLE
                             attendanceCard!!.visibility = View.VISIBLE
-                            attendanceStatusTv!!.text = "Pending"
+                            attendanceStatusTv!!.text = resources.getString(R.string.pending)
                             attendanceStatusTv!!.setTextColor(requireActivity().resources.getColor(R.color.yellow))
                             attendanceStatusTv!!.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_baseline_pending_actions_24, 0)
                             setTextViewDrawableColor(attendanceStatusTv!!, R.color.yellow)
@@ -577,7 +564,7 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
                         scanButton!!.visibility = View.GONE
                         attendanceButton!!.visibility = View.VISIBLE
                         attendanceCard!!.visibility = View.VISIBLE
-                        attendanceStatusTv!!.text = "Pending"
+                        attendanceStatusTv!!.text = resources.getString(R.string.pending)
                         attendanceStatusTv!!.setTextColor(requireActivity().resources.getColor(R.color.yellow))
                         attendanceStatusTv!!.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_baseline_pending_actions_24, 0)
                         setTextViewDrawableColor(attendanceStatusTv!!, R.color.yellow)
@@ -588,7 +575,7 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
         return rootView
     }
 
-    var attendanceScanner: ActivityResultLauncher<ScanOptions> = registerForActivityResult(ScanContract(), ActivityResultCallback { result ->
+    var attendanceScanner: ActivityResultLauncher<ScanOptions> = registerForActivityResult(ScanContract()) { result ->
         if (result.contents != null) {
             try {
                 val data = result.contents.split("&".toRegex(), 2).toTypedArray()
@@ -600,9 +587,13 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
                 val qrCode = data2[0]
                 val qrColor = data2[1]
 
-                if (qrCbwtfId == MSP.getInstance(requireContext()).getStringData(AppStrings.userCbwtfID)) {
-                    MSP.getInstance(requireContext()).setStringData(AppStrings.currentHcfCode, hcfCode)
-                    MSP.getInstance(requireContext()).setStringData(AppStrings.currentHcfName, hospitalName)
+                if (qrCbwtfId == MSP.getInstance(requireContext())
+                        .getStringData(AppStrings.userCbwtfID)
+                ) {
+                    MSP.getInstance(requireContext())
+                        .setStringData(AppStrings.currentHcfCode, hcfCode)
+                    MSP.getInstance(requireContext())
+                        .setStringData(AppStrings.currentHcfName, hospitalName)
 
                     hcf_name!!.text = hospitalName
                     codeTv!!.text = hcfCode
@@ -616,7 +607,7 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
                 showToast("Wrong QR Code 7")
             }
         }
-    })
+    }
 
     fun manualWeightInput(w_color: String) {
         currentPhotoPath = null
@@ -1120,8 +1111,8 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
                             if (dataSize == hospitalModels.size) {
                                 if (loading_ll != null) loading_ll!!.visibility = View.GONE
                                 showToast("Submitted")
-                                total_bags!!.text = "0"
-                                total_waste_weight!!.text = "000.000"
+                                total_bags!!.text = resources.getString(R.string._0)
+                                total_waste_weight!!.text = resources.getString(R.string.zero_weight)
                                 dataSize = 0
                                 hospitalModels.clear()
                                 hospitalAdapter!!.notifyDataSetChanged()
@@ -1219,7 +1210,7 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
                 } else {
                     dialog.dismiss()
                     dialog.show()
-                    errorText.text = "Wrong OTP"
+                    errorText.text = resources.getString(R.string.wrong_otp)
                     mOtpView.setText("")
                 }
             } catch (e: Exception) {
@@ -1253,7 +1244,7 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
                     scanButton!!.visibility = View.VISIBLE
                     attendanceButton!!.visibility = View.GONE
                     attendanceCard!!.visibility = View.VISIBLE
-                    attendanceStatusTv!!.text = "Done"
+                    attendanceStatusTv!!.text = resources.getString(R.string.done)
                     attendanceStatusTv!!.setTextColor(ContextCompat.getColor(requireContext(), R.color.green))
                     attendanceStatusTv!!.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_baseline_check_24, 0)
                     setTextViewDrawableColor(attendanceStatusTv!!, R.color.green)
@@ -1311,7 +1302,7 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
                     scanButton!!.visibility = View.VISIBLE
                     attendanceButton!!.visibility = View.GONE
                     attendanceCard!!.visibility = View.VISIBLE
-                    attendanceStatusTv!!.text = "Done"
+                    attendanceStatusTv!!.text = resources.getString(R.string.done)
                     attendanceStatusTv!!.setTextColor(ContextCompat.getColor(requireContext(), R.color.green))
                     attendanceStatusTv!!.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_baseline_check_24, 0)
                     setTextViewDrawableColor(attendanceStatusTv!!, R.color.green)
@@ -1352,6 +1343,7 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
             try {
                 val otpObject = JSONObject(response)
                 if (otpObject.get("status").toString().equals("success", ignoreCase = true)) {
+                    Log.d(TAG,"Success")
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "updateHospitalLocationForOnce Exception: ", e)

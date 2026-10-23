@@ -41,4 +41,13 @@
     <string name="important_please_do_not_turn_off_the_bluetooth_keep_your_mobile_close_to_the_machine">Important: Please do not turn off the bluetooth, keep your mobile close to the machine</string>
     <string name="_0">0</string>
     <string name="waste_bag_colour">Waste bag colour:</string>
+    <string name="auto">Auto</string>
+    <string name="manual">Manual</string>
+    <string name="hcf_qr_code">HCF QR Code</string>
+    <string name="hcf_name">HCF Name</string>
+    <string name="pending">Pending</string>
+    <string name="done">Done</string>
+    <string name="wrong_otp">Wrong OTP</string>
+    <string name="please_wait">Please wait&#8230;</string>
+    <string name="zero_weight">000.000</string>
 </resources>
