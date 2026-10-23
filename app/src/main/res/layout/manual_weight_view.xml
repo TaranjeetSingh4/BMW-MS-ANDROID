@@ -96,7 +96,7 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/manual_weight_take_photo"
                 android:text="Take Weighing Scale Photo"
-                android:backgroundTint="@color/app_color"
+                android:backgroundTint="@color/app_color_dark"
                 android:textColor="@color/white"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"/>

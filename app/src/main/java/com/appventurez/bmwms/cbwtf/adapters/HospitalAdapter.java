@@ -11,6 +11,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
@@ -147,5 +148,11 @@ public class HospitalAdapter extends RecyclerView.Adapter<HospitalAdapter.ViewHo
         });
         AlertDialog alertDialog = builder.create();
         alertDialog.show();
+        if (alertDialog.getButton(AlertDialog.BUTTON_POSITIVE) != null) {
+            alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(ContextCompat.getColor(context, R.color.app_color_dark));
+        }
+        if (alertDialog.getButton(AlertDialog.BUTTON_NEGATIVE) != null) {
+            alertDialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(ContextCompat.getColor(context, R.color.app_color_dark));
+        }
     }
 }

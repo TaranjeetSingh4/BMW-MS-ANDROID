@@ -875,6 +875,7 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
             .setPositiveButton("Yes") { _, _ -> startActivity(newIntentForLocationSource()) }
         val alert = builder.create()
         alert.show()
+        alert.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(ContextCompat.getColor(requireContext(), R.color.app_color_dark))
     }
 
     private fun newIntentForLocationSource(): Intent {
