@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "349894732467",
+    "project_id": "upbmwmis-qr-scanner",
+    "storage_bucket": "upbmwmis-qr-scanner.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:349894732467:android:4510ed73c8cc41138ddec6",
+        "android_client_info": {
+          "package_name": "com.appventurez.bmwms"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAUOjHM1Vf87RyII5umg46AX24Jl0_CjmA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:349894732467:android:53dead282253b04c8ddec6",
+        "android_client_info": {
+          "package_name": "com.appventurez.bmwms.staging"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAUOjHM1Vf87RyII5umg46AX24Jl0_CjmA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -17,7 +17,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.appventurez.bmwms.activities.PdfViewActivity
 import com.appventurez.bmwms.cbwtf.activities.CbwtfDashboardActivity
+import com.appventurez.bmwms.classes.App
 import com.appventurez.bmwms.classes.AppStrings
+import com.appventurez.bmwms.utils.CrashlyticsHelper
 import com.appventurez.bmwms.classes.MSP
 import com.appventurez.bmwms.hcf.compose.HcfLoginScreen
 import com.appventurez.bmwms.network.RetrofitClient
@@ -52,6 +54,7 @@ class HcfLoginActivity : AppCompatActivity() {
             getSystemService(VIBRATOR_SERVICE) as Vibrator
         }
         loginAs = intent.getIntExtra("loginAs", 1)
+        CrashlyticsHelper.log("HcfLoginActivity onCreate (loginAs=$loginAs)")
 
         setContent {
             val isLoading = viewModel.isLoading.value
@@ -83,6 +86,7 @@ class HcfLoginActivity : AppCompatActivity() {
                                     setStringData(AppStrings.loginAs, "hcf")
                                 }
                             }
+                            App.updateCrashlyticsUserContext(this@HcfLoginActivity)
                             val intent = Intent(this@HcfLoginActivity, CbwtfDashboardActivity::class.java)
                             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                             startActivity(intent)

@@ -2,7 +2,6 @@ package com.appventurez.bmwms.cbwtf.activities
 
 import android.content.ActivityNotFoundException
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.VibrationEffect
@@ -18,12 +17,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.appventurez.bmwms.activities.PdfViewActivity
 import com.appventurez.bmwms.cbwtf.compose.CbwtfLoginScreen
+import com.appventurez.bmwms.classes.App
 import com.appventurez.bmwms.classes.AppStrings
+import com.appventurez.bmwms.utils.CrashlyticsHelper
 import com.appventurez.bmwms.classes.MSP
 import com.appventurez.bmwms.network.RetrofitClient
 import com.appventurez.bmwms.repository.LoginRepository
 import com.appventurez.bmwms.viewmodel.LoginViewModel
 import java.util.HashMap
+import androidx.core.net.toUri
 
 class CbwtfLoginActivity : AppCompatActivity() {
     private var TAG = "CbwtfLoginActivity"
@@ -51,6 +53,7 @@ class CbwtfLoginActivity : AppCompatActivity() {
         }
         
         loginAs = intent.getIntExtra("loginAs", 0)
+        CrashlyticsHelper.log("CbwtfLoginActivity onCreate (loginAs=$loginAs)")
 
         setContent {
             val loginResponse = viewModel.loginResponse.value
@@ -59,8 +62,9 @@ class CbwtfLoginActivity : AppCompatActivity() {
                 loginResponse?.let { response ->
                     if (response.isSuccessful) {
                         val body = response.body()
-                        if (body?.status.equals("success", ignoreCase = true) && !body?.data.isNullOrEmpty()) {
-                            val data = body!!.data!![0]
+                        val userDataList = body?.data
+                        if (body?.status.equals("success", ignoreCase = true) && !userDataList.isNullOrEmpty()) {
+                            val data = userDataList[0]
                             val msp = MSP.getInstance(this@CbwtfLoginActivity)
                             
                             if (loginAs == 0) {
@@ -80,6 +84,7 @@ class CbwtfLoginActivity : AppCompatActivity() {
                                 msp.setStringData(AppStrings.userCbwtfID, data.cbwtfId)
                                 msp.setStringData(AppStrings.loginAs, "hcf")
                             }
+                            App.updateCrashlyticsUserContext(this@CbwtfLoginActivity)
 
                             val intent = Intent(this@CbwtfLoginActivity, CbwtfDashboardActivity::class.java)
                             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -113,8 +118,9 @@ class CbwtfLoginActivity : AppCompatActivity() {
     }
 
     private fun openYoutube() {
-        val appIntent = Intent(Intent.ACTION_VIEW, Uri.parse("vnd.youtube:j46IAKw6rpI"))
-        val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("http://www.youtube.com/watch?v=j46IAKw6rpI"))
+        val appIntent = Intent(Intent.ACTION_VIEW, "vnd.youtube:j46IAKw6rpI".toUri())
+        val webIntent = Intent(Intent.ACTION_VIEW,
+            "http://www.youtube.com/watch?v=j46IAKw6rpI".toUri())
         try {
             startActivity(appIntent)
         } catch (ex: ActivityNotFoundException) {

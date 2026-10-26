@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.appventurez.bmwms.model.*
 import com.appventurez.bmwms.repository.DashboardRepository
+import com.appventurez.bmwms.utils.CrashlyticsHelper
 import kotlinx.coroutines.launch
 import retrofit2.Response
 
@@ -44,6 +45,8 @@ class DashboardViewModel(private val repository: DashboardRepository) : ViewMode
                 val response = repository.getNotice(url)
                 _noticeResponse.value = response
             } catch (e: Exception) {
+                CrashlyticsHelper.log("getNotice error: ${e.message}")
+                CrashlyticsHelper.recordException(e)
                 _error.value = e.message
             }
         }
@@ -55,6 +58,8 @@ class DashboardViewModel(private val repository: DashboardRepository) : ViewMode
                 val response = repository.getCbwtfData(url, params)
                 _cbwtfDataResponse.value = response
             } catch (e: Exception) {
+                CrashlyticsHelper.log("getCbwtfData error: ${e.message}")
+                CrashlyticsHelper.recordException(e)
                 _error.value = e.message
             }
         }
@@ -66,6 +71,8 @@ class DashboardViewModel(private val repository: DashboardRepository) : ViewMode
                 val response = repository.getTodayData(url, params)
                 _todayDataResponse.value = response
             } catch (e: Exception) {
+                CrashlyticsHelper.log("getTodayData error: ${e.message}")
+                CrashlyticsHelper.recordException(e)
                 _error.value = e.message
             }
         }
@@ -77,6 +84,8 @@ class DashboardViewModel(private val repository: DashboardRepository) : ViewMode
                 val response = repository.getHospitalData(url, params)
                 _hospitalDataResponse.value = response
             } catch (e: Exception) {
+                CrashlyticsHelper.log("getHospitalData error: ${e.message}")
+                CrashlyticsHelper.recordException(e)
                 _error.value = e.message
             }
         }
@@ -88,6 +97,8 @@ class DashboardViewModel(private val repository: DashboardRepository) : ViewMode
                 val response = repository.generateOtp(url, params)
                 _otpResponse.value = response
             } catch (e: Exception) {
+                CrashlyticsHelper.log("generateOtp error: ${e.message}")
+                CrashlyticsHelper.recordException(e)
                 _error.value = e.message
             }
         }
@@ -99,6 +110,8 @@ class DashboardViewModel(private val repository: DashboardRepository) : ViewMode
                 val response = repository.sendQuery(url, params)
                 _sendQueryResponse.value = response
             } catch (e: Exception) {
+                CrashlyticsHelper.log("sendQuery error: ${e.message}")
+                CrashlyticsHelper.recordException(e)
                 _error.value = e.message
             }
         }
@@ -110,6 +123,8 @@ class DashboardViewModel(private val repository: DashboardRepository) : ViewMode
                 val response = repository.getReports(url, params)
                 _reportResponse.value = response
             } catch (e: Exception) {
+                CrashlyticsHelper.log("getReports error: ${e.message}")
+                CrashlyticsHelper.recordException(e)
                 _error.value = e.message
             }
         }
@@ -121,6 +136,8 @@ class DashboardViewModel(private val repository: DashboardRepository) : ViewMode
                 val response = repository.sendMail(url, params)
                 _sendMailResponse.value = response
             } catch (e: Exception) {
+                CrashlyticsHelper.log("sendMail error: ${e.message}")
+                CrashlyticsHelper.recordException(e)
                 _error.value = e.message
             }
         }

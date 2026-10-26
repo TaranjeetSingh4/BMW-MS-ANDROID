@@ -25,6 +25,7 @@ import com.appventurez.bmwms.cbwtf.adapters.ReportsAdapter
 import com.appventurez.bmwms.cbwtf.models.ReportsModel
 import com.appventurez.bmwms.classes.AppStrings
 import com.appventurez.bmwms.classes.MSP
+import com.appventurez.bmwms.utils.CrashlyticsHelper
 import com.appventurez.bmwms.network.RetrofitClient
 import com.appventurez.bmwms.repository.ReportRepository
 import com.appventurez.bmwms.viewmodel.ReportViewModel
@@ -32,6 +33,7 @@ import com.facebook.shimmer.ShimmerFrameLayout
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import androidx.core.net.toUri
 
 class ReportsFragment : Fragment() {
 
@@ -64,6 +66,7 @@ class ReportsFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
+        CrashlyticsHelper.log("ReportsFragment onCreateView")
         val view = inflater.inflate(R.layout.fragment_reports, container, false)
 
         initViews(view)
@@ -375,7 +378,7 @@ class ReportsFragment : Fragment() {
 
         Log.d("TAG", "downloadPDF: $pdfUrl")
 
-        val uri = Uri.parse(pdfUrl)
+        val uri = pdfUrl.toUri()
         val intent = Intent(Intent.ACTION_VIEW, uri)
         intent.setPackage("com.android.chrome")
 

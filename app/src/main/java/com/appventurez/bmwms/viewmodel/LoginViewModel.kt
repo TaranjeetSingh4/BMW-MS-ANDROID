@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.appventurez.bmwms.model.LoginResponse
 import com.appventurez.bmwms.repository.LoginRepository
+import com.appventurez.bmwms.utils.CrashlyticsHelper
 import kotlinx.coroutines.launch
 import retrofit2.Response
 
@@ -24,6 +25,8 @@ class LoginViewModel(private val repository: LoginRepository) : ViewModel() {
                 val response = repository.login(url, params)
                 _loginResponse.value = response
             } catch (e: Exception) {
+                CrashlyticsHelper.log("Login error: ${e.message}")
+                CrashlyticsHelper.recordException(e)
                 _loginResponse.value = null
             } finally {
                 _isLoading.value = false

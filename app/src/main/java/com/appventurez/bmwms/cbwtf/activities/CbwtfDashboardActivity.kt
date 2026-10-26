@@ -19,7 +19,6 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -28,6 +27,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.appventurez.bmwms.R
 import com.appventurez.bmwms.activities.LoginActivity
+import com.appventurez.bmwms.utils.CrashlyticsHelper
 import com.appventurez.bmwms.activities.PdfViewActivity
 import com.appventurez.bmwms.classes.AppStrings
 import com.appventurez.bmwms.classes.MSP
@@ -43,13 +43,16 @@ import com.google.gson.Gson
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 import com.karumi.dexter.Dexter
+import com.karumi.dexter.MultiplePermissionsReport
 import com.karumi.dexter.PermissionToken
 import com.karumi.dexter.listener.PermissionDeniedResponse
 import com.karumi.dexter.listener.PermissionGrantedResponse
 import com.karumi.dexter.listener.PermissionRequest
+import com.karumi.dexter.listener.multi.MultiplePermissionsListener
 import com.karumi.dexter.listener.single.PermissionListener
 import java.text.DecimalFormat
 import java.util.*
+import androidx.core.net.toUri
 
 class CbwtfDashboardActivity : AppCompatActivity() {
 
@@ -100,6 +103,7 @@ class CbwtfDashboardActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_dashboard)
 
+        CrashlyticsHelper.log("CbwtfDashboardActivity onCreate")
         initVibrator()
         viewBinding()
         loadImages()
@@ -349,6 +353,8 @@ class CbwtfDashboardActivity : AppCompatActivity() {
 
     private fun onLogout() {
         MSP.getInstance(this).removeAll()
+        CrashlyticsHelper.log("User logged out")
+        CrashlyticsHelper.setUserId("")
         val intent = Intent(this, LoginActivity::class.java)
         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         startActivity(intent)
@@ -360,7 +366,7 @@ class CbwtfDashboardActivity : AppCompatActivity() {
     }
 
     private fun openYoutubeLink() {
-        val appIntent = Intent(Intent.ACTION_VIEW, Uri.parse("vnd.youtube:OcrMGvRdjaY"))
+        val appIntent = Intent(Intent.ACTION_VIEW, "vnd.youtube:OcrMGvRdjaY".toUri())
         val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("http://www.youtube.com/watch?v=OcrMGvRdjaY"))
         try {
             startActivity(appIntent)
@@ -379,11 +385,37 @@ class CbwtfDashboardActivity : AppCompatActivity() {
     }
 
     private fun getBluetoothPermission(): Boolean {
-        Dexter.withContext(this).withPermission(Manifest.permission.BLUETOOTH).withListener(object : PermissionListener {
-            override fun onPermissionGranted(response: PermissionGrantedResponse) { isBluetoothGranted = true }
-            override fun onPermissionDenied(response: PermissionDeniedResponse) { isBluetoothGranted = false }
-            override fun onPermissionRationaleShouldBeShown(request: PermissionRequest, token: PermissionToken) { token.continuePermissionRequest() }
-        }).check()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val connectGranted = ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
+            val scanGranted = ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED
+            if (connectGranted && scanGranted) {
+                isBluetoothGranted = true
+                return true
+            }
+            Dexter.withContext(this)
+                .withPermissions(
+                    Manifest.permission.BLUETOOTH_CONNECT,
+                    Manifest.permission.BLUETOOTH_SCAN
+                )
+                .withListener(object : MultiplePermissionsListener {
+                    override fun onPermissionsChecked(report: MultiplePermissionsReport?) {
+                        isBluetoothGranted = report?.areAllPermissionsGranted() == true
+                    }
+
+                    override fun onPermissionRationaleShouldBeShown(
+                        permissions: MutableList<PermissionRequest>?,
+                        token: PermissionToken?
+                    ) {
+                        token?.continuePermissionRequest()
+                    }
+                }).check()
+        } else {
+            Dexter.withContext(this).withPermission(Manifest.permission.BLUETOOTH).withListener(object : PermissionListener {
+                override fun onPermissionGranted(response: PermissionGrantedResponse) { isBluetoothGranted = true }
+                override fun onPermissionDenied(response: PermissionDeniedResponse) { isBluetoothGranted = false }
+                override fun onPermissionRationaleShouldBeShown(request: PermissionRequest, token: PermissionToken) { token.continuePermissionRequest() }
+            }).check()
+        }
         return isBluetoothGranted
     }
 
@@ -420,7 +452,9 @@ class CbwtfDashboardActivity : AppCompatActivity() {
                 if (exception.statusCode == LocationSettingsStatusCodes.RESOLUTION_REQUIRED) {
                     try {
                         (exception as ResolvableApiException).startResolutionForResult(this, 1000)
-                    } catch (e: Exception) { }
+                    } catch (e: Exception) {
+                        CrashlyticsHelper.recordException(e)
+                    }
                 }
             }
         }
@@ -433,6 +467,7 @@ class CbwtfDashboardActivity : AppCompatActivity() {
                 val hcfCode = data[0]
                 viewModel.getHospitalData(AppStrings.hospital_data, mapOf("hospital_code" to hcfCode))
             } catch (e: Exception) {
+                CrashlyticsHelper.recordException(e)
                 Toast.makeText(this, "Wrong QR Code", Toast.LENGTH_SHORT).show()
             }
         }

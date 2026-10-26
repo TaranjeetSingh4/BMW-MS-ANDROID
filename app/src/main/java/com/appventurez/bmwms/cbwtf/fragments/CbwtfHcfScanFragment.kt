@@ -6,18 +6,23 @@ import android.app.AlertDialog
 import android.bluetooth.BluetoothDevice
 import android.content.Context
 import android.content.Intent
-import android.content.IntentSender
+import android.content.pm.PackageManager
+import android.app.Activity
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Matrix
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
-import android.graphics.drawable.Drawable
-import android.location.Address
+import android.media.ExifInterface
 import android.location.Geocoder
-import android.location.Location
 import android.location.LocationManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.os.Handler
 import android.os.Looper
+import android.provider.MediaStore
 import android.provider.Settings
 import android.text.format.DateFormat
 import android.util.Log
@@ -29,21 +34,33 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.result.ActivityResultCallback
 import androidx.activity.result.ActivityResultLauncher
-import androidx.annotation.NonNull
-import androidx.annotation.Nullable
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
+import com.appventurez.bmwms.network.RetrofitClient
+import com.appventurez.bmwms.utils.CrashlyticsHelper
+import okhttp3.Call as OkHttpCall
+import okhttp3.Callback as OkHttpCallback
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.Request as OkHttpRequest
+import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.Response as OkHttpResponse
+import java.io.ByteArrayOutputStream
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
+import java.text.SimpleDateFormat
+import java.util.Locale
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.room.Room
 
-import com.android.volley.AuthFailureError
 import com.android.volley.Request
 import com.android.volley.Response
-import com.android.volley.VolleyError
 import com.android.volley.toolbox.StringRequest
 
 import com.bumptech.glide.Glide
@@ -54,12 +71,8 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.LocationSettingsRequest
-import com.google.android.gms.location.LocationSettingsResponse
 import com.google.android.gms.location.LocationSettingsStatusCodes
-import com.google.android.gms.tasks.OnCompleteListener
-import com.google.android.gms.tasks.Task
 import com.google.android.gms.tasks.CancellationToken
-import com.google.android.gms.tasks.OnSuccessListener
 import com.google.android.gms.tasks.OnTokenCanceledListener
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
@@ -72,7 +85,6 @@ import com.journeyapps.barcodescanner.BarcodeResult
 import com.journeyapps.barcodescanner.DecoratedBarcodeView
 import com.journeyapps.barcodescanner.DefaultDecoderFactory
 import com.journeyapps.barcodescanner.ScanContract
-import com.journeyapps.barcodescanner.ScanIntentResult
 import com.journeyapps.barcodescanner.ScanOptions
 import com.journeyapps.barcodescanner.camera.CameraSettings
 import com.karumi.dexter.Dexter
@@ -83,7 +95,6 @@ import com.karumi.dexter.listener.PermissionGrantedResponse
 import com.karumi.dexter.listener.PermissionRequest
 import com.karumi.dexter.listener.multi.MultiplePermissionsListener
 import com.karumi.dexter.listener.single.PermissionListener
-import com.mukesh.OnOtpCompletionListener
 import com.mukesh.OtpView
 import com.appventurez.bmwms.R
 import com.appventurez.bmwms.adapters.BluetoothDevicesAdapter
@@ -104,7 +115,6 @@ import java.util.ArrayList
 import java.util.Arrays
 import java.util.Date
 import java.util.HashMap
-import java.util.Objects
 
 import me.aflak.bluetooth.Bluetooth
 
@@ -151,8 +161,6 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
     private var weight_tv: TextView? = null
     private var weight_type: TextView? = null
 
-    private val permissions = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
-
     private var myBluetoothService: MyBluetoothService? = null
     private var weightView: ConstraintLayout? = null
     private var weight_img: ImageView? = null
@@ -187,6 +195,170 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
     private var lastText: String? = null
     private var isWeightAdded: Boolean? = true
     private var isFirstScanHCF: Boolean? = false
+
+    private var currentPhotoPath: String? = null
+    private var currentDialogPhotoPreview: ImageView? = null
+    private var currentDialogPhotoSize: TextView? = null
+
+    private fun getFormattedFileSize(file: File): String {
+        val bytes = file.length()
+        return when {
+            bytes >= 1024 * 1024 -> String.format(Locale.getDefault(), "Size: %.2f MB", bytes.toDouble() / (1024 * 1024))
+            bytes >= 1024 -> String.format(Locale.getDefault(), "Size: %.2f KB", bytes.toDouble() / 1024)
+            else -> "Size: $bytes Bytes"
+        }
+    }
+
+    private fun rotateBitmapIfRequired(bitmap: Bitmap, filePath: String): Bitmap {
+        try {
+            val exif = ExifInterface(filePath)
+            val orientation = exif.getAttributeInt(
+                ExifInterface.TAG_ORIENTATION,
+                ExifInterface.ORIENTATION_UNDEFINED
+            )
+            val degrees = when (orientation) {
+                ExifInterface.ORIENTATION_ROTATE_90 -> 90f
+                ExifInterface.ORIENTATION_ROTATE_180 -> 180f
+                ExifInterface.ORIENTATION_ROTATE_270 -> 270f
+                else -> 0f
+            }
+            if (degrees != 0f) {
+                val matrix = Matrix()
+                matrix.postRotate(degrees)
+                return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error checking EXIF orientation", e)
+        }
+        return bitmap
+    }
+
+    private fun compressImageFile(filePath: String): Boolean {
+        try {
+            val file = File(filePath)
+            if (!file.exists()) return false
+
+            val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeFile(filePath, options)
+
+            var inSampleSize = 1
+            val reqWidth = 1080
+            val reqHeight = 1080
+            if (options.outHeight > reqHeight || options.outWidth > reqWidth) {
+                val halfHeight = options.outHeight / 2
+                val halfWidth = options.outWidth / 2
+                while (halfHeight / inSampleSize >= reqHeight && halfWidth / inSampleSize >= reqWidth) {
+                    inSampleSize *= 2
+                }
+            }
+
+            val decodeOptions = BitmapFactory.Options().apply {
+                this.inSampleSize = inSampleSize
+            }
+            var bitmap = BitmapFactory.decodeFile(filePath, decodeOptions) ?: return false
+            bitmap = rotateBitmapIfRequired(bitmap, filePath)
+
+            var quality = 80
+            val outStream = ByteArrayOutputStream()
+            bitmap.compress(Bitmap.CompressFormat.JPEG, quality, outStream)
+
+            while (outStream.toByteArray().size >= 2 * 1024 * 1024 && quality > 20) {
+                outStream.reset()
+                quality -= 15
+                bitmap.compress(Bitmap.CompressFormat.JPEG, quality, outStream)
+            }
+
+            val fos = FileOutputStream(file)
+            fos.write(outStream.toByteArray())
+            fos.flush()
+            fos.close()
+            outStream.close()
+            return true
+        } catch (e: Exception) {
+            Log.e(TAG, "Error compressing image", e)
+            return false
+        }
+    }
+
+    private fun updatePhotoUI(
+        photoPath: String?,
+        previewImageView: ImageView,
+        sizeTextView: TextView
+    ) {
+        if (!photoPath.isNullOrEmpty()) {
+            val file = File(photoPath)
+            if (file.exists()) {
+                var bitmap = BitmapFactory.decodeFile(file.absolutePath)
+                if (bitmap != null) {
+                    bitmap = rotateBitmapIfRequired(bitmap, file.absolutePath)
+                    previewImageView.setImageBitmap(bitmap)
+                    previewImageView.visibility = View.VISIBLE
+
+                    val sizeText = getFormattedFileSize(file)
+                    sizeTextView.text = sizeText
+                    sizeTextView.visibility = View.VISIBLE
+                    return
+                }
+            }
+        }
+        previewImageView.visibility = View.GONE
+        sizeTextView.visibility = View.GONE
+    }
+
+    private val takePhotoLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            if (!currentPhotoPath.isNullOrEmpty()) {
+                val file = File(currentPhotoPath!!)
+                if (file.exists()) {
+                    compressImageFile(currentPhotoPath!!)
+                    if (currentDialogPhotoPreview != null && currentDialogPhotoSize != null) {
+                        updatePhotoUI(currentPhotoPath, currentDialogPhotoPreview!!, currentDialogPhotoSize!!)
+                    }
+                }
+            }
+        } else {
+            currentPhotoPath = null
+            currentDialogPhotoPreview?.visibility = View.GONE
+            currentDialogPhotoSize?.visibility = View.GONE
+        }
+    }
+
+    private fun dispatchTakePictureIntent(
+        previewImageView: ImageView,
+        sizeTextView: TextView
+    ) {
+        currentDialogPhotoPreview = previewImageView
+        currentDialogPhotoSize = sizeTextView
+
+        val takePictureIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+        if (takePictureIntent.resolveActivity(requireActivity().packageManager) != null) {
+            val photoFile: File? = try {
+                createImageFile()
+            } catch (ex: IOException) {
+                Log.e(TAG, "Error creating image file", ex)
+                null
+            }
+            if (photoFile != null) {
+                currentPhotoPath = photoFile.absolutePath
+                val photoURI: Uri = FileProvider.getUriForFile(
+                    requireContext(),
+                    "${requireActivity().packageName}.provider",
+                    photoFile
+                )
+                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI)
+                takePhotoLauncher.launch(takePictureIntent)
+            }
+        } else {
+            takePhotoLauncher.launch(takePictureIntent)
+        }
+    }
+
+    @Throws(IOException::class)
+    private fun createImageFile(): File {
+        val timeStamp: String = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+        val storageDir: File? = requireContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES)
+        return File.createTempFile("WEIGHING_${timeStamp}_", ".jpg", storageDir)
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         if (rootView == null) {
@@ -265,16 +437,16 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
 
             switchMaterial!!.setOnCheckedChangeListener { _, b ->
                 if (b) {
-                    appbar_tv!!.text = "Auto"
+                    appbar_tv!!.text = resources.getString(R.string.auto)
                     scanMode = 1
                 } else {
-                    appbar_tv!!.text = "Manual"
+                    appbar_tv!!.text = resources.getString(R.string.manual)
                     scanMode = 0
                 }
             }
 
             switchMaterial!!.isChecked = false
-            appbar_tv!!.text = "Manual"
+            appbar_tv!!.text = resources.getString(R.string.manual)
             scanMode = 0
 
             scanButton!!.setOnClickListener {
@@ -358,10 +530,10 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
 
             hcf_reset_button!!.setOnClickListener {
                 MSP.getInstance(requireContext()).removeData(AppStrings.currentHcfCode)
-                codeTv!!.text = "HCF QR Code"
-                hcf_name!!.text = "HCF Name"
-                total_bags!!.text = "0"
-                total_waste_weight!!.text = "000.000"
+                codeTv!!.text = resources.getString(R.string.hcf_qr_code)
+                hcf_name!!.text = resources.getString(R.string.hcf_name)
+                total_bags!!.text = resources.getString(R.string._0)
+                total_waste_weight!!.text = resources.getString(R.string.zero_weight)
                 dataSize = 0
                 hospitalModels.clear()
                 hospitalAdapter!!.notifyDataSetChanged()
@@ -373,7 +545,7 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
                             scanButton!!.visibility = View.GONE
                             attendanceButton!!.visibility = View.VISIBLE
                             attendanceCard!!.visibility = View.VISIBLE
-                            attendanceStatusTv!!.text = "Pending"
+                            attendanceStatusTv!!.text = resources.getString(R.string.pending)
                             attendanceStatusTv!!.setTextColor(requireActivity().resources.getColor(R.color.yellow))
                             attendanceStatusTv!!.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_baseline_pending_actions_24, 0)
                             setTextViewDrawableColor(attendanceStatusTv!!, R.color.yellow)
@@ -408,7 +580,7 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
                         scanButton!!.visibility = View.GONE
                         attendanceButton!!.visibility = View.VISIBLE
                         attendanceCard!!.visibility = View.VISIBLE
-                        attendanceStatusTv!!.text = "Pending"
+                        attendanceStatusTv!!.text = resources.getString(R.string.pending)
                         attendanceStatusTv!!.setTextColor(requireActivity().resources.getColor(R.color.yellow))
                         attendanceStatusTv!!.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_baseline_pending_actions_24, 0)
                         setTextViewDrawableColor(attendanceStatusTv!!, R.color.yellow)
@@ -419,7 +591,7 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
         return rootView
     }
 
-    var attendanceScanner: ActivityResultLauncher<ScanOptions> = registerForActivityResult(ScanContract(), ActivityResultCallback { result ->
+    var attendanceScanner: ActivityResultLauncher<ScanOptions> = registerForActivityResult(ScanContract()) { result ->
         if (result.contents != null) {
             try {
                 val data = result.contents.split("&".toRegex(), 2).toTypedArray()
@@ -431,9 +603,13 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
                 val qrCode = data2[0]
                 val qrColor = data2[1]
 
-                if (qrCbwtfId == MSP.getInstance(requireContext()).getStringData(AppStrings.userCbwtfID)) {
-                    MSP.getInstance(requireContext()).setStringData(AppStrings.currentHcfCode, hcfCode)
-                    MSP.getInstance(requireContext()).setStringData(AppStrings.currentHcfName, hospitalName)
+                if (qrCbwtfId == MSP.getInstance(requireContext())
+                        .getStringData(AppStrings.userCbwtfID)
+                ) {
+                    MSP.getInstance(requireContext())
+                        .setStringData(AppStrings.currentHcfCode, hcfCode)
+                    MSP.getInstance(requireContext())
+                        .setStringData(AppStrings.currentHcfName, hospitalName)
 
                     hcf_name!!.text = hospitalName
                     codeTv!!.text = hcfCode
@@ -447,9 +623,10 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
                 showToast("Wrong QR Code 7")
             }
         }
-    })
+    }
 
     fun manualWeightInput(w_color: String) {
+        currentPhotoPath = null
         val manualWeightAlert = AlertDialog.Builder(requireContext()).create()
         val manualWeightView = LayoutInflater.from(requireContext()).inflate(R.layout.manual_weight_view, null, false)
 
@@ -457,25 +634,36 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
         val manualWeightImage = manualWeightView.findViewById<ImageView>(R.id.manual_weight_image)
         val manualWeightKilo = manualWeightView.findViewById<EditText>(R.id.manual_weight_kilo)
         val manualWeightGram = manualWeightView.findViewById<EditText>(R.id.manual_weight_gram)
+        val manualWeightTakePhoto = manualWeightView.findViewById<MaterialButton>(R.id.manual_weight_take_photo)
+        val manualWeightPhotoPreview = manualWeightView.findViewById<ImageView>(R.id.manual_weight_photo_preview)
+        val manualWeightPhotoSize = manualWeightView.findViewById<TextView>(R.id.manual_weight_photo_size)
         val manualWeightAdd = manualWeightView.findViewById<MaterialButton>(R.id.manual_weight_add)
 
         manualWeightColor.text = w_color.uppercase()
 
         if (w_color.trim().equals("red", ignoreCase = true)) {
             Glide.with(requireContext()).load(R.drawable.red).into(manualWeightImage)
-            manualWeightColor.setTextColor(requireActivity().resources.getColor(android.R.color.holo_red_light))
+            manualWeightColor.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_red_light))
         } else if (w_color.trim().equals("blue", ignoreCase = true)) {
             Glide.with(requireContext()).load(R.drawable.blue).into(manualWeightImage)
-            manualWeightColor.setTextColor(requireActivity().resources.getColor(android.R.color.holo_blue_light))
+            manualWeightColor.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_blue_light))
         } else if (w_color.trim().equals("yellow", ignoreCase = true)) {
             Glide.with(requireContext()).load(R.drawable.yellow).into(manualWeightImage)
-            manualWeightColor.setTextColor(requireActivity().resources.getColor(android.R.color.holo_orange_light))
+            manualWeightColor.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_orange_light))
         } else if (w_color.trim().equals("yellow c", ignoreCase = true)) {
             Glide.with(requireContext()).load(R.drawable.yellow).into(manualWeightImage)
-            manualWeightColor.setTextColor(requireActivity().resources.getColor(android.R.color.holo_orange_light))
+            manualWeightColor.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_orange_light))
         } else if (w_color.trim().equals("white", ignoreCase = true)) {
             Glide.with(requireContext()).load(R.drawable.gray).into(manualWeightImage)
-            manualWeightColor.setTextColor(requireActivity().resources.getColor(android.R.color.darker_gray))
+            manualWeightColor.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.darker_gray))
+        }
+
+        manualWeightTakePhoto.setOnClickListener {
+            if (getCameraPermission()) {
+                dispatchTakePictureIntent(manualWeightPhotoPreview, manualWeightPhotoSize)
+            } else {
+                showToast("Camera permission required to capture photo")
+            }
         }
 
         manualWeightAdd.setOnClickListener {
@@ -486,21 +674,34 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
             val w_kilo = manualWeightKilo.text.toString().trim()
             val w_gram = manualWeightGram.text.toString().trim()
 
-            if (w_kilo.isNotEmpty() && w_gram.isNotEmpty()) {
-                val d_kilo = w_kilo.toInt()
-                val d_gram = w_gram.toInt()
-
-                val decimalKilo = String.format("%03d", d_kilo)
-                val decimalGram = String.format("%03d", d_gram)
-
-                hospitalModels.add(HospitalModel(code, hName, wType, decimalKilo, decimalGram, scannedQrCode))
-                hospitalAdapter!!.notifyDataSetChanged()
-                barcodeView!!.resume()
-                manualWeightAlert.dismiss()
-            } else {
-                showToast("Empty field")
+            if (w_kilo.isEmpty() || w_gram.isEmpty()) {
+                showToast("Please fill weight fields")
+                return@setOnClickListener
             }
+
+            if (currentPhotoPath.isNullOrEmpty() || !File(currentPhotoPath!!).exists()) {
+                showToast("Please capture weighing scale photo using camera first")
+                return@setOnClickListener
+            }
+
+            val file = File(currentPhotoPath!!)
+            if (file.length() > 5 * 1024 * 1024) {
+                showToast("Photo must not exceed 5 MB")
+                return@setOnClickListener
+            }
+
+            val d_kilo = w_kilo.toInt()
+            val d_gram = w_gram.toInt()
+
+            val decimalKilo = String.format("%03d", d_kilo)
+            val decimalGram = String.format("%03d", d_gram)
+
+            hospitalModels.add(HospitalModel(code, hName, wType, decimalKilo, decimalGram, scannedQrCode, currentPhotoPath!!))
+            hospitalAdapter!!.notifyDataSetChanged()
+            barcodeView!!.resume()
+            manualWeightAlert.dismiss()
         }
+
         barcodeView!!.resume()
         manualWeightAlert.window!!.setBackgroundDrawableResource(android.R.color.transparent)
         manualWeightAlert.setView(manualWeightView)
@@ -508,7 +709,9 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
     }
 
     fun getHospitalData(id: String, nameHos: String) {
+        Log.d(TAG, "getHospitalData Request -> URL: ${AppStrings.hospital_data} | hospital_code: $id, nameHos: $nameHos")
         val stringRequest = object : StringRequest(Method.POST, AppStrings.hospital_data, Response.Listener { response ->
+            Log.d(TAG, "getHospitalData Response -> $response")
             try {
                 val jsonObject = JSONObject(response)
                 if (jsonObject.get("status").toString().equals("success", ignoreCase = true)) {
@@ -522,9 +725,12 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
                     showToast("Wrong QR Code 5")
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Exception: ", e)
+                Log.e(TAG, "getHospitalData Exception: ", e)
             }
-        }, Response.ErrorListener { }) {
+        }, Response.ErrorListener { error ->
+            Log.e(TAG, "getHospitalData VolleyError: ${error.message}", error)
+            VolleySingleton.logVolleyError("CbwtfHcfScanFragment", error)
+        }) {
             override fun getParams(): Map<String, String> {
                 val map: MutableMap<String, String> = HashMap()
                 map["hospital_code"] = id
@@ -628,42 +834,90 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
         }
     }
 
+    private fun getBluetoothPermissions(): Array<String> {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            arrayOf(
+                Manifest.permission.BLUETOOTH_CONNECT,
+                Manifest.permission.BLUETOOTH_SCAN,
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            )
+        } else {
+            arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            )
+        }
+    }
+
     fun getBluetoothDevices() {
-        bluetoothDevicesModel.clear()
-        bluetooth!!.onStart()
-
-        val bluetoothDevices = bluetooth!!.pairedDevices
-        alertDialog = AlertDialog.Builder(requireContext()).create()
-
-        val bl_view = LayoutInflater.from(requireContext()).inflate(R.layout.blutooth_view, null, false)
-        val closeAlert = bl_view.findViewById<ImageView>(R.id.alert_dismiss)
-        blRv = bl_view.findViewById(R.id.bluetooth_devices_rv)
-
-        alertDialog!!.setView(bl_view)
-        alertDialog!!.setCancelable(false)
-
-        blRv!!.layoutManager = LinearLayoutManager(requireContext(), RecyclerView.VERTICAL, false)
-        blRv!!.adapter = bluetoothDevicesAdapter
-
-        closeAlert.setOnClickListener {
-            barcodeView!!.resume()
-            alertDialog!!.dismiss()
+        val reqPermissions = getBluetoothPermissions()
+        val allGranted = reqPermissions.all { permission ->
+            ContextCompat.checkSelfPermission(requireContext(), permission) == PackageManager.PERMISSION_GRANTED
         }
 
-        alertDialog!!.show()
+        if (allGranted) {
+            showBluetoothDevicesDialog()
+        } else {
+            Dexter.withContext(requireContext())
+                .withPermissions(*reqPermissions)
+                .withListener(object : MultiplePermissionsListener {
+                    override fun onPermissionsChecked(multiplePermissionsReport: MultiplePermissionsReport) {
+                        if (multiplePermissionsReport.areAllPermissionsGranted()) {
+                            showBluetoothDevicesDialog()
+                        } else {
+                            showToast("Bluetooth permissions are required to scan for devices")
+                        }
+                    }
 
-        for (i in bluetoothDevices.indices) {
-            bluetoothDevicesModel.add(BluetoothDevicesModel(bluetoothDevices[i], 1))
-            bluetoothDevicesAdapter!!.notifyDataSetChanged()
+                    override fun onPermissionRationaleShouldBeShown(
+                        list: MutableList<PermissionRequest>?,
+                        permissionToken: PermissionToken?
+                    ) {
+                        permissionToken?.continuePermissionRequest()
+                    }
+                }).check()
         }
+    }
 
-        Dexter.withContext(requireContext()).withPermissions(*permissions).withListener(object : MultiplePermissionsListener {
-            override fun onPermissionsChecked(multiplePermissionsReport: MultiplePermissionsReport) {
-                statusCheck()
+    @SuppressLint("MissingPermission")
+    private fun showBluetoothDevicesDialog() {
+        try {
+            bluetoothDevicesModel.clear()
+            bluetooth!!.onStart()
+
+            val bluetoothDevices = bluetooth!!.pairedDevices ?: emptyList()
+            alertDialog = AlertDialog.Builder(requireContext()).create()
+
+            val bl_view = LayoutInflater.from(requireContext()).inflate(R.layout.blutooth_view, null, false)
+            val closeAlert = bl_view.findViewById<ImageView>(R.id.alert_dismiss)
+            blRv = bl_view.findViewById(R.id.bluetooth_devices_rv)
+
+            alertDialog!!.setView(bl_view)
+            alertDialog!!.setCancelable(false)
+
+            blRv!!.layoutManager = LinearLayoutManager(requireContext(), RecyclerView.VERTICAL, false)
+            blRv!!.adapter = bluetoothDevicesAdapter
+
+            closeAlert.setOnClickListener {
+                barcodeView!!.resume()
+                alertDialog!!.dismiss()
             }
 
-            override fun onPermissionRationaleShouldBeShown(list: MutableList<PermissionRequest>?, permissionToken: PermissionToken?) { }
-        }).check()
+            alertDialog!!.show()
+
+            for (i in bluetoothDevices.indices) {
+                bluetoothDevicesModel.add(BluetoothDevicesModel(bluetoothDevices[i], 1))
+            }
+            bluetoothDevicesAdapter!!.notifyDataSetChanged()
+
+            statusCheck()
+        } catch (e: SecurityException) {
+            Log.e(TAG, "SecurityException in showBluetoothDevicesDialog", e)
+            showToast("Bluetooth permission required: ${e.localizedMessage}")
+        } catch (e: Exception) {
+            Log.e(TAG, "Exception in showBluetoothDevicesDialog", e)
+        }
     }
 
     override fun getDevices(device: BluetoothDevice) {
@@ -703,18 +957,25 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
     }
 
     fun statusCheck() {
-        val manager = requireActivity().getSystemService(Context.LOCATION_SERVICE) as LocationManager
-        if (!manager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-            buildAlertMessageNoGps()
-        } else {
-            if (bluetooth!!.isEnabled) {
-                bluetooth!!.onStop()
-                myBluetoothService!!.startScanService()
+        try {
+            val manager = requireActivity().getSystemService(Context.LOCATION_SERVICE) as LocationManager
+            if (!manager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                buildAlertMessageNoGps()
             } else {
-                bluetooth!!.enable()
-                bluetooth!!.onStop()
-                myBluetoothService!!.startScanService()
+                if (bluetooth!!.isEnabled) {
+                    bluetooth!!.onStop()
+                    myBluetoothService!!.startScanService()
+                } else {
+                    bluetooth!!.enable()
+                    bluetooth!!.onStop()
+                    myBluetoothService!!.startScanService()
+                }
             }
+        } catch (e: SecurityException) {
+            Log.e(TAG, "SecurityException in statusCheck", e)
+            showToast("Bluetooth permission required: ${e.localizedMessage}")
+        } catch (e: Exception) {
+            Log.e(TAG, "Exception in statusCheck", e)
         }
     }
 
@@ -725,6 +986,7 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
             .setPositiveButton("Yes") { _, _ -> startActivity(newIntentForLocationSource()) }
         val alert = builder.create()
         alert.show()
+        alert.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(ContextCompat.getColor(requireContext(), R.color.app_color_dark))
     }
 
     private fun newIntentForLocationSource(): Intent {
@@ -753,80 +1015,128 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
     }
 
     fun cbwtfScanSubmitRequest(url: String, map: Map<String, String>) {
-        Log.d("TAG", "cbwtfScanSubmitRequest: SCAN")
-        val request = object : StringRequest(Method.POST, url, Response.Listener { response ->
-            try {
-                val jsonObject = JSONObject(response)
-                if (jsonObject.get("status").toString().equals("success", ignoreCase = true)) {
-                    dataSize++
-                    if (dataSize < hospitalModels.size) {
-                        val date = DateFormat.format("yyyy-MM-dd", Date().time).toString()
-                        if (scanType == 0) {
-                            if (MSP.getInstance(requireContext()).getStringData(AppStrings.loginAs) == "hcf") {
-                                val nextMap: MutableMap<String, String> = HashMap()
-                                nextMap["weight"] = hospitalModels[dataSize].waste_weight + "." + hospitalModels[dataSize].waste_weight_g
-                                nextMap["admin_id"] = MSP.getInstance(requireContext()).getStringData(AppStrings.userCbwtfID)
-                                nextMap["handhover_address"] = "$latitude,$longitude"
-                                nextMap["type"] = hospitalModels[dataSize].waste_color
-                                nextMap["hospital_id"] = hospitalModels[dataSize].hcf_code.trim()
-                                nextMap["seq_no"] = hospitalModels[dataSize].qr_code
-                                nextMap["year"] = date
-                                nextMap["attenden_status"] = "empty"
-                                cbwtfScanSubmitRequest(AppStrings.hcf_scan_submit_hcf, nextMap)
-                            } else {
-                                val nextMap: MutableMap<String, String> = HashMap()
-                                nextMap["weight"] = hospitalModels[dataSize].waste_weight + "." + hospitalModels[dataSize].waste_weight_g
-                                nextMap["admin_id"] = MSP.getInstance(requireContext()).getStringData(AppStrings.userCbwtfID)
-                                nextMap["operator_name"] = MSP.getInstance(requireContext()).getStringData(AppStrings.userID)
-                                nextMap["handhover_address"] = "$latitude,$longitude"
-                                nextMap["type"] = hospitalModels[dataSize].waste_color
-                                nextMap["hospital_id"] = hospitalModels[dataSize].hcf_code.trim()
-                                nextMap["seq_no"] = hospitalModels[dataSize].qr_code
-                                nextMap["year"] = date
-                                nextMap["attenden_status"] = "collected"
-                                deleteQRData(hospitalModels[dataSize].qr_code, nextMap)
-                            }
-                        } else {
-                            val nextMap: MutableMap<String, String> = HashMap()
-                            nextMap["weight"] = hospitalModels[dataSize].waste_weight + "." + hospitalModels[dataSize].waste_weight_g
-                            nextMap["receiving_date"] = date
-                            nextMap["operator_id"] = MSP.getInstance(requireContext()).getStringData(AppStrings.userID)
-                            nextMap["receiving_address"] = "$latitude,$longitude"
-                            nextMap["color"] = hospitalModels[dataSize].waste_color
-                            nextMap["hospital_id"] = hospitalModels[dataSize].hcf_code.trim()
-                            nextMap["seq_no"] = hospitalModels[dataSize].qr_code
-                            cbwtfScanSubmitRequest(AppStrings.cbwtf_scan_submit, nextMap)
-                        }
-                    }
+        activity?.runOnUiThread {
+            if (loading_ll != null) loading_ll!!.visibility = View.VISIBLE
+        }
 
-                    if (dataSize == hospitalModels.size) {
-                        if (loading_ll != null) loading_ll!!.visibility = View.GONE
-                        showToast("Submitted")
-                        total_bags!!.text = "0"
-                        total_waste_weight!!.text = "000.000"
-                        dataSize = 0
-                        hospitalModels.clear()
-                        hospitalAdapter!!.notifyDataSetChanged()
-                        getQRData(AppStrings.get_all_report)
-                    }
+        Log.d(TAG, "cbwtfScanSubmitRequest Request -> URL: $url | Params: $map")
+
+        val builder = MultipartBody.Builder().setType(MultipartBody.FORM)
+
+        for ((key, value) in map) {
+            builder.addFormDataPart(key, value)
+        }
+
+        if (dataSize < hospitalModels.size) {
+            val photoPath = hospitalModels[dataSize].weighing_photo
+            if (!photoPath.isNullOrEmpty()) {
+                val photoFile = File(photoPath)
+                if (photoFile.exists()) {
+                    val mediaType = "image/*".toMediaTypeOrNull()
+                    val requestBody = photoFile.asRequestBody(mediaType)
+                    builder.addFormDataPart("weighing_photo", photoFile.name, requestBody)
+                    Log.d(TAG, "Attached weighing_photo: ${photoFile.absolutePath} (${photoFile.length()} bytes)")
+                } else {
+                    Log.d(TAG, "weighing_photo file not found at: $photoPath")
                 }
-            } catch (e: Exception) {
-                Log.e(TAG, "Exception: ", e)
-                if (loading_ll != null) loading_ll!!.visibility = View.GONE
-            }
-        }, Response.ErrorListener { error ->
-            VolleySingleton.logVolleyError("CbwtfHcfScanFragment", error)
-            if (loading_ll != null) loading_ll!!.visibility = View.GONE
-        }) {
-            override fun getParams(): Map<String, String> {
-                return map
+            } else {
+                Log.d(TAG, "No weighing_photo provided for model index $dataSize")
             }
         }
-        VolleySingleton.getInstance(requireActivity()).addToRequestQueue(request)
+
+        val requestBody = builder.build()
+        val request = OkHttpRequest.Builder()
+            .url(url)
+            .post(requestBody)
+            .build()
+
+        RetrofitClient.okHttpClient.newCall(request).enqueue(object : OkHttpCallback {
+            override fun onFailure(call: OkHttpCall, e: IOException) {
+                Log.e(TAG, "cbwtfScanSubmitRequest Failure -> URL: $url | Error: ${e.message}", e)
+                activity?.runOnUiThread {
+                    if (loading_ll != null) loading_ll!!.visibility = View.GONE
+                    showToast("Network Error: ${e.localizedMessage}")
+                }
+            }
+
+            override fun onResponse(call: OkHttpCall, response: OkHttpResponse) {
+                val responseStr = response.body?.string() ?: ""
+                Log.d(TAG, "cbwtfScanSubmitRequest Response -> URL: $url | Response: $responseStr")
+
+                activity?.runOnUiThread {
+                    try {
+                        val jsonObject = JSONObject(responseStr)
+                        if (jsonObject.optString("status").equals("success", ignoreCase = true)) {
+                            dataSize++
+                            if (dataSize < hospitalModels.size) {
+                                val date = DateFormat.format("yyyy-MM-dd", Date().time).toString()
+                                if (scanType == 0) {
+                                    if (MSP.getInstance(requireContext()).getStringData(AppStrings.loginAs) == "hcf") {
+                                        val nextMap: MutableMap<String, String> = HashMap()
+                                        nextMap["weight"] = hospitalModels[dataSize].waste_weight + "." + hospitalModels[dataSize].waste_weight_g
+                                        nextMap["admin_id"] = MSP.getInstance(requireContext()).getStringData(AppStrings.userCbwtfID)
+                                        nextMap["handhover_address"] = "$latitude,$longitude"
+                                        nextMap["type"] = hospitalModels[dataSize].waste_color
+                                        nextMap["hospital_id"] = hospitalModels[dataSize].hcf_code.trim()
+                                        nextMap["seq_no"] = hospitalModels[dataSize].qr_code
+                                        nextMap["year"] = date
+                                        nextMap["attenden_status"] = "empty"
+                                        cbwtfScanSubmitRequest(AppStrings.hcf_scan_submit_hcf, nextMap)
+                                    } else {
+                                        val nextMap: MutableMap<String, String> = HashMap()
+                                        nextMap["weight"] = hospitalModels[dataSize].waste_weight + "." + hospitalModels[dataSize].waste_weight_g
+                                        nextMap["admin_id"] = MSP.getInstance(requireContext()).getStringData(AppStrings.userCbwtfID)
+                                        nextMap["operator_name"] = MSP.getInstance(requireContext()).getStringData(AppStrings.userID)
+                                        nextMap["handhover_address"] = "$latitude,$longitude"
+                                        nextMap["type"] = hospitalModels[dataSize].waste_color
+                                        nextMap["hospital_id"] = hospitalModels[dataSize].hcf_code.trim()
+                                        nextMap["seq_no"] = hospitalModels[dataSize].qr_code
+                                        nextMap["year"] = date
+                                        nextMap["attenden_status"] = "collected"
+                                        deleteQRData(hospitalModels[dataSize].qr_code, nextMap)
+                                    }
+                                } else {
+                                    val nextMap: MutableMap<String, String> = HashMap()
+                                    nextMap["weight"] = hospitalModels[dataSize].waste_weight + "." + hospitalModels[dataSize].waste_weight_g
+                                    nextMap["receiving_date"] = date
+                                    nextMap["operator_id"] = MSP.getInstance(requireContext()).getStringData(AppStrings.userID)
+                                    nextMap["receiving_address"] = "$latitude,$longitude"
+                                    nextMap["color"] = hospitalModels[dataSize].waste_color
+                                    nextMap["hospital_id"] = hospitalModels[dataSize].hcf_code.trim()
+                                    nextMap["seq_no"] = hospitalModels[dataSize].qr_code
+                                    cbwtfScanSubmitRequest(AppStrings.cbwtf_scan_submit, nextMap)
+                                }
+                            }
+
+                            if (dataSize == hospitalModels.size) {
+                                if (loading_ll != null) loading_ll!!.visibility = View.GONE
+                                showToast("Submitted")
+                                total_bags!!.text = resources.getString(R.string._0)
+                                total_waste_weight!!.text = resources.getString(R.string.zero_weight)
+                                dataSize = 0
+                                hospitalModels.clear()
+                                hospitalAdapter!!.notifyDataSetChanged()
+                                getQRData(AppStrings.get_all_report)
+                            }
+                        } else {
+                            if (loading_ll != null) loading_ll!!.visibility = View.GONE
+                            val msg = jsonObject.optString("message", "Submission Failed")
+                            showToast(msg)
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "cbwtfScanSubmitRequest Exception: ", e)
+                        if (loading_ll != null) loading_ll!!.visibility = View.GONE
+                        showToast("Error processing response")
+                    }
+                }
+            }
+        })
     }
 
     fun getQRData(url: String) {
+        Log.d(TAG, "getQRData Request -> URL: $url")
         val request = StringRequest(Request.Method.POST, url, Response.Listener { response ->
+            Log.d(TAG, "getQRData Response -> URL: $url | Response: $response")
             try {
                 val jsonObject = JSONObject(response)
                 if (jsonObject.get("status").toString().equals("success", ignoreCase = true)) {
@@ -841,15 +1151,20 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
                     }
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Exception: ", e)
+                Log.e(TAG, "getQRData Exception: ", e)
             }
-        }, Response.ErrorListener { error -> VolleySingleton.logVolleyError("CbwtfHcfScanFragment", error) })
+        }, Response.ErrorListener { error ->
+            Log.e(TAG, "getQRData VolleyError -> URL: $url | Error: ${error.message}", error)
+            VolleySingleton.logVolleyError("CbwtfHcfScanFragment", error)
+        })
 
         VolleySingleton.getInstance(requireContext()).addToRequestQueue(request)
     }
 
     fun deleteQRData(qrId: String, map: Map<String, String>) {
+        Log.d(TAG, "deleteQRData Request -> URL: ${AppStrings.delete_qr} | qr_id: $qrId | Next Submit Params: $map")
         val request = object : StringRequest(Method.POST, AppStrings.delete_qr, Response.Listener { response ->
+            Log.d(TAG, "deleteQRData Response -> $response")
             try {
                 val jsonObject = JSONObject(response)
                 if (jsonObject.get("status").toString().equals("success", ignoreCase = true)) {
@@ -858,9 +1173,19 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
                     cbwtfScanSubmitRequest(AppStrings.hcf_scan_submit, map)
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Exception: ", e)
+                Log.e(TAG, "deleteQRData Exception: ", e)
+                activity?.runOnUiThread {
+                    if (loading_ll != null) loading_ll!!.visibility = View.GONE
+                }
             }
-        }, Response.ErrorListener { error -> VolleySingleton.logVolleyError("CbwtfHcfScanFragment", error) }) {
+        }, Response.ErrorListener { error ->
+            Log.e(TAG, "deleteQRData VolleyError: ${error.message}", error)
+            VolleySingleton.logVolleyError("CbwtfHcfScanFragment", error)
+            activity?.runOnUiThread {
+                if (loading_ll != null) loading_ll!!.visibility = View.GONE
+                showToast("Network Error: ${error.message}")
+            }
+        }) {
             override fun getParams(): Map<String, String> {
                 val params: MutableMap<String, String> = HashMap()
                 params["qr_id"] = qrId
@@ -871,7 +1196,10 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
     }
 
     fun getOtp(otp_value: String, dialog: AlertDialog, errorText: TextView, mOtpView: OtpView, h_cOde: String) {
+        val dateStr = DateFormat.format("yyyy-MM-dd", Date().time).toString()
+        Log.d(TAG, "getOtp Request -> URL: ${AppStrings.get_otp} | hcf_code: $h_cOde | otp: $otp_value | date: $dateStr")
         val otpRequest = object : StringRequest(Method.POST, AppStrings.get_otp, Response.Listener { response ->
+            Log.d(TAG, "getOtp Response -> $response")
             try {
                 val otpObject = JSONObject(response)
                 if (otpObject.get("status").toString().equals("success", ignoreCase = true)) {
@@ -882,18 +1210,21 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
                 } else {
                     dialog.dismiss()
                     dialog.show()
-                    errorText.text = "Wrong OTP"
+                    errorText.text = resources.getString(R.string.wrong_otp)
                     mOtpView.setText("")
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Exception: ", e)
+                Log.e(TAG, "getOtp Exception: ", e)
             }
-        }, Response.ErrorListener { }) {
+        }, Response.ErrorListener { error ->
+            Log.e(TAG, "getOtp VolleyError: ${error.message}", error)
+            VolleySingleton.logVolleyError("CbwtfHcfScanFragment", error)
+        }) {
             override fun getParams(): Map<String, String> {
                 val otp: MutableMap<String, String> = HashMap()
                 otp["hcf_code"] = h_cOde
                 otp["otp"] = otp_value
-                otp["date"] = DateFormat.format("yyyy-MM-dd", Date().time).toString()
+                otp["date"] = dateStr
                 return otp
             }
         }
@@ -901,7 +1232,11 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
     }
 
     fun checkAttendance(mHospitalCode: String, hos_name: String) {
+        val dateStr = DateFormat.format("yyyy-MM-dd", Date().time).toString()
+        val opId = MSP.getInstance(requireContext()).getStringData(AppStrings.userID)
+        Log.d(TAG, "checkAttendance Request -> URL: ${AppStrings.check_attendance} | hcf_code: $mHospitalCode | operator_id: $opId | date: $dateStr")
         val checkAttendanceRequest = object : StringRequest(Method.POST, AppStrings.check_attendance, Response.Listener { response ->
+            Log.d(TAG, "checkAttendance Response -> $response")
             try {
                 val otpObject = JSONObject(response)
                 if (otpObject.get("status").toString().equals("success", ignoreCase = true)) {
@@ -909,7 +1244,7 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
                     scanButton!!.visibility = View.VISIBLE
                     attendanceButton!!.visibility = View.GONE
                     attendanceCard!!.visibility = View.VISIBLE
-                    attendanceStatusTv!!.text = "Done"
+                    attendanceStatusTv!!.text = resources.getString(R.string.done)
                     attendanceStatusTv!!.setTextColor(ContextCompat.getColor(requireContext(), R.color.green))
                     attendanceStatusTv!!.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_baseline_check_24, 0)
                     setTextViewDrawableColor(attendanceStatusTv!!, R.color.green)
@@ -935,14 +1270,17 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
                     otpAlertDialog.show()
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Exception: ", e)
+                Log.e(TAG, "checkAttendance Exception: ", e)
             }
-        }, Response.ErrorListener { }) {
+        }, Response.ErrorListener { error ->
+            Log.e(TAG, "checkAttendance VolleyError: ${error.message}", error)
+            VolleySingleton.logVolleyError("CbwtfHcfScanFragment", error)
+        }) {
             override fun getParams(): Map<String, String> {
                 val param: MutableMap<String, String> = HashMap()
                 param["hcf_code"] = mHospitalCode
-                param["operator_id"] = MSP.getInstance(requireContext()).getStringData(AppStrings.userID)
-                param["date"] = DateFormat.format("yyyy-MM-dd", Date().time).toString()
+                param["operator_id"] = opId
+                param["date"] = dateStr
                 return param
             }
         }
@@ -950,7 +1288,13 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
     }
 
     fun markAttendance(mHospitalCode: String) {
+        val dateStr = DateFormat.format("yyyy-MM-dd", Date().time).toString()
+        val opId = MSP.getInstance(requireContext()).getStringData(AppStrings.userID)
+        val cbwtfId = MSP.getInstance(requireContext()).getStringData(AppStrings.userCbwtfID)
+        val latLong = "$latitude,$longitude"
+        Log.d(TAG, "markAttendance Request -> URL: ${AppStrings.mark_attendance} | hcf_code: $mHospitalCode | operator_id: $opId | cbwtf_id: $cbwtfId | date: $dateStr | lat_long: $latLong")
         val markAttendanceRequest = object : StringRequest(Method.POST, AppStrings.mark_attendance, Response.Listener { response ->
+            Log.d(TAG, "markAttendance Response -> $response")
             try {
                 val otpObject = JSONObject(response)
                 if (otpObject.get("status").toString().equals("success", ignoreCase = true)) {
@@ -958,22 +1302,25 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
                     scanButton!!.visibility = View.VISIBLE
                     attendanceButton!!.visibility = View.GONE
                     attendanceCard!!.visibility = View.VISIBLE
-                    attendanceStatusTv!!.text = "Done"
+                    attendanceStatusTv!!.text = resources.getString(R.string.done)
                     attendanceStatusTv!!.setTextColor(ContextCompat.getColor(requireContext(), R.color.green))
                     attendanceStatusTv!!.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_baseline_check_24, 0)
                     setTextViewDrawableColor(attendanceStatusTv!!, R.color.green)
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Exception: ", e)
+                Log.e(TAG, "markAttendance Exception: ", e)
             }
-        }, Response.ErrorListener { }) {
+        }, Response.ErrorListener { error ->
+            Log.e(TAG, "markAttendance VolleyError: ${error.message}", error)
+            VolleySingleton.logVolleyError("CbwtfHcfScanFragment", error)
+        }) {
             override fun getParams(): Map<String, String> {
                 val param: MutableMap<String, String> = HashMap()
                 param["hcf_code"] = mHospitalCode
-                param["operator_id"] = MSP.getInstance(requireContext()).getStringData(AppStrings.userID)
-                param["cbwtf_id"] = MSP.getInstance(requireContext()).getStringData(AppStrings.userCbwtfID)
-                param["date"] = DateFormat.format("yyyy-MM-dd", Date().time).toString()
-                param["lat_long"] = "$latitude,$longitude"
+                param["operator_id"] = opId
+                param["cbwtf_id"] = cbwtfId
+                param["date"] = dateStr
+                param["lat_long"] = latLong
                 return param
             }
         }
@@ -989,19 +1336,26 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
     }
 
     private fun updateHospitalLocationForOnce(mHospitalCode: String) {
+        val latLong = "$latitude,$longitude"
+        Log.d(TAG, "updateHospitalLocationForOnce Request -> URL: ${AppStrings.set_hospital_location} | hcf_code: $mHospitalCode | lat_long: $latLong")
         val markAttendanceRequest = object : StringRequest(Method.POST, AppStrings.set_hospital_location, Response.Listener { response ->
+            Log.d(TAG, "updateHospitalLocationForOnce Response -> $response")
             try {
                 val otpObject = JSONObject(response)
                 if (otpObject.get("status").toString().equals("success", ignoreCase = true)) {
+                    Log.d(TAG,"Success")
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Exception: ", e)
+                Log.e(TAG, "updateHospitalLocationForOnce Exception: ", e)
             }
-        }, Response.ErrorListener { }) {
+        }, Response.ErrorListener { error ->
+            Log.e(TAG, "updateHospitalLocationForOnce VolleyError: ${error.message}", error)
+            VolleySingleton.logVolleyError("CbwtfHcfScanFragment", error)
+        }) {
             override fun getParams(): Map<String, String> {
                 val param: MutableMap<String, String> = HashMap()
                 param["hcf_code"] = mHospitalCode
-                param["lat_long"] = "$latitude,$longitude"
+                param["lat_long"] = latLong
                 return param
             }
         }
@@ -1049,6 +1403,12 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
 
             lastText = result.text
 
+            CrashlyticsHelper.log("Barcode scanned: $lastText")
+            CrashlyticsHelper.setKey("last_scanned_qr", lastText ?: "")
+            CrashlyticsHelper.setKey("scan_type", scanType)
+            CrashlyticsHelper.setKey("scan_mode", if (scanMode == 0) "manual" else "auto")
+            CrashlyticsHelper.setKey("bluetooth_connected", bluetoothConnected)
+
             barcodeView!!.pause()
             isWeightAdded = true
             beepManager!!.playBeepSoundAndVibrate()
@@ -1062,6 +1422,9 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
                 val data2 = data1[0].split("-".toRegex(), 2).toTypedArray()
                 val qrCode = data2[0]
                 val qrColor = data2[1]
+
+                Log.d(TAG, "Barcode Scanned -> Raw: $lastText | scanType: $scanType | scanMode: $scanMode")
+                Log.d(TAG, "Barcode Parsed -> hcfCode: $hcfCode | hospitalName: $hospitalName | scannedQrCode: $qrCode | qrColor: $qrColor | qrCbwtfId: $qrCbwtfId")
 
                 scannedQrCode = qrCode
                 scannedHcfCode = hcfCode
@@ -1217,17 +1580,22 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
 
     @SuppressLint("MissingPermission")
     override fun onClickBluetoothDevice(bluetoothDevice: BluetoothDevice, status: Int) {
-        if (bluetoothDevice.bondState == BluetoothDevice.BOND_NONE) {
-            bluetoothDevice.createBond()
-        } else {
-            myBluetoothService!!.startDisconnectService()
-            myBluetoothService!!.connectDevice(bluetoothDevice)
+        try {
+            if (bluetoothDevice.bondState == BluetoothDevice.BOND_NONE) {
+                bluetoothDevice.createBond()
+            } else {
+                myBluetoothService!!.startDisconnectService()
+                myBluetoothService!!.connectDevice(bluetoothDevice)
 
-            weightView!!.visibility = View.VISIBLE
-            alertDialog!!.dismiss()
+                weightView!!.visibility = View.VISIBLE
+                alertDialog!!.dismiss()
 
-            bluetoothConnected = true
-            MSP.getInstance(requireContext()).setStringData(AppStrings.bluetoothConnection, "1")
+                bluetoothConnected = true
+                MSP.getInstance(requireContext()).setStringData(AppStrings.bluetoothConnection, "1")
+            }
+        } catch (e: SecurityException) {
+            Log.e(TAG, "SecurityException in onClickBluetoothDevice", e)
+            showToast("Bluetooth permission required: ${e.localizedMessage}")
         }
     }
 
@@ -1328,7 +1696,9 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
     }
 
     fun getRescanObjectData(qrcode: String, callback: RescanCallback) {
+        Log.d(TAG, "getRescanObjectData Request -> URL: ${AppStrings.get_qr_data} | qr_code: $qrcode")
         val request = object : StringRequest(Method.POST, AppStrings.get_qr_data, Response.Listener { response ->
+            Log.d(TAG, "getRescanObjectData Response -> $response")
             try {
                 val jsonObject = JSONObject(response)
                 if (jsonObject.get("status").toString().equals("success", ignoreCase = true)) {
@@ -1346,16 +1716,21 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
                         qrAlreadyScanned = false
                     }
 
+                    Log.d(TAG, "getRescanObjectData Parsed -> qrAlreadyScanned: $qrAlreadyScanned, qrSwitch: $qrSwitch, cbwtfWeight: $cbwtfWeight, hcfWeight: $hcfWeight")
                     callback.onResult(qrAlreadyScanned, qrSwitch, data)
                 } else {
                     showToast("QR Data Not Found")
                     barcodeView!!.resume()
                 }
             } catch (e: Exception) {
-                Log.d(TAG, "Exception " + e.message)
+                Log.e(TAG, "getRescanObjectData Exception: ", e)
                 barcodeView!!.resume()
             }
-        }, Response.ErrorListener { barcodeView!!.resume() }) {
+        }, Response.ErrorListener { error ->
+            Log.e(TAG, "getRescanObjectData VolleyError: ${error.message}", error)
+            VolleySingleton.logVolleyError("CbwtfHcfScanFragment", error)
+            barcodeView!!.resume()
+        }) {
             override fun getParams(): Map<String, String> {
                 val params: MutableMap<String, String> = HashMap()
                 params["qr_code"] = qrcode
