@@ -10,8 +10,10 @@ import android.content.pm.PackageManager
 import android.app.Activity
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Matrix
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
+import android.media.ExifInterface
 import android.location.Geocoder
 import android.location.LocationManager
 import android.net.Uri
@@ -207,6 +209,30 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
         }
     }
 
+    private fun rotateBitmapIfRequired(bitmap: Bitmap, filePath: String): Bitmap {
+        try {
+            val exif = ExifInterface(filePath)
+            val orientation = exif.getAttributeInt(
+                ExifInterface.TAG_ORIENTATION,
+                ExifInterface.ORIENTATION_UNDEFINED
+            )
+            val degrees = when (orientation) {
+                ExifInterface.ORIENTATION_ROTATE_90 -> 90f
+                ExifInterface.ORIENTATION_ROTATE_180 -> 180f
+                ExifInterface.ORIENTATION_ROTATE_270 -> 270f
+                else -> 0f
+            }
+            if (degrees != 0f) {
+                val matrix = Matrix()
+                matrix.postRotate(degrees)
+                return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error checking EXIF orientation", e)
+        }
+        return bitmap
+    }
+
     private fun compressImageFile(filePath: String): Boolean {
         try {
             val file = File(filePath)
@@ -229,13 +255,14 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
             val decodeOptions = BitmapFactory.Options().apply {
                 this.inSampleSize = inSampleSize
             }
-            val bitmap = BitmapFactory.decodeFile(filePath, decodeOptions) ?: return false
+            var bitmap = BitmapFactory.decodeFile(filePath, decodeOptions) ?: return false
+            bitmap = rotateBitmapIfRequired(bitmap, filePath)
 
             var quality = 80
             val outStream = ByteArrayOutputStream()
             bitmap.compress(Bitmap.CompressFormat.JPEG, quality, outStream)
 
-            while (outStream.toByteArray().size >= 3 * 1024 * 1024 && quality > 20) {
+            while (outStream.toByteArray().size >= 2 * 1024 * 1024 && quality > 20) {
                 outStream.reset()
                 quality -= 15
                 bitmap.compress(Bitmap.CompressFormat.JPEG, quality, outStream)
@@ -261,8 +288,9 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
         if (!photoPath.isNullOrEmpty()) {
             val file = File(photoPath)
             if (file.exists()) {
-                val bitmap = BitmapFactory.decodeFile(file.absolutePath)
+                var bitmap = BitmapFactory.decodeFile(file.absolutePath)
                 if (bitmap != null) {
+                    bitmap = rotateBitmapIfRequired(bitmap, file.absolutePath)
                     previewImageView.setImageBitmap(bitmap)
                     previewImageView.visibility = View.VISIBLE
 
