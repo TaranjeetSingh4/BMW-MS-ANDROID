@@ -367,19 +367,114 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
         }
     }
 
-    private fun buildSubmitMap(index: Int): MutableMap<String, String> {
-        val date = DateFormat.format("yyyy-MM-dd", Date().time).toString()
-        val model = hospitalModels[index]
+    private fun submitRescan() {
+        if (currentPhotoPath.isNullOrEmpty() || !File(currentPhotoPath!!).exists()) {
+            showToast("Please capture weighing scale photo using camera first")
+            return
+        }
+        if (hospitalModels.isEmpty()) {
+            showToast("No scan data to submit")
+            return
+        }
 
-        val map: MutableMap<String, String> = HashMap()
-        map["weight"] = model.waste_weight + "." + model.waste_weight_g
-        map["receiving_date"] = date
-        map["operator_id"] = MSP.getInstance(requireContext()).getStringData(AppStrings.userID)
-        map["receiving_address"] = "$latitude,$longitude"
-        map["color"] = model.waste_color
-        map["hospital_id"] = model.hcf_code.trim()
-        map["seq_no"] = model.qr_code
-        return map
+        if (loading_ll != null) loading_ll!!.visibility = View.VISIBLE
+
+        val dateTimeStr = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
+        val jsonArray = JSONArray()
+
+        val opId = MSP.getInstance(requireContext()).getStringData(AppStrings.userID)
+
+        for (i in 0 until hospitalModels.size) {
+            val model = hospitalModels[i]
+            val itemObj = JSONObject()
+            itemObj.put("hospital_id", model.hcf_code.trim())
+            itemObj.put("seq_no", model.qr_code.trim())
+
+            val totalWeightStr = model.waste_weight.trim() + "." + model.waste_weight_g.trim()
+            val weightDouble = totalWeightStr.toDoubleOrNull() ?: 0.0
+            itemObj.put("weight", weightDouble)
+
+            itemObj.put("receiving_date", dateTimeStr)
+            itemObj.put("operator_id", if (opId.isEmpty()) "1" else opId)
+            itemObj.put("receiving_address", "$latitude,$longitude")
+            itemObj.put("color", model.waste_color.trim().uppercase())
+            jsonArray.put(itemObj)
+        }
+
+        val jsonString = jsonArray.toString()
+        val url = AppStrings.cbwtf_scan_submit
+
+        val builder = MultipartBody.Builder().setType(MultipartBody.FORM)
+        builder.addFormDataPart("json", jsonString)
+
+        val photoFile = File(currentPhotoPath!!)
+        if (photoFile.exists()) {
+            val seqNo = hospitalModels[0].qr_code ?: "img"
+            val timeStamp = System.currentTimeMillis().toString()
+            val fileName = md5(seqNo + timeStamp) + ".jpg"
+
+            val mediaType = "image/jpeg".toMediaTypeOrNull()
+            val requestBody = photoFile.asRequestBody(mediaType)
+            builder.addFormDataPart("weighing_photo", fileName, requestBody)
+
+            Log.d(TAG, "===== [RESCAN REQUEST SENT] MULTIPART WEIGHING PHOTO =====")
+            Log.d(TAG, "URL: $url")
+            Log.d(TAG, "json param: $jsonString")
+            Log.d(TAG, "weighing_photo file name: $fileName")
+            Log.d(TAG, "Local File: ${photoFile.absolutePath}")
+            Log.d(TAG, "File Size: ${photoFile.length() / 1024} KB")
+            Log.d(TAG, "========================================================")
+        }
+
+        val requestBody = builder.build()
+        val request = OkHttpRequest.Builder()
+            .url(url)
+            .post(requestBody)
+            .build()
+
+        RetrofitClient.okHttpClient.newCall(request).enqueue(object : OkHttpCallback {
+            override fun onFailure(call: OkHttpCall, e: IOException) {
+                Log.e(TAG, "===== [RESCAN FAILED] =====")
+                Log.e(TAG, "URL: $url | Error: ${e.message}", e)
+                Log.e(TAG, "==========================")
+                activity?.runOnUiThread {
+                    if (loading_ll != null) loading_ll!!.visibility = View.GONE
+                    showToast("Network Error: ${e.localizedMessage}")
+                }
+            }
+
+            override fun onResponse(call: OkHttpCall, response: OkHttpResponse) {
+                val responseStr = response.body?.string() ?: ""
+                Log.d(TAG, "===== [RESCAN RESPONSE] =====")
+                Log.d(TAG, "URL: $url | Response: $responseStr")
+                Log.d(TAG, "=============================")
+
+                activity?.runOnUiThread {
+                    try {
+                        val jsonObject = JSONObject(responseStr)
+                        if (jsonObject.optString("status").equals("success", ignoreCase = true)) {
+                            if (loading_ll != null) loading_ll!!.visibility = View.GONE
+                            val msg = jsonObject.optString("message", "Successfully uploaded all rescans.")
+                            showToast(msg)
+                            total_bags!!.text = resources.getString(R.string._0)
+                            total_waste_weight!!.text = resources.getString(R.string.zero_weight)
+                            dataSize = 0
+                            hospitalModels.clear()
+                            hospitalAdapter!!.notifyDataSetChanged()
+                            getQRData(AppStrings.get_all_report)
+                        } else {
+                            if (loading_ll != null) loading_ll!!.visibility = View.GONE
+                            val msg = jsonObject.optString("message", "Rescan Submission Failed")
+                            showToast(msg)
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "submitRescan Exception: ", e)
+                        if (loading_ll != null) loading_ll!!.visibility = View.GONE
+                        showToast("Error processing response")
+                    }
+                }
+            }
+        })
     }
 
     private fun submitFirstScan() {
@@ -647,11 +742,19 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
 
             submit_button!!.setOnClickListener {
                 Log.d("TAG", "onClick: HCF Scan ")
+                if (hospitalModels.isEmpty()) {
+                    showToast("No waste bags added to submit")
+                    return@setOnClickListener
+                }
                 if (currentPhotoPath.isNullOrEmpty() || !File(currentPhotoPath!!).exists()) {
                     showToast("Please capture weighing scale photo using camera first")
                     return@setOnClickListener
                 }
                 for (model in hospitalModels) {
+                    if (model.qr_code.isNullOrEmpty() || model.qr_code.trim() == "0") {
+                        showToast("Invalid or empty QR code for ${model.waste_color} bag. Please scan a valid barcode first.")
+                        return@setOnClickListener
+                    }
                     if (model.weighing_photo.isNullOrEmpty()) {
                         model.weighing_photo = currentPhotoPath!!
                     }
@@ -659,11 +762,7 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
                 if (scanType == 0) {
                     submitFirstScan()
                 } else {
-                    if (dataSize < hospitalModels.size) {
-                        if (loading_ll != null) loading_ll!!.visibility = View.VISIBLE
-                        val map = buildSubmitMap(dataSize)
-                        cbwtfScanSubmitRequest(AppStrings.cbwtf_scan_submit, map)
-                    }
+                    submitRescan()
                 }
             }
 
@@ -1130,127 +1229,6 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
         total_waste_weight!!.text = DecimalFormat("000.000").format(countWeight)
     }
 
-    fun cbwtfScanSubmitRequest(url: String, map: Map<String, String>) {
-        activity?.runOnUiThread {
-            if (loading_ll != null) loading_ll!!.visibility = View.VISIBLE
-        }
-
-        Log.d(TAG, "cbwtfScanSubmitRequest Request -> URL: $url | Params: $map")
-
-        val builder = MultipartBody.Builder().setType(MultipartBody.FORM)
-
-        for ((key, value) in map) {
-            builder.addFormDataPart(key, value)
-        }
-
-        var uploadedFileName: String? = map["weighing_photo"]
-        if (dataSize < hospitalModels.size) {
-            var photoPath = hospitalModels[dataSize].weighing_photo
-            if (photoPath.isNullOrEmpty() && !currentPhotoPath.isNullOrEmpty()) {
-                photoPath = currentPhotoPath
-            }
-            if (!photoPath.isNullOrEmpty()) {
-                val photoFile = File(photoPath)
-                if (photoFile.exists()) {
-                    val seqNo = hospitalModels[dataSize].qr_code ?: "img"
-                    val timeStamp = System.currentTimeMillis().toString()
-                    val fileName = uploadedFileName ?: (md5(seqNo + timeStamp) + ".jpg")
-                    uploadedFileName = fileName
-
-                    val mediaType = "image/jpeg".toMediaTypeOrNull()
-                    val requestBody = photoFile.asRequestBody(mediaType)
-                    val sizeKb = photoFile.length() / 1024
-                    builder.addFormDataPart("weighing_photo", fileName, requestBody)
-                    Log.d(TAG, "===== [REQUEST SENT] MULTIPART WEIGHING PHOTO UPLOAD =====")
-                    Log.d(TAG, "API Endpoint: $url")
-                    Log.d(TAG, "Key: weighing_photo | Value (filename): $fileName")
-                    Log.d(TAG, "MIME Type: image/jpeg")
-                    Log.d(TAG, "Target Upload Path: http://staging16.dgmhup.in/uploads/weighing_photos/$fileName")
-                    Log.d(TAG, "Local File Path: ${photoFile.absolutePath}")
-                    Log.d(TAG, "File Size: $sizeKb KB (${photoFile.length()} bytes)")
-                    Log.d(TAG, "=========================================================")
-                } else {
-                    Log.d(TAG, "weighing_photo file not found at: $photoPath")
-                }
-            } else {
-                Log.d(TAG, "No weighing_photo provided for model index $dataSize")
-            }
-        }
-
-        val requestBody = builder.build()
-        val request = OkHttpRequest.Builder()
-            .url(url)
-            .post(requestBody)
-            .build()
-
-        RetrofitClient.okHttpClient.newCall(request).enqueue(object : OkHttpCallback {
-            override fun onFailure(call: OkHttpCall, e: IOException) {
-                Log.e(TAG, "===== [FAILED] MULTIPART IMAGE UPLOAD FAILED =====")
-                Log.e(TAG, "API Endpoint: $url")
-                Log.e(TAG, "Error: ${e.message}", e)
-                Log.e(TAG, "==================================================")
-                activity?.runOnUiThread {
-                    if (loading_ll != null) loading_ll!!.visibility = View.GONE
-                    showToast("Network Error: ${e.localizedMessage}")
-                }
-            }
-
-            override fun onResponse(call: OkHttpCall, response: OkHttpResponse) {
-                val responseStr = response.body?.string() ?: ""
-                Log.d(TAG, "cbwtfScanSubmitRequest Response -> URL: $url | Response: $responseStr")
-
-                activity?.runOnUiThread {
-                    try {
-                        val jsonObject = JSONObject(responseStr)
-                        if (jsonObject.optString("status").equals("success", ignoreCase = true)) {
-                            if (!uploadedFileName.isNullOrEmpty()) {
-                                Log.d(TAG, "===== [SUCCESS] MULTIPART IMAGE UPLOADED SUCCESSFULLY =====")
-                                Log.d(TAG, "Target Upload URL: http://staging16.dgmhup.in/uploads/weighing_photos/$uploadedFileName")
-                                Log.d(TAG, "Server Response: $responseStr")
-                                Log.d(TAG, "==========================================================")
-                            }
-                            dataSize++
-                            if (dataSize < hospitalModels.size) {
-                                val nextMap = buildSubmitMap(dataSize)
-                                if (scanType == 0) {
-                                    if (MSP.getInstance(requireContext()).getStringData(AppStrings.loginAs) == "hcf") {
-                                        cbwtfScanSubmitRequest(AppStrings.hcf_scan_submit_hcf, nextMap)
-                                    } else {
-                                        deleteQRData(hospitalModels[dataSize].qr_code, nextMap)
-                                    }
-                                } else {
-                                    cbwtfScanSubmitRequest(AppStrings.cbwtf_scan_submit, nextMap)
-                                }
-                            }
-
-                            if (dataSize == hospitalModels.size) {
-                                if (loading_ll != null) loading_ll!!.visibility = View.GONE
-                                showToast("Submitted successfully with weighing photo!")
-                                total_bags!!.text = resources.getString(R.string._0)
-                                total_waste_weight!!.text = resources.getString(R.string.zero_weight)
-                                dataSize = 0
-                                hospitalModels.clear()
-                                hospitalAdapter!!.notifyDataSetChanged()
-                                getQRData(AppStrings.get_all_report)
-                            }
-                        } else {
-                            if (loading_ll != null) loading_ll!!.visibility = View.GONE
-                            val msg = jsonObject.optString("message", "Submission Failed")
-                            Log.e(TAG, "===== [FAILED] MULTIPART IMAGE UPLOAD FAILED =====")
-                            Log.e(TAG, "Server Error Message: $msg")
-                            Log.e(TAG, "==================================================")
-                            showToast(msg)
-                        }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "cbwtfScanSubmitRequest Exception: ", e)
-                        if (loading_ll != null) loading_ll!!.visibility = View.GONE
-                        showToast("Error processing response")
-                    }
-                }
-            }
-        })
-    }
-
     fun getQRData(url: String) {
         Log.d(TAG, "getQRData Request -> URL: $url")
         val request = StringRequest(Request.Method.POST, url, Response.Listener { response ->
@@ -1276,40 +1254,6 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
             VolleySingleton.logVolleyError("CbwtfHcfScanFragment", error)
         })
 
-        VolleySingleton.getInstance(requireContext()).addToRequestQueue(request)
-    }
-
-    fun deleteQRData(qrId: String, map: Map<String, String>) {
-        Log.d(TAG, "deleteQRData Request -> URL: ${AppStrings.delete_qr} | qr_id: $qrId | Next Submit Params: $map")
-        val request = object : StringRequest(Method.POST, AppStrings.delete_qr, Response.Listener { response ->
-            Log.d(TAG, "deleteQRData Response -> $response")
-            try {
-                val jsonObject = JSONObject(response)
-                if (jsonObject.get("status").toString().equals("success", ignoreCase = true)) {
-                    cbwtfScanSubmitRequest(AppStrings.hcf_scan_submit, map)
-                } else {
-                    cbwtfScanSubmitRequest(AppStrings.hcf_scan_submit, map)
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "deleteQRData Exception: ", e)
-                activity?.runOnUiThread {
-                    if (loading_ll != null) loading_ll!!.visibility = View.GONE
-                }
-            }
-        }, Response.ErrorListener { error ->
-            Log.e(TAG, "deleteQRData VolleyError: ${error.message}", error)
-            VolleySingleton.logVolleyError("CbwtfHcfScanFragment", error)
-            activity?.runOnUiThread {
-                if (loading_ll != null) loading_ll!!.visibility = View.GONE
-                showToast("Network Error: ${error.message}")
-            }
-        }) {
-            override fun getParams(): Map<String, String> {
-                val params: MutableMap<String, String> = HashMap()
-                params["qr_id"] = qrId
-                return params
-            }
-        }
         VolleySingleton.getInstance(requireContext()).addToRequestQueue(request)
     }
 
