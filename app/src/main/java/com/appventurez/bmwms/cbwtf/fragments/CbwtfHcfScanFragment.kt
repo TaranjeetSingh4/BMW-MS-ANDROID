@@ -49,8 +49,15 @@ import okhttp3.MultipartBody
 import okhttp3.Request as OkHttpRequest
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.Response as OkHttpResponse
+import android.media.ExifInterface
+import android.provider.MediaStore
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.FileProvider
+import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
+import java.text.SimpleDateFormat
 
 import java.util.Locale
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -194,6 +201,161 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
     private var isWeightAdded: Boolean? = true
     private var isFirstScanHCF: Boolean? = false
 
+    private var captureWeighingPhotoButton: MaterialButton? = null
+    private var weighingPhotoPreviewLayout: LinearLayout? = null
+    private var weighingPhotoThumbnail: ImageView? = null
+    private var weighingPhotoSizeTv: TextView? = null
+    private var weighingPhotoRetakeBtn: MaterialButton? = null
+    private var weighingPhotoRemoveBtn: MaterialButton? = null
+    private var currentPhotoPath: String? = null
+
+    private fun getFormattedFileSize(file: File): String {
+        val bytes = file.length()
+        return when {
+            bytes >= 1024 * 1024 -> String.format(Locale.getDefault(), "Size: %.2f MB", bytes.toDouble() / (1024 * 1024))
+            bytes >= 1024 -> String.format(Locale.getDefault(), "Size: %.2f KB", bytes.toDouble() / 1024)
+            else -> "Size: $bytes Bytes"
+        }
+    }
+
+    private fun rotateBitmapIfRequired(bitmap: Bitmap, filePath: String): Bitmap {
+        try {
+            val exif = ExifInterface(filePath)
+            val orientation = exif.getAttributeInt(
+                ExifInterface.TAG_ORIENTATION,
+                ExifInterface.ORIENTATION_UNDEFINED
+            )
+            val degrees = when (orientation) {
+                ExifInterface.ORIENTATION_ROTATE_90 -> 90f
+                ExifInterface.ORIENTATION_ROTATE_180 -> 180f
+                ExifInterface.ORIENTATION_ROTATE_270 -> 270f
+                else -> 0f
+            }
+            if (degrees != 0f) {
+                val matrix = Matrix()
+                matrix.postRotate(degrees)
+                return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error checking EXIF orientation", e)
+        }
+        return bitmap
+    }
+
+    private fun compressImageFile(filePath: String): Boolean {
+        try {
+            val file = File(filePath)
+            if (!file.exists()) return false
+
+            val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeFile(filePath, options)
+
+            var inSampleSize = 1
+            val reqWidth = 1080
+            val reqHeight = 1080
+            if (options.outHeight > reqHeight || options.outWidth > reqWidth) {
+                val halfHeight = options.outHeight / 2
+                val halfWidth = options.outWidth / 2
+                while (halfHeight / inSampleSize >= reqHeight && halfWidth / inSampleSize >= reqWidth) {
+                    inSampleSize *= 2
+                }
+            }
+
+            val decodeOptions = BitmapFactory.Options().apply {
+                this.inSampleSize = inSampleSize
+            }
+            var bitmap = BitmapFactory.decodeFile(filePath, decodeOptions) ?: return false
+            bitmap = rotateBitmapIfRequired(bitmap, filePath)
+
+            var quality = 80
+            val outStream = ByteArrayOutputStream()
+            bitmap.compress(Bitmap.CompressFormat.JPEG, quality, outStream)
+
+            while (outStream.toByteArray().size >= 2 * 1024 * 1024 && quality > 20) {
+                outStream.reset()
+                quality -= 15
+                bitmap.compress(Bitmap.CompressFormat.JPEG, quality, outStream)
+            }
+
+            val fos = FileOutputStream(file)
+            fos.write(outStream.toByteArray())
+            fos.flush()
+            fos.close()
+            outStream.close()
+            return true
+        } catch (e: Exception) {
+            Log.e(TAG, "Error compressing image", e)
+            return false
+        }
+    }
+
+    private fun updateMainPhotoUI() {
+        if (!currentPhotoPath.isNullOrEmpty()) {
+            val file = File(currentPhotoPath!!)
+            if (file.exists()) {
+                var bitmap = BitmapFactory.decodeFile(file.absolutePath)
+                if (bitmap != null) {
+                    bitmap = rotateBitmapIfRequired(bitmap, file.absolutePath)
+                    weighingPhotoThumbnail?.setImageBitmap(bitmap)
+                    weighingPhotoPreviewLayout?.visibility = View.VISIBLE
+                    captureWeighingPhotoButton?.visibility = View.GONE
+
+                    val sizeText = getFormattedFileSize(file)
+                    weighingPhotoSizeTv?.text = sizeText
+                    return
+                }
+            }
+        }
+        weighingPhotoPreviewLayout?.visibility = View.GONE
+        captureWeighingPhotoButton?.visibility = View.VISIBLE
+    }
+
+    private val takePhotoLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            if (!currentPhotoPath.isNullOrEmpty()) {
+                val file = File(currentPhotoPath!!)
+                if (file.exists()) {
+                    compressImageFile(currentPhotoPath!!)
+                    updateMainPhotoUI()
+                }
+            }
+        } else {
+            currentPhotoPath = null
+            updateMainPhotoUI()
+        }
+    }
+
+    private fun dispatchTakePictureIntent() {
+        val takePictureIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+        if (takePictureIntent.resolveActivity(requireActivity().packageManager) != null) {
+            val photoFile: File? = try {
+                createImageFile()
+            } catch (ex: IOException) {
+                Log.e(TAG, "Error creating image file", ex)
+                null
+            }
+            if (photoFile != null) {
+                currentPhotoPath = photoFile.absolutePath
+                val photoURI: Uri = FileProvider.getUriForFile(
+                    requireContext(),
+                    "${requireActivity().packageName}.provider",
+                    photoFile
+                )
+                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI)
+                takePhotoLauncher.launch(takePictureIntent)
+            }
+        } else {
+            takePhotoLauncher.launch(takePictureIntent)
+        }
+    }
+
+    @Throws(IOException::class)
+    private fun createImageFile(): File {
+        val timeStamp: String = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+        val storageDir: File? = requireContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES)
+        return File.createTempFile("WEIGHING_${timeStamp}_", ".jpg", storageDir)
+    }
+
 
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -235,6 +397,33 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
             appbar_tv = rootView!!.findViewById(R.id.cbwtf_hcf_scan_appbar_tv)
             submit_button = rootView!!.findViewById(R.id.cbwtf_hcf_scan_submit_button)
             loading_ll = rootView!!.findViewById(R.id.loading_view_ll)
+            captureWeighingPhotoButton = rootView!!.findViewById(R.id.capture_weighing_photo_button)
+            weighingPhotoPreviewLayout = rootView!!.findViewById(R.id.weighing_photo_preview_layout)
+            weighingPhotoThumbnail = rootView!!.findViewById(R.id.weighing_photo_thumbnail)
+            weighingPhotoSizeTv = rootView!!.findViewById(R.id.weighing_photo_size_tv)
+            weighingPhotoRetakeBtn = rootView!!.findViewById(R.id.weighing_photo_retake_btn)
+            weighingPhotoRemoveBtn = rootView!!.findViewById(R.id.weighing_photo_remove_btn)
+
+            captureWeighingPhotoButton!!.setOnClickListener {
+                if (getCameraPermission()) {
+                    dispatchTakePictureIntent()
+                } else {
+                    showToast("Camera permission required to capture photo")
+                }
+            }
+
+            weighingPhotoRetakeBtn!!.setOnClickListener {
+                if (getCameraPermission()) {
+                    dispatchTakePictureIntent()
+                } else {
+                    showToast("Camera permission required to capture photo")
+                }
+            }
+
+            weighingPhotoRemoveBtn!!.setOnClickListener {
+                currentPhotoPath = null
+                updateMainPhotoUI()
+            }
 
             Glide.with(requireContext()).load(R.drawable.uplogogpb).into(appBarLogo!!)
 
@@ -312,12 +501,21 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
 
                 val ww_ww = finalWeight.trim().split("\\.".toRegex()).toTypedArray()
 
-                hospitalModels.add(HospitalModel(code, hName, wType, ww_ww[0], ww_ww[1], scannedQrCode))
+                hospitalModels.add(HospitalModel(code, hName, wType, ww_ww[0], ww_ww[1], scannedQrCode, currentPhotoPath ?: ""))
                 hospitalAdapter!!.notifyDataSetChanged()
             }
 
             submit_button!!.setOnClickListener {
                 Log.d("TAG", "onClick: HCF Scan ")
+                if (currentPhotoPath.isNullOrEmpty() || !File(currentPhotoPath!!).exists()) {
+                    showToast("Please capture weighing scale photo using camera first")
+                    return@setOnClickListener
+                }
+                for (model in hospitalModels) {
+                    if (model.weighing_photo.isNullOrEmpty()) {
+                        model.weighing_photo = currentPhotoPath!!
+                    }
+                }
                 if (dataSize < hospitalModels.size) {
                     if (loading_ll != null) loading_ll!!.visibility = View.VISIBLE
 
@@ -509,7 +707,7 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
             val decimalKilo = String.format("%03d", d_kilo)
             val decimalGram = String.format("%03d", d_gram)
 
-            hospitalModels.add(HospitalModel(code, hName, wType, decimalKilo, decimalGram, scannedQrCode))
+            hospitalModels.add(HospitalModel(code, hName, wType, decimalKilo, decimalGram, scannedQrCode, currentPhotoPath ?: ""))
             hospitalAdapter!!.notifyDataSetChanged()
             barcodeView!!.resume()
             manualWeightAlert.dismiss()
@@ -841,14 +1039,22 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
         }
 
         if (dataSize < hospitalModels.size) {
-            val photoPath = hospitalModels[dataSize].weighing_photo
+            var photoPath = hospitalModels[dataSize].weighing_photo
+            if (photoPath.isNullOrEmpty() && !currentPhotoPath.isNullOrEmpty()) {
+                photoPath = currentPhotoPath
+            }
             if (!photoPath.isNullOrEmpty()) {
                 val photoFile = File(photoPath)
                 if (photoFile.exists()) {
                     val mediaType = "image/*".toMediaTypeOrNull()
                     val requestBody = photoFile.asRequestBody(mediaType)
+                    val sizeKb = photoFile.length() / 1024
                     builder.addFormDataPart("weighing_photo", photoFile.name, requestBody)
-                    Log.d(TAG, "Attached weighing_photo: ${photoFile.absolutePath} (${photoFile.length()} bytes)")
+                    Log.d(TAG, "===== WEIGHING PHOTO ATTACHED =====")
+                    Log.d(TAG, "Path: ${photoFile.absolutePath}")
+                    Log.d(TAG, "Name: ${photoFile.name}")
+                    Log.d(TAG, "Size: $sizeKb KB (${photoFile.length()} bytes)")
+                    Log.d(TAG, "===================================")
                 } else {
                     Log.d(TAG, "weighing_photo file not found at: $photoPath")
                 }
@@ -1470,7 +1676,7 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
                         showToast("Duplicate QR Code! Not Added.")
                         return
                     } else {
-                        hospitalModels.add(HospitalModel(code, hName, wType, ww_ww[0], ww_ww[1], scannedQrCode))
+                        hospitalModels.add(HospitalModel(code, hName, wType, ww_ww[0], ww_ww[1], scannedQrCode, currentPhotoPath ?: ""))
                         hospitalAdapter!!.notifyDataSetChanged()
                         isFirstScanHCF = false
                         isWeightAdded = false
@@ -1484,7 +1690,7 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
                     showToast("Duplicate QR Code! Not Added.")
                     return
                 } else {
-                    hospitalModels.add(HospitalModel(code, hName, wType, ww_ww[0], ww_ww[1], scannedQrCode))
+                    hospitalModels.add(HospitalModel(code, hName, wType, ww_ww[0], ww_ww[1], scannedQrCode, currentPhotoPath ?: ""))
                     hospitalAdapter!!.notifyDataSetChanged()
                     isFirstScanHCF = false
                     isWeightAdded = false
