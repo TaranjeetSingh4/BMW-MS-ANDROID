@@ -114,6 +114,7 @@ import com.appventurez.bmwms.database.HospitalModel
 import com.appventurez.bmwms.database.MyDatabase
 import com.appventurez.bmwms.models.BluetoothDevicesModel
 
+import org.json.JSONArray
 import org.json.JSONObject
 import java.text.DecimalFormat
 import java.util.ArrayList
@@ -356,6 +357,145 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
         return File.createTempFile("WEIGHING_${timeStamp}_", ".jpg", storageDir)
     }
 
+    private fun md5(input: String): String {
+        try {
+            val md = java.security.MessageDigest.getInstance("MD5")
+            val digested = md.digest(input.toByteArray())
+            return digested.joinToString("") { "%02x".format(it) }
+        } catch (e: Exception) {
+            return System.currentTimeMillis().toString()
+        }
+    }
+
+    private fun buildSubmitMap(index: Int): MutableMap<String, String> {
+        val date = DateFormat.format("yyyy-MM-dd", Date().time).toString()
+        val model = hospitalModels[index]
+
+        val map: MutableMap<String, String> = HashMap()
+        map["weight"] = model.waste_weight + "." + model.waste_weight_g
+        map["receiving_date"] = date
+        map["operator_id"] = MSP.getInstance(requireContext()).getStringData(AppStrings.userID)
+        map["receiving_address"] = "$latitude,$longitude"
+        map["color"] = model.waste_color
+        map["hospital_id"] = model.hcf_code.trim()
+        map["seq_no"] = model.qr_code
+        return map
+    }
+
+    private fun submitFirstScan() {
+        if (currentPhotoPath.isNullOrEmpty() || !File(currentPhotoPath!!).exists()) {
+            showToast("Please capture weighing scale photo using camera first")
+            return
+        }
+        if (hospitalModels.isEmpty()) {
+            showToast("No scan data to submit")
+            return
+        }
+
+        if (loading_ll != null) loading_ll!!.visibility = View.VISIBLE
+
+        val date = DateFormat.format("yyyy-MM-dd", Date().time).toString()
+        val jsonArray = JSONArray()
+
+        val opName = MSP.getInstance(requireContext()).getStringData(AppStrings.userID)
+        val adminId = MSP.getInstance(requireContext()).getStringData(AppStrings.userCbwtfID)
+
+        for (i in 0 until hospitalModels.size) {
+            val model = hospitalModels[i]
+            val itemObj = JSONObject()
+            itemObj.put("barcodeID", 2)
+            itemObj.put("hospital_id", model.hcf_code.trim())
+            itemObj.put("seq_no", model.qr_code.trim())
+            itemObj.put("operator_name", if (opName.isEmpty()) "1" else opName)
+            itemObj.put("admin_id", if (adminId.isEmpty()) "2040" else adminId)
+
+            val totalWeightStr = model.waste_weight.trim() + "." + model.waste_weight_g.trim()
+            val weightDouble = totalWeightStr.toDoubleOrNull() ?: 0.0
+            itemObj.put("weight", weightDouble)
+
+            itemObj.put("type", model.waste_color.trim().uppercase())
+            itemObj.put("year", date)
+            itemObj.put("handhover_address", "$latitude,$longitude")
+            itemObj.put("attenden_status", "collected")
+            jsonArray.put(itemObj)
+        }
+
+        val jsonString = jsonArray.toString()
+        val url = AppStrings.scanning_hcf_side
+
+        val builder = MultipartBody.Builder().setType(MultipartBody.FORM)
+        builder.addFormDataPart("json", jsonString)
+
+        val photoFile = File(currentPhotoPath!!)
+        if (photoFile.exists()) {
+            val seqNo = hospitalModels[0].qr_code ?: "img"
+            val timeStamp = System.currentTimeMillis().toString()
+            val fileName = md5(seqNo + timeStamp) + ".jpg"
+
+            val mediaType = "image/jpeg".toMediaTypeOrNull()
+            val requestBody = photoFile.asRequestBody(mediaType)
+            builder.addFormDataPart("weighing_photo", fileName, requestBody)
+
+            Log.d(TAG, "===== [FIRST SCAN REQUEST SENT] MULTIPART WEIGHING PHOTO =====")
+            Log.d(TAG, "URL: $url")
+            Log.d(TAG, "json param: $jsonString")
+            Log.d(TAG, "weighing_photo file name: $fileName")
+            Log.d(TAG, "Local File: ${photoFile.absolutePath}")
+            Log.d(TAG, "File Size: ${photoFile.length() / 1024} KB")
+            Log.d(TAG, "==========================================================")
+        }
+
+        val requestBody = builder.build()
+        val request = OkHttpRequest.Builder()
+            .url(url)
+            .post(requestBody)
+            .build()
+
+        RetrofitClient.okHttpClient.newCall(request).enqueue(object : OkHttpCallback {
+            override fun onFailure(call: OkHttpCall, e: IOException) {
+                Log.e(TAG, "===== [FIRST SCAN FAILED] =====")
+                Log.e(TAG, "URL: $url | Error: ${e.message}", e)
+                Log.e(TAG, "===============================")
+                activity?.runOnUiThread {
+                    if (loading_ll != null) loading_ll!!.visibility = View.GONE
+                    showToast("Network Error: ${e.localizedMessage}")
+                }
+            }
+
+            override fun onResponse(call: OkHttpCall, response: OkHttpResponse) {
+                val responseStr = response.body?.string() ?: ""
+                Log.d(TAG, "===== [FIRST SCAN RESPONSE] =====")
+                Log.d(TAG, "URL: $url | Response: $responseStr")
+                Log.d(TAG, "=================================")
+
+                activity?.runOnUiThread {
+                    try {
+                        val jsonObject = JSONObject(responseStr)
+                        if (jsonObject.optString("status").equals("success", ignoreCase = true)) {
+                            if (loading_ll != null) loading_ll!!.visibility = View.GONE
+                            val msg = jsonObject.optString("message", "Successfully uploaded data!")
+                            showToast(msg)
+                            total_bags!!.text = resources.getString(R.string._0)
+                            total_waste_weight!!.text = resources.getString(R.string.zero_weight)
+                            dataSize = 0
+                            hospitalModels.clear()
+                            hospitalAdapter!!.notifyDataSetChanged()
+                            getQRData(AppStrings.get_all_report)
+                        } else {
+                            if (loading_ll != null) loading_ll!!.visibility = View.GONE
+                            val msg = jsonObject.optString("message", "Submission Failed")
+                            showToast(msg)
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "submitFirstScan Exception: ", e)
+                        if (loading_ll != null) loading_ll!!.visibility = View.GONE
+                        showToast("Error processing response")
+                    }
+                }
+            }
+        })
+    }
+
 
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -516,47 +656,12 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
                         model.weighing_photo = currentPhotoPath!!
                     }
                 }
-                if (dataSize < hospitalModels.size) {
-                    if (loading_ll != null) loading_ll!!.visibility = View.VISIBLE
-
-                    val date = DateFormat.format("yyyy-MM-dd", Date().time).toString()
-
-                    if (scanType == 0) {
-                        if (MSP.getInstance(requireContext()).getStringData(AppStrings.loginAs) == "hcf") {
-                            val map: MutableMap<String, String> = HashMap()
-                            map["weight"] = hospitalModels[dataSize].waste_weight + "." + hospitalModels[dataSize].waste_weight_g
-                            map["admin_id"] = MSP.getInstance(requireContext()).getStringData(AppStrings.userCbwtfID)
-                            map["handhover_address"] = "$latitude,$longitude"
-                            map["type"] = hospitalModels[dataSize].waste_color
-                            map["hospital_id"] = hospitalModels[dataSize].hcf_code
-                            map["seq_no"] = hospitalModels[dataSize].qr_code
-                            map["year"] = date
-                            map["attenden_status"] = "collected"
-                            cbwtfScanSubmitRequest(AppStrings.hcf_scan_submit_hcf, map)
-                        } else {
-                            val map: MutableMap<String, String> = HashMap()
-                            map["weight"] = hospitalModels[dataSize].waste_weight + "." + hospitalModels[dataSize].waste_weight_g
-                            map["admin_id"] = MSP.getInstance(requireContext()).getStringData(AppStrings.userCbwtfID)
-                            map["operator_name"] = MSP.getInstance(requireContext()).getStringData(AppStrings.userID)
-                            map["handhover_address"] = "$latitude,$longitude"
-                            map["type"] = hospitalModels[dataSize].waste_color
-                            map["hospital_id"] = hospitalModels[dataSize].hcf_code
-                            map["seq_no"] = hospitalModels[dataSize].qr_code
-                            map["year"] = date
-                            map["attenden_status"] = "collected"
-
-                            deleteQRData(hospitalModels[dataSize].qr_code, map)
-                        }
-                    } else {
-                        val map: MutableMap<String, String> = HashMap()
-                        map["weight"] = hospitalModels[dataSize].waste_weight + "." + hospitalModels[dataSize].waste_weight_g
-                        map["receiving_date"] = date
-                        map["operator_id"] = MSP.getInstance(requireContext()).getStringData(AppStrings.userID)
-                        map["receiving_address"] = "$latitude,$longitude"
-                        map["color"] = hospitalModels[dataSize].waste_color
-                        map["hospital_id"] = hospitalModels[dataSize].hcf_code
-                        map["seq_no"] = hospitalModels[dataSize].qr_code
-
+                if (scanType == 0) {
+                    submitFirstScan()
+                } else {
+                    if (dataSize < hospitalModels.size) {
+                        if (loading_ll != null) loading_ll!!.visibility = View.VISIBLE
+                        val map = buildSubmitMap(dataSize)
                         cbwtfScanSubmitRequest(AppStrings.cbwtf_scan_submit, map)
                     }
                 }
@@ -1038,6 +1143,7 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
             builder.addFormDataPart(key, value)
         }
 
+        var uploadedFileName: String? = map["weighing_photo"]
         if (dataSize < hospitalModels.size) {
             var photoPath = hospitalModels[dataSize].weighing_photo
             if (photoPath.isNullOrEmpty() && !currentPhotoPath.isNullOrEmpty()) {
@@ -1046,15 +1152,23 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
             if (!photoPath.isNullOrEmpty()) {
                 val photoFile = File(photoPath)
                 if (photoFile.exists()) {
-                    val mediaType = "image/*".toMediaTypeOrNull()
+                    val seqNo = hospitalModels[dataSize].qr_code ?: "img"
+                    val timeStamp = System.currentTimeMillis().toString()
+                    val fileName = uploadedFileName ?: (md5(seqNo + timeStamp) + ".jpg")
+                    uploadedFileName = fileName
+
+                    val mediaType = "image/jpeg".toMediaTypeOrNull()
                     val requestBody = photoFile.asRequestBody(mediaType)
                     val sizeKb = photoFile.length() / 1024
-                    builder.addFormDataPart("weighing_photo", photoFile.name, requestBody)
-                    Log.d(TAG, "===== WEIGHING PHOTO ATTACHED =====")
-                    Log.d(TAG, "Path: ${photoFile.absolutePath}")
-                    Log.d(TAG, "Name: ${photoFile.name}")
-                    Log.d(TAG, "Size: $sizeKb KB (${photoFile.length()} bytes)")
-                    Log.d(TAG, "===================================")
+                    builder.addFormDataPart("weighing_photo", fileName, requestBody)
+                    Log.d(TAG, "===== [REQUEST SENT] MULTIPART WEIGHING PHOTO UPLOAD =====")
+                    Log.d(TAG, "API Endpoint: $url")
+                    Log.d(TAG, "Key: weighing_photo | Value (filename): $fileName")
+                    Log.d(TAG, "MIME Type: image/jpeg")
+                    Log.d(TAG, "Target Upload Path: http://staging16.dgmhup.in/uploads/weighing_photos/$fileName")
+                    Log.d(TAG, "Local File Path: ${photoFile.absolutePath}")
+                    Log.d(TAG, "File Size: $sizeKb KB (${photoFile.length()} bytes)")
+                    Log.d(TAG, "=========================================================")
                 } else {
                     Log.d(TAG, "weighing_photo file not found at: $photoPath")
                 }
@@ -1071,7 +1185,10 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
 
         RetrofitClient.okHttpClient.newCall(request).enqueue(object : OkHttpCallback {
             override fun onFailure(call: OkHttpCall, e: IOException) {
-                Log.e(TAG, "cbwtfScanSubmitRequest Failure -> URL: $url | Error: ${e.message}", e)
+                Log.e(TAG, "===== [FAILED] MULTIPART IMAGE UPLOAD FAILED =====")
+                Log.e(TAG, "API Endpoint: $url")
+                Log.e(TAG, "Error: ${e.message}", e)
+                Log.e(TAG, "==================================================")
                 activity?.runOnUiThread {
                     if (loading_ll != null) loading_ll!!.visibility = View.GONE
                     showToast("Network Error: ${e.localizedMessage}")
@@ -1086,50 +1203,29 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
                     try {
                         val jsonObject = JSONObject(responseStr)
                         if (jsonObject.optString("status").equals("success", ignoreCase = true)) {
+                            if (!uploadedFileName.isNullOrEmpty()) {
+                                Log.d(TAG, "===== [SUCCESS] MULTIPART IMAGE UPLOADED SUCCESSFULLY =====")
+                                Log.d(TAG, "Target Upload URL: http://staging16.dgmhup.in/uploads/weighing_photos/$uploadedFileName")
+                                Log.d(TAG, "Server Response: $responseStr")
+                                Log.d(TAG, "==========================================================")
+                            }
                             dataSize++
                             if (dataSize < hospitalModels.size) {
-                                val date = DateFormat.format("yyyy-MM-dd", Date().time).toString()
+                                val nextMap = buildSubmitMap(dataSize)
                                 if (scanType == 0) {
                                     if (MSP.getInstance(requireContext()).getStringData(AppStrings.loginAs) == "hcf") {
-                                        val nextMap: MutableMap<String, String> = HashMap()
-                                        nextMap["weight"] = hospitalModels[dataSize].waste_weight + "." + hospitalModels[dataSize].waste_weight_g
-                                        nextMap["admin_id"] = MSP.getInstance(requireContext()).getStringData(AppStrings.userCbwtfID)
-                                        nextMap["handhover_address"] = "$latitude,$longitude"
-                                        nextMap["type"] = hospitalModels[dataSize].waste_color
-                                        nextMap["hospital_id"] = hospitalModels[dataSize].hcf_code.trim()
-                                        nextMap["seq_no"] = hospitalModels[dataSize].qr_code
-                                        nextMap["year"] = date
-                                        nextMap["attenden_status"] = "empty"
                                         cbwtfScanSubmitRequest(AppStrings.hcf_scan_submit_hcf, nextMap)
                                     } else {
-                                        val nextMap: MutableMap<String, String> = HashMap()
-                                        nextMap["weight"] = hospitalModels[dataSize].waste_weight + "." + hospitalModels[dataSize].waste_weight_g
-                                        nextMap["admin_id"] = MSP.getInstance(requireContext()).getStringData(AppStrings.userCbwtfID)
-                                        nextMap["operator_name"] = MSP.getInstance(requireContext()).getStringData(AppStrings.userID)
-                                        nextMap["handhover_address"] = "$latitude,$longitude"
-                                        nextMap["type"] = hospitalModels[dataSize].waste_color
-                                        nextMap["hospital_id"] = hospitalModels[dataSize].hcf_code.trim()
-                                        nextMap["seq_no"] = hospitalModels[dataSize].qr_code
-                                        nextMap["year"] = date
-                                        nextMap["attenden_status"] = "collected"
                                         deleteQRData(hospitalModels[dataSize].qr_code, nextMap)
                                     }
                                 } else {
-                                    val nextMap: MutableMap<String, String> = HashMap()
-                                    nextMap["weight"] = hospitalModels[dataSize].waste_weight + "." + hospitalModels[dataSize].waste_weight_g
-                                    nextMap["receiving_date"] = date
-                                    nextMap["operator_id"] = MSP.getInstance(requireContext()).getStringData(AppStrings.userID)
-                                    nextMap["receiving_address"] = "$latitude,$longitude"
-                                    nextMap["color"] = hospitalModels[dataSize].waste_color
-                                    nextMap["hospital_id"] = hospitalModels[dataSize].hcf_code.trim()
-                                    nextMap["seq_no"] = hospitalModels[dataSize].qr_code
                                     cbwtfScanSubmitRequest(AppStrings.cbwtf_scan_submit, nextMap)
                                 }
                             }
 
                             if (dataSize == hospitalModels.size) {
                                 if (loading_ll != null) loading_ll!!.visibility = View.GONE
-                                showToast("Submitted")
+                                showToast("Submitted successfully with weighing photo!")
                                 total_bags!!.text = resources.getString(R.string._0)
                                 total_waste_weight!!.text = resources.getString(R.string.zero_weight)
                                 dataSize = 0
@@ -1140,6 +1236,9 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
                         } else {
                             if (loading_ll != null) loading_ll!!.visibility = View.GONE
                             val msg = jsonObject.optString("message", "Submission Failed")
+                            Log.e(TAG, "===== [FAILED] MULTIPART IMAGE UPLOAD FAILED =====")
+                            Log.e(TAG, "Server Error Message: $msg")
+                            Log.e(TAG, "==================================================")
                             showToast(msg)
                         }
                     } catch (e: Exception) {
