@@ -367,6 +367,17 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
         }
     }
 
+    private fun resetFormAndPhotoUI() {
+        total_bags?.text = resources.getString(R.string._0)
+        total_waste_weight?.text = resources.getString(R.string.zero_weight)
+        dataSize = 0
+        hospitalModels.clear()
+        hospitalAdapter?.notifyDataSetChanged()
+        currentPhotoPath = null
+        updateMainPhotoUI()
+        getQRData(AppStrings.get_all_report)
+    }
+
     private fun submitRescan() {
         if (currentPhotoPath.isNullOrEmpty() || !File(currentPhotoPath!!).exists()) {
             showToast("Please capture weighing scale photo using camera first")
@@ -456,12 +467,7 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
                             if (loading_ll != null) loading_ll!!.visibility = View.GONE
                             val msg = jsonObject.optString("message", "Successfully uploaded all rescans.")
                             showToast(msg)
-                            total_bags!!.text = resources.getString(R.string._0)
-                            total_waste_weight!!.text = resources.getString(R.string.zero_weight)
-                            dataSize = 0
-                            hospitalModels.clear()
-                            hospitalAdapter!!.notifyDataSetChanged()
-                            getQRData(AppStrings.get_all_report)
+                            resetFormAndPhotoUI()
                         } else {
                             if (loading_ll != null) loading_ll!!.visibility = View.GONE
                             val msg = jsonObject.optString("message", "Rescan Submission Failed")
@@ -570,12 +576,7 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
                             if (loading_ll != null) loading_ll!!.visibility = View.GONE
                             val msg = jsonObject.optString("message", "Successfully uploaded data!")
                             showToast(msg)
-                            total_bags!!.text = resources.getString(R.string._0)
-                            total_waste_weight!!.text = resources.getString(R.string.zero_weight)
-                            dataSize = 0
-                            hospitalModels.clear()
-                            hospitalAdapter!!.notifyDataSetChanged()
-                            getQRData(AppStrings.get_all_report)
+                            resetFormAndPhotoUI()
                         } else {
                             if (loading_ll != null) loading_ll!!.visibility = View.GONE
                             val msg = jsonObject.optString("message", "Submission Failed")
