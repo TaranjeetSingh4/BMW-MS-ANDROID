@@ -13,7 +13,7 @@ import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
-import android.media.ExifInterface
+
 import android.location.Geocoder
 import android.location.LocationManager
 import android.net.Uri
@@ -22,7 +22,7 @@ import android.os.Bundle
 import android.os.Environment
 import android.os.Handler
 import android.os.Looper
-import android.provider.MediaStore
+
 import android.provider.Settings
 import android.text.format.DateFormat
 import android.util.Log
@@ -35,10 +35,10 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
+
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
-import androidx.core.content.FileProvider
+
 import androidx.fragment.app.Fragment
 import com.appventurez.bmwms.network.RetrofitClient
 import com.appventurez.bmwms.utils.CrashlyticsHelper
@@ -49,11 +49,9 @@ import okhttp3.MultipartBody
 import okhttp3.Request as OkHttpRequest
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.Response as OkHttpResponse
-import java.io.ByteArrayOutputStream
 import java.io.File
-import java.io.FileOutputStream
 import java.io.IOException
-import java.text.SimpleDateFormat
+
 import java.util.Locale
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -196,169 +194,7 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
     private var isWeightAdded: Boolean? = true
     private var isFirstScanHCF: Boolean? = false
 
-    private var currentPhotoPath: String? = null
-    private var currentDialogPhotoPreview: ImageView? = null
-    private var currentDialogPhotoSize: TextView? = null
 
-    private fun getFormattedFileSize(file: File): String {
-        val bytes = file.length()
-        return when {
-            bytes >= 1024 * 1024 -> String.format(Locale.getDefault(), "Size: %.2f MB", bytes.toDouble() / (1024 * 1024))
-            bytes >= 1024 -> String.format(Locale.getDefault(), "Size: %.2f KB", bytes.toDouble() / 1024)
-            else -> "Size: $bytes Bytes"
-        }
-    }
-
-    private fun rotateBitmapIfRequired(bitmap: Bitmap, filePath: String): Bitmap {
-        try {
-            val exif = ExifInterface(filePath)
-            val orientation = exif.getAttributeInt(
-                ExifInterface.TAG_ORIENTATION,
-                ExifInterface.ORIENTATION_UNDEFINED
-            )
-            val degrees = when (orientation) {
-                ExifInterface.ORIENTATION_ROTATE_90 -> 90f
-                ExifInterface.ORIENTATION_ROTATE_180 -> 180f
-                ExifInterface.ORIENTATION_ROTATE_270 -> 270f
-                else -> 0f
-            }
-            if (degrees != 0f) {
-                val matrix = Matrix()
-                matrix.postRotate(degrees)
-                return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error checking EXIF orientation", e)
-        }
-        return bitmap
-    }
-
-    private fun compressImageFile(filePath: String): Boolean {
-        try {
-            val file = File(filePath)
-            if (!file.exists()) return false
-
-            val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-            BitmapFactory.decodeFile(filePath, options)
-
-            var inSampleSize = 1
-            val reqWidth = 1080
-            val reqHeight = 1080
-            if (options.outHeight > reqHeight || options.outWidth > reqWidth) {
-                val halfHeight = options.outHeight / 2
-                val halfWidth = options.outWidth / 2
-                while (halfHeight / inSampleSize >= reqHeight && halfWidth / inSampleSize >= reqWidth) {
-                    inSampleSize *= 2
-                }
-            }
-
-            val decodeOptions = BitmapFactory.Options().apply {
-                this.inSampleSize = inSampleSize
-            }
-            var bitmap = BitmapFactory.decodeFile(filePath, decodeOptions) ?: return false
-            bitmap = rotateBitmapIfRequired(bitmap, filePath)
-
-            var quality = 80
-            val outStream = ByteArrayOutputStream()
-            bitmap.compress(Bitmap.CompressFormat.JPEG, quality, outStream)
-
-            while (outStream.toByteArray().size >= 2 * 1024 * 1024 && quality > 20) {
-                outStream.reset()
-                quality -= 15
-                bitmap.compress(Bitmap.CompressFormat.JPEG, quality, outStream)
-            }
-
-            val fos = FileOutputStream(file)
-            fos.write(outStream.toByteArray())
-            fos.flush()
-            fos.close()
-            outStream.close()
-            return true
-        } catch (e: Exception) {
-            Log.e(TAG, "Error compressing image", e)
-            return false
-        }
-    }
-
-    private fun updatePhotoUI(
-        photoPath: String?,
-        previewImageView: ImageView,
-        sizeTextView: TextView
-    ) {
-        if (!photoPath.isNullOrEmpty()) {
-            val file = File(photoPath)
-            if (file.exists()) {
-                var bitmap = BitmapFactory.decodeFile(file.absolutePath)
-                if (bitmap != null) {
-                    bitmap = rotateBitmapIfRequired(bitmap, file.absolutePath)
-                    previewImageView.setImageBitmap(bitmap)
-                    previewImageView.visibility = View.VISIBLE
-
-                    val sizeText = getFormattedFileSize(file)
-                    sizeTextView.text = sizeText
-                    sizeTextView.visibility = View.VISIBLE
-                    return
-                }
-            }
-        }
-        previewImageView.visibility = View.GONE
-        sizeTextView.visibility = View.GONE
-    }
-
-    private val takePhotoLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            if (!currentPhotoPath.isNullOrEmpty()) {
-                val file = File(currentPhotoPath!!)
-                if (file.exists()) {
-                    compressImageFile(currentPhotoPath!!)
-                    if (currentDialogPhotoPreview != null && currentDialogPhotoSize != null) {
-                        updatePhotoUI(currentPhotoPath, currentDialogPhotoPreview!!, currentDialogPhotoSize!!)
-                    }
-                }
-            }
-        } else {
-            currentPhotoPath = null
-            currentDialogPhotoPreview?.visibility = View.GONE
-            currentDialogPhotoSize?.visibility = View.GONE
-        }
-    }
-
-    private fun dispatchTakePictureIntent(
-        previewImageView: ImageView,
-        sizeTextView: TextView
-    ) {
-        currentDialogPhotoPreview = previewImageView
-        currentDialogPhotoSize = sizeTextView
-
-        val takePictureIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-        if (takePictureIntent.resolveActivity(requireActivity().packageManager) != null) {
-            val photoFile: File? = try {
-                createImageFile()
-            } catch (ex: IOException) {
-                Log.e(TAG, "Error creating image file", ex)
-                null
-            }
-            if (photoFile != null) {
-                currentPhotoPath = photoFile.absolutePath
-                val photoURI: Uri = FileProvider.getUriForFile(
-                    requireContext(),
-                    "${requireActivity().packageName}.provider",
-                    photoFile
-                )
-                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI)
-                takePhotoLauncher.launch(takePictureIntent)
-            }
-        } else {
-            takePhotoLauncher.launch(takePictureIntent)
-        }
-    }
-
-    @Throws(IOException::class)
-    private fun createImageFile(): File {
-        val timeStamp: String = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-        val storageDir: File? = requireContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES)
-        return File.createTempFile("WEIGHING_${timeStamp}_", ".jpg", storageDir)
-    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         if (rootView == null) {
@@ -626,7 +462,6 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
     }
 
     fun manualWeightInput(w_color: String) {
-        currentPhotoPath = null
         val manualWeightAlert = AlertDialog.Builder(requireContext()).create()
         val manualWeightView = LayoutInflater.from(requireContext()).inflate(R.layout.manual_weight_view, null, false)
 
@@ -634,9 +469,6 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
         val manualWeightImage = manualWeightView.findViewById<ImageView>(R.id.manual_weight_image)
         val manualWeightKilo = manualWeightView.findViewById<EditText>(R.id.manual_weight_kilo)
         val manualWeightGram = manualWeightView.findViewById<EditText>(R.id.manual_weight_gram)
-        val manualWeightTakePhoto = manualWeightView.findViewById<MaterialButton>(R.id.manual_weight_take_photo)
-        val manualWeightPhotoPreview = manualWeightView.findViewById<ImageView>(R.id.manual_weight_photo_preview)
-        val manualWeightPhotoSize = manualWeightView.findViewById<TextView>(R.id.manual_weight_photo_size)
         val manualWeightAdd = manualWeightView.findViewById<MaterialButton>(R.id.manual_weight_add)
 
         manualWeightColor.text = w_color.uppercase()
@@ -658,14 +490,6 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
             manualWeightColor.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.darker_gray))
         }
 
-        manualWeightTakePhoto.setOnClickListener {
-            if (getCameraPermission()) {
-                dispatchTakePictureIntent(manualWeightPhotoPreview, manualWeightPhotoSize)
-            } else {
-                showToast("Camera permission required to capture photo")
-            }
-        }
-
         manualWeightAdd.setOnClickListener {
             val code = codeTv!!.text.toString()
             val hName = hcf_name!!.text.toString()
@@ -679,24 +503,13 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
                 return@setOnClickListener
             }
 
-            if (currentPhotoPath.isNullOrEmpty() || !File(currentPhotoPath!!).exists()) {
-                showToast("Please capture weighing scale photo using camera first")
-                return@setOnClickListener
-            }
-
-            val file = File(currentPhotoPath!!)
-            if (file.length() > 5 * 1024 * 1024) {
-                showToast("Photo must not exceed 5 MB")
-                return@setOnClickListener
-            }
-
             val d_kilo = w_kilo.toInt()
             val d_gram = w_gram.toInt()
 
             val decimalKilo = String.format("%03d", d_kilo)
             val decimalGram = String.format("%03d", d_gram)
 
-            hospitalModels.add(HospitalModel(code, hName, wType, decimalKilo, decimalGram, scannedQrCode, currentPhotoPath!!))
+            hospitalModels.add(HospitalModel(code, hName, wType, decimalKilo, decimalGram, scannedQrCode))
             hospitalAdapter!!.notifyDataSetChanged()
             barcodeView!!.resume()
             manualWeightAlert.dismiss()
