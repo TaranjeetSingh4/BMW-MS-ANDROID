@@ -1,6 +1,7 @@
 package com.appventurez.bmwms.cbwtf.adapters;
 
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Context;
 import android.location.Address;
 import android.location.Geocoder;
@@ -8,6 +9,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -134,25 +136,45 @@ public class ReportsAdapter extends RecyclerView.Adapter<ReportsAdapter.ViewHold
         } else {
             String baseUrl = AppStrings.site_url;
             if (!baseUrl.endsWith("/")) baseUrl += "/";
-            if (photoPath.startsWith("/")) photoPath = photoPath.substring(1);
-            fullUrl = baseUrl + photoPath;
+            String cleanPath = photoPath.startsWith("/") ? photoPath.substring(1) : photoPath;
+            fullUrl = baseUrl + cleanPath;
         }
 
         View view = LayoutInflater.from(context).inflate(R.layout.dialog_image_viewer, null);
-        AlertDialog dialog = new AlertDialog.Builder(context).setView(view).create();
+        Dialog dialog = new Dialog(context, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
+        dialog.setContentView(view);
+
         if (dialog.getWindow() != null) {
-            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.black);
         }
 
         TextView titleTv = view.findViewById(R.id.dialog_image_title);
         ImageView imageView = view.findViewById(R.id.dialog_image_view);
         ImageView closeBtn = view.findViewById(R.id.dialog_image_close);
+        ProgressBar progressBar = view.findViewById(R.id.dialog_image_progress);
 
         titleTv.setText(title);
 
+        if (progressBar != null) {
+            progressBar.setVisibility(View.VISIBLE);
+        }
+
         Glide.with(context)
                 .load(fullUrl)
-                .placeholder(R.drawable.bg_et)
+                .listener(new com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable>() {
+                    @Override
+                    public boolean onLoadFailed(com.bumptech.glide.load.engine.GlideException e, Object model, com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target, boolean isFirstResource) {
+                        if (progressBar != null) progressBar.setVisibility(View.GONE);
+                        return false;
+                    }
+
+                    @Override
+                    public boolean onResourceReady(android.graphics.drawable.Drawable resource, Object model, com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target, com.bumptech.glide.load.DataSource dataSource, boolean isFirstResource) {
+                        if (progressBar != null) progressBar.setVisibility(View.GONE);
+                        return false;
+                    }
+                })
                 .into(imageView);
 
         closeBtn.setOnClickListener(v -> dialog.dismiss());
