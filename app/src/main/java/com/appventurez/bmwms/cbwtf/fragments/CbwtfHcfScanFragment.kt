@@ -640,6 +640,17 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
             weighingPhotoRetakeBtn = rootView!!.findViewById(R.id.weighing_photo_retake_btn)
             weighingPhotoRemoveBtn = rootView!!.findViewById(R.id.weighing_photo_remove_btn)
 
+            val btnDisclaimer = rootView!!.findViewById<ImageView>(R.id.btn_disclaimer)
+            btnDisclaimer?.setOnClickListener {
+                val disclaimerUrl = "https://drive.google.com/file/d/10uZ-hG_1NtyccS-EsYtVDK3ZHs8yCHIG/view?usp=sharing"
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(disclaimerUrl))
+                try {
+                    startActivity(intent)
+                } catch (e: Exception) {
+                    showToast("Could not open disclaimer link: ${e.localizedMessage}")
+                }
+            }
+
             captureWeighingPhotoButton!!.setOnClickListener {
                 if (getCameraPermission()) {
                     dispatchTakePictureIntent()
