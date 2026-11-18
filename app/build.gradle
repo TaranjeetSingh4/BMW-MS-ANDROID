@@ -2,6 +2,8 @@ plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
     id 'kotlin-kapt'
+    id 'com.google.gms.google-services'
+    id 'com.google.firebase.crashlytics'
 }
 
 def localProperties = new Properties()
@@ -125,4 +127,9 @@ dependencies {
     implementation "io.coil-kt:coil-compose:2.5.0"
     implementation "androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2"
     implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.6.2"
+
+    // Firebase
+    implementation platform('com.google.firebase:firebase-bom:33.1.2')
+    implementation 'com.google.firebase:firebase-analytics'
+    implementation 'com.google.firebase:firebase-crashlytics'
 }

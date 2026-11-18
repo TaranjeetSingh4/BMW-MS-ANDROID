@@ -67,6 +67,10 @@ public class VolleySingleton {
     }
 
     public static void logVolleyError(String tag, VolleyError error) {
+        if (error != null) {
+            com.appventurez.bmwms.utils.CrashlyticsHelper.INSTANCE.recordException(error);
+            com.appventurez.bmwms.utils.CrashlyticsHelper.INSTANCE.log("Volley error [" + tag + "]: " + error.getMessage());
+        }
         if (error != null && error.networkResponse != null) {
             Log.e(tag, "Error response code: " + error.networkResponse.statusCode);
             if (error.networkResponse.data != null) {

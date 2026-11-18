@@ -18,6 +18,7 @@ import com.appventurez.bmwms.R
 import com.appventurez.bmwms.activities.LoginActivity
 import com.appventurez.bmwms.classes.AppStrings
 import com.appventurez.bmwms.classes.MSP
+import com.appventurez.bmwms.utils.CrashlyticsHelper
 import com.appventurez.bmwms.network.RetrofitClient
 import com.appventurez.bmwms.repository.DashboardRepository
 import com.appventurez.bmwms.viewmodel.DashboardViewModel
@@ -85,6 +86,8 @@ class CbwtfProfileFragment : Fragment() {
         logoutButton.setOnClickListener {
             context?.let {
                 MSP.getInstance(it).removeAll()
+                CrashlyticsHelper.log("User logged out from profile")
+                CrashlyticsHelper.setUserId("")
                 val intent = Intent(activity, LoginActivity::class.java)
                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 startActivity(intent)
@@ -93,6 +96,8 @@ class CbwtfProfileFragment : Fragment() {
         }
 
         help.setOnClickListener {
+            CrashlyticsHelper.log("help setOnClickListener")
+            CrashlyticsHelper.setUserId("")
             val alertDialog = AlertDialog.Builder(context).create()
             val helpView = LayoutInflater.from(context).inflate(R.layout.help_view, null, false)
             alertDialog.setView(helpView)
@@ -101,6 +106,8 @@ class CbwtfProfileFragment : Fragment() {
         }
 
         enquiry.setOnClickListener {
+            CrashlyticsHelper.log("enquiry setOnClickListener")
+            CrashlyticsHelper.setUserId("")
             val alertDialog = AlertDialog.Builder(context).create()
             val enquiryView = LayoutInflater.from(context).inflate(R.layout.enquiry_view, null, false)
             val editText = enquiryView.findViewById<EditText>(R.id.enquiry_et)

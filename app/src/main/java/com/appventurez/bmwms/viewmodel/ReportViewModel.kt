@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.appventurez.bmwms.model.ReportResponse
 import com.appventurez.bmwms.model.StatusResponse
 import com.appventurez.bmwms.repository.ReportRepository
+import com.appventurez.bmwms.utils.CrashlyticsHelper
 import kotlinx.coroutines.launch
 import retrofit2.Response
 
@@ -31,6 +32,8 @@ class ReportViewModel(private val repository: ReportRepository) : ViewModel() {
                 val response = repository.getReports(url, params)
                 _reportResponse.value = response
             } catch (e: Exception) {
+                CrashlyticsHelper.log("getReports error: ${e.message}")
+                CrashlyticsHelper.recordException(e)
                 _error.value = e.message
             } finally {
                 _isLoading.value = false
@@ -45,6 +48,8 @@ class ReportViewModel(private val repository: ReportRepository) : ViewModel() {
                 val response = repository.sendMail(url, params)
                 _sendMailResponse.value = response
             } catch (e: Exception) {
+                CrashlyticsHelper.log("sendMail error: ${e.message}")
+                CrashlyticsHelper.recordException(e)
                 _error.value = e.message
             } finally {
                 _isLoading.value = false

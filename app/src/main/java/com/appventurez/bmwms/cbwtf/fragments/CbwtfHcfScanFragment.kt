@@ -36,6 +36,7 @@ import androidx.annotation.Nullable
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import com.appventurez.bmwms.utils.CrashlyticsHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.room.Room
@@ -104,7 +105,6 @@ import java.util.ArrayList
 import java.util.Arrays
 import java.util.Date
 import java.util.HashMap
-import java.util.Objects
 
 import me.aflak.bluetooth.Bluetooth
 
@@ -1048,6 +1048,12 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
             }
 
             lastText = result.text
+
+            CrashlyticsHelper.log("Barcode scanned: $lastText")
+            CrashlyticsHelper.setKey("last_scanned_qr", lastText ?: "")
+            CrashlyticsHelper.setKey("scan_type", scanType)
+            CrashlyticsHelper.setKey("scan_mode", if (scanMode == 0) "manual" else "auto")
+            CrashlyticsHelper.setKey("bluetooth_connected", bluetoothConnected)
 
             barcodeView!!.pause()
             isWeightAdded = true

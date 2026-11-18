@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.appventurez.bmwms.model.AppVersionResponse
 import com.appventurez.bmwms.model.LoginResponse
 import com.appventurez.bmwms.repository.SplashRepository
+import com.appventurez.bmwms.utils.CrashlyticsHelper
 import kotlinx.coroutines.launch
 import retrofit2.Response
 
@@ -28,7 +29,9 @@ class SplashViewModel(private val repository: SplashRepository) : ViewModel() {
                 val response = repository.login(url, params)
                 _loginResponse.value = response
             } catch (e: Exception) {
-                Log.e(TAG, "Error: $error")
+                CrashlyticsHelper.log("Splash login error: ${e.message}")
+                CrashlyticsHelper.recordException(e)
+                Log.e(TAG, "Error: ${e.message}")
                 _error.value = e.message
             }
         }
@@ -40,6 +43,8 @@ class SplashViewModel(private val repository: SplashRepository) : ViewModel() {
                 val response = repository.getAppVersion(url)
                 _versionResponse.value = response
             } catch (e: Exception) {
+                CrashlyticsHelper.log("getAppVersion error: ${e.message}")
+                CrashlyticsHelper.recordException(e)
                 _error.value = e.message
             }
         }
