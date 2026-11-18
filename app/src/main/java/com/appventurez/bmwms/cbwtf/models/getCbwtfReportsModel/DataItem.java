@@ -79,6 +79,12 @@ public class DataItem{
 	@SerializedName("dispose_date")
 	private String disposeDate;
 
+	@SerializedName("cbwtf_weight_photo")
+	private String cbwtfWeightPhoto;
+
+	@SerializedName("hcf_weight_photo")
+	private String hcfWeightPhoto;
+
 	@SerializedName("operator_id_cbwtf")
 	private String operatorIdCbwtf;
 
@@ -288,5 +294,21 @@ public class DataItem{
 
 	public String getOperatorIdCbwtf(){
 		return operatorIdCbwtf;
+	}
+
+	public void setCbwtfWeightPhoto(String cbwtfWeightPhoto){
+		this.cbwtfWeightPhoto = cbwtfWeightPhoto;
+	}
+
+	public String getCbwtfWeightPhoto(){
+		return cbwtfWeightPhoto;
+	}
+
+	public void setHcfWeightPhoto(String hcfWeightPhoto){
+		this.hcfWeightPhoto = hcfWeightPhoto;
+	}
+
+	public String getHcfWeightPhoto(){
+		return hcfWeightPhoto;
 	}
 }

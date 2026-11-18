@@ -13,4 +13,5 @@
     <color name="app_color_light">#CCfa8717</color>
     <color name="yellow">#FFD600</color>
     <color name="green">#64DD17</color>
+    <color name="text_color">#4A4848</color>
 </resources>

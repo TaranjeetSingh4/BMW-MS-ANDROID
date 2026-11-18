@@ -83,6 +83,14 @@ public class ReportsModel{
     @Expose
     private String updatedOn;
 
+    @SerializedName("cbwtf_weight_photo")
+    @Expose
+    private String cbwtfWeightPhoto;
+
+    @SerializedName("hcf_weight_photo")
+    @Expose
+    private String hcfWeightPhoto;
+
     private String red;
     private String blue;
     private String yellow;
@@ -375,5 +383,19 @@ public class ReportsModel{
         this.updatedOn = updatedOn;
     }
 
+    public String getCbwtfWeightPhoto() {
+        return cbwtfWeightPhoto;
+    }
 
+    public void setCbwtfWeightPhoto(String cbwtfWeightPhoto) {
+        this.cbwtfWeightPhoto = cbwtfWeightPhoto;
+    }
+
+    public String getHcfWeightPhoto() {
+        return hcfWeightPhoto;
+    }
+
+    public void setHcfWeightPhoto(String hcfWeightPhoto) {
+        this.hcfWeightPhoto = hcfWeightPhoto;
+    }
 }

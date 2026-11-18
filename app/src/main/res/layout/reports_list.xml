@@ -252,6 +252,66 @@
 
             </LinearLayout>
 
+            <LinearLayout
+                android:id="@+id/layout_hcf_photo"
+                android:orientation="horizontal"
+                android:visibility="visible"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    android:textColor="@color/app_color_dark"
+                    android:textStyle="bold"
+                    android:textSize="12sp"
+                    android:text="HCF Weight Photo: "
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+                <TextView
+                    android:id="@+id/report_hcf_photo_view"
+                    android:textColor="@color/text_color"
+                    android:textStyle="bold"
+                    android:textSize="12sp"
+                    android:text="view"
+                    android:paddingStart="4dp"
+                    android:paddingEnd="4dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/layout_cbwtf_photo"
+                android:orientation="horizontal"
+                android:visibility="visible"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    android:textColor="@color/app_color_dark"
+                    android:textStyle="bold"
+                    android:textSize="12sp"
+                    android:text="CBWTF Weight Photo: "
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+                <TextView
+                    android:id="@+id/report_cbwtf_photo_view"
+                    android:textColor="@color/text_color"
+                    android:textStyle="bold"
+                    android:textSize="12sp"
+                    android:text="view"
+                    android:paddingStart="4dp"
+                    android:paddingEnd="4dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+            </LinearLayout>
+
             <View
                 android:layout_marginEnd="10dp"
                 android:layout_marginBottom="10dp"
