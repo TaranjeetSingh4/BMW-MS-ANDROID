@@ -187,8 +187,8 @@ public class ReportsAdapter extends RecyclerView.Adapter<ReportsAdapter.ViewHold
         TextView hName,hCode,hcf_w,cbwtf_w,diff_w,hcf_addr
                 ,cbwtf_addr,date,red_w,blue_w,yellow_w
                 ,white_w,hInitial,red_w_c,blue_w_c,tv_cbwtf_weight
-                ,yellow_w_c,white_w_c,total_packets_tv,hcfPhotoView,cbwtfPhotoView;
-        ImageView red,blue,white,yellow,red_c,blue_c,white_c,yellow_c,total_packets_img;
+                ,yellow_w_c,white_w_c,total_packets_tv;
+        ImageView red,blue,white,yellow,red_c,blue_c,white_c,yellow_c,total_packets_img,hcfPhotoView,cbwtfPhotoView;
         View layoutHcfPhoto, layoutCbwtfPhoto;
 
         public ViewHolder(@NonNull View itemView) {

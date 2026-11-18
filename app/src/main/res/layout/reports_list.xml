@@ -6,6 +6,7 @@
     android:layout_marginTop="5dp"
     app:cardCornerRadius="10dp"
     app:cardElevation="5dp"
+    app:cardBackgroundColor="@color/white"
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -256,6 +257,7 @@
                 android:id="@+id/layout_hcf_photo"
                 android:orientation="horizontal"
                 android:visibility="visible"
+                android:gravity="center_vertical"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content">
 
@@ -267,18 +269,17 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"/>
 
-                <TextView
+                <ImageView
                     android:id="@+id/report_hcf_photo_view"
-                    android:textColor="@color/text_color"
-                    android:textStyle="bold"
-                    android:textSize="12sp"
-                    android:text="view"
-                    android:paddingStart="4dp"
-                    android:paddingEnd="4dp"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
                     android:clickable="true"
+                    android:contentDescription="@string/image_description"
                     android:focusable="true"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                    android:padding="4dp"
+                    android:src="@drawable/ic_baseline_visibility_24"
+                    app:tint="@color/app_color_dark" />
 
             </LinearLayout>
 
@@ -286,6 +287,7 @@
                 android:id="@+id/layout_cbwtf_photo"
                 android:orientation="horizontal"
                 android:visibility="visible"
+                android:gravity="center_vertical"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content">
 
@@ -297,18 +299,17 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"/>
 
-                <TextView
+                <ImageView
                     android:id="@+id/report_cbwtf_photo_view"
-                    android:textColor="@color/text_color"
-                    android:textStyle="bold"
-                    android:textSize="12sp"
-                    android:text="view"
-                    android:paddingStart="4dp"
-                    android:paddingEnd="4dp"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
                     android:clickable="true"
+                    android:contentDescription="@string/image_description"
                     android:focusable="true"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                    android:padding="4dp"
+                    android:src="@drawable/ic_baseline_visibility_24"
+                    app:tint="@color/app_color_dark" />
 
             </LinearLayout>
 
