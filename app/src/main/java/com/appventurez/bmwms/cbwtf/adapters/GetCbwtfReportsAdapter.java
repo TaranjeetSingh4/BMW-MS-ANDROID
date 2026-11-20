@@ -1,5 +1,7 @@
 package com.appventurez.bmwms.cbwtf.adapters;
 
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Context;
 import android.location.Address;
 import android.location.Geocoder;
@@ -7,6 +9,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -15,6 +18,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.appventurez.bmwms.R;
 import com.appventurez.bmwms.cbwtf.models.getCbwtfReportsModel.DataItem;
+import com.appventurez.bmwms.classes.AppStrings;
 
 import java.text.DecimalFormat;
 import java.util.List;
@@ -81,6 +85,20 @@ public class GetCbwtfReportsAdapter extends RecyclerView.Adapter<GetCbwtfReports
         Glide.with(context).load(R.drawable.blue).into(holder.blue_c);
         Glide.with(context).load(R.drawable.yellow).into(holder.yellow_c);
         Glide.with(context).load(R.drawable.gray).into(holder.white_c);
+
+        if (model.getHcfWeightPhoto() != null && !model.getHcfWeightPhoto().trim().isEmpty()) {
+            holder.layoutHcfPhoto.setVisibility(View.VISIBLE);
+            holder.hcfPhotoView.setOnClickListener(v -> showImageDialog(context, "HCF Weight Photo", model.getHcfWeightPhoto()));
+        } else {
+            holder.layoutHcfPhoto.setVisibility(View.GONE);
+        }
+
+        if (model.getCbwtfWeightPhoto() != null && !model.getCbwtfWeightPhoto().trim().isEmpty()) {
+            holder.layoutCbwtfPhoto.setVisibility(View.VISIBLE);
+            holder.cbwtfPhotoView.setOnClickListener(v -> showImageDialog(context, "CBWTF Weight Photo", model.getCbwtfWeightPhoto()));
+        } else {
+            holder.layoutCbwtfPhoto.setVisibility(View.GONE);
+        }
 //
 //        holder.red_w_c.setText(model.getRedCbwtf());
 //        holder.blue_w_c.setText(model.getBlueCbwtf());
@@ -107,13 +125,69 @@ public class GetCbwtfReportsAdapter extends RecyclerView.Adapter<GetCbwtfReports
         notifyDataSetChanged();
     }
 
+    private void showImageDialog(Context context, String title, String photoPath) {
+        if (photoPath == null || photoPath.trim().isEmpty()) return;
+
+        String fullUrl;
+        if (photoPath.startsWith("http://") || photoPath.startsWith("https://")) {
+            fullUrl = photoPath;
+        } else {
+            String baseUrl = AppStrings.site_url;
+            if (!baseUrl.endsWith("/")) baseUrl += "/";
+            String cleanPath = photoPath.startsWith("/") ? photoPath.substring(1) : photoPath;
+            fullUrl = baseUrl + cleanPath;
+        }
+
+        View view = LayoutInflater.from(context).inflate(R.layout.dialog_image_viewer, null);
+        Dialog dialog = new Dialog(context, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
+        dialog.setContentView(view);
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.black);
+        }
+
+        TextView titleTv = view.findViewById(R.id.dialog_image_title);
+        ImageView imageView = view.findViewById(R.id.dialog_image_view);
+        ImageView closeBtn = view.findViewById(R.id.dialog_image_close);
+        ProgressBar progressBar = view.findViewById(R.id.dialog_image_progress);
+
+        titleTv.setText(title);
+
+        if (progressBar != null) {
+            progressBar.setVisibility(View.VISIBLE);
+        }
+
+        Glide.with(context)
+                .load(fullUrl)
+                .listener(new com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable>() {
+                    @Override
+                    public boolean onLoadFailed(com.bumptech.glide.load.engine.GlideException e, Object model, com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target, boolean isFirstResource) {
+                        if (progressBar != null) progressBar.setVisibility(View.GONE);
+                        return false;
+                    }
+
+                    @Override
+                    public boolean onResourceReady(android.graphics.drawable.Drawable resource, Object model, com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target, com.bumptech.glide.load.DataSource dataSource, boolean isFirstResource) {
+                        if (progressBar != null) progressBar.setVisibility(View.GONE);
+                        return false;
+                    }
+                })
+                .into(imageView);
+
+        closeBtn.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
+    }
+
     public class ViewHolder extends RecyclerView.ViewHolder{
 
         TextView hName,hCode,hcf_w,cbwtf_w,diff_w,hcf_addr
                 ,cbwtf_addr,date,red_w,blue_w,yellow_w
                 ,white_w,hInitial,red_w_c,blue_w_c,tv_cbwtf_weight
                 ,yellow_w_c,white_w_c,total_packets_tv;
-        ImageView red,blue,white,yellow,red_c,blue_c,white_c,yellow_c,total_packets_img;
+        ImageView red,blue,white,yellow,red_c,blue_c,white_c,yellow_c,total_packets_img,hcfPhotoView,cbwtfPhotoView;
+        View layoutHcfPhoto, layoutCbwtfPhoto;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -147,6 +221,11 @@ public class GetCbwtfReportsAdapter extends RecyclerView.Adapter<GetCbwtfReports
             blue_c = itemView.findViewById(R.id.report_blue_iv_cbwtf);
             white_c = itemView.findViewById(R.id.report_white_iv_cbwtf);
             yellow_c = itemView.findViewById(R.id.report_yellow_iv_cbwtf);
+
+            layoutHcfPhoto = itemView.findViewById(R.id.layout_hcf_photo);
+            layoutCbwtfPhoto = itemView.findViewById(R.id.layout_cbwtf_photo);
+            hcfPhotoView = itemView.findViewById(R.id.report_hcf_photo_view);
+            cbwtfPhotoView = itemView.findViewById(R.id.report_cbwtf_photo_view);
         }
     }
 }
