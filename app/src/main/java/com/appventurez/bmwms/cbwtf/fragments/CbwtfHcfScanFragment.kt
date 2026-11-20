@@ -3,6 +3,7 @@ package com.appventurez.bmwms.cbwtf.fragments
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.AlertDialog
+import android.app.Dialog
 import android.bluetooth.BluetoothDevice
 import android.content.Context
 import android.content.Intent
@@ -32,6 +33,7 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
@@ -639,6 +641,11 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
             weighingPhotoSizeTv = rootView!!.findViewById(R.id.weighing_photo_size_tv)
             weighingPhotoRetakeBtn = rootView!!.findViewById(R.id.weighing_photo_retake_btn)
             weighingPhotoRemoveBtn = rootView!!.findViewById(R.id.weighing_photo_remove_btn)
+
+            val samplePhotoInfoLayout = rootView!!.findViewById<View>(R.id.sample_photo_info_layout)
+            samplePhotoInfoLayout?.setOnClickListener {
+                showSampleImageDialog("Biomedical Waste Weighing Station", "http://staging16.dgmhup.in/images/Biomedical%20Waste%20Weighing%20Station.png")
+            }
 
             captureWeighingPhotoButton!!.setOnClickListener {
                 if (getCameraPermission()) {
@@ -1801,6 +1808,68 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
             }
         }
         VolleySingleton.getInstance(requireContext()).addToRequestQueue(request)
+    }
+
+    private fun showSampleImageDialog(title: String, photoPath: String) {
+        if (photoPath.isEmpty()) return
+
+        val fullUrl = if (photoPath.startsWith("http://") || photoPath.startsWith("https://")) {
+            photoPath
+        } else {
+            var baseUrl = AppStrings.site_url
+            if (!baseUrl.endsWith("/")) baseUrl += "/"
+            val cleanPath = if (photoPath.startsWith("/")) photoPath.substring(1) else photoPath
+            baseUrl + cleanPath
+        }
+
+        val view = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_image_viewer, null)
+        val dialog = Dialog(requireContext(), android.R.style.Theme_Black_NoTitleBar_Fullscreen)
+        dialog.setContentView(view)
+
+        if (dialog.window != null) {
+            dialog.window!!.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+            dialog.window!!.setBackgroundDrawableResource(android.R.color.black)
+        }
+
+        val titleTv = view.findViewById<TextView>(R.id.dialog_image_title)
+        val imageView = view.findViewById<ImageView>(R.id.dialog_image_view)
+        val closeBtn = view.findViewById<ImageView>(R.id.dialog_image_close)
+        val progressBar = view.findViewById<ProgressBar>(R.id.dialog_image_progress)
+
+        titleTv.text = title
+
+        if (progressBar != null) {
+            progressBar.visibility = View.VISIBLE
+        }
+
+        Glide.with(requireContext())
+            .load(fullUrl)
+            .listener(object : com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable> {
+                override fun onLoadFailed(
+                    e: com.bumptech.glide.load.engine.GlideException?,
+                    model: Any?,
+                    target: com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable>?,
+                    isFirstResource: Boolean
+                ): Boolean {
+                    progressBar?.visibility = View.GONE
+                    return false
+                }
+
+                override fun onResourceReady(
+                    resource: android.graphics.drawable.Drawable,
+                    model: Any?,
+                    target: com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable>?,
+                    dataSource: com.bumptech.glide.load.DataSource?,
+                    isFirstResource: Boolean
+                ): Boolean {
+                    progressBar?.visibility = View.GONE
+                    return false
+                }
+            })
+            .into(imageView)
+
+        closeBtn.setOnClickListener { dialog.dismiss() }
+        dialog.show()
     }
 
     companion object {

@@ -73,7 +73,7 @@
 
 
     <ScrollView
-        app:layout_constraintBottom_toTopOf="@id/capture_weighing_photo_button"
+        app:layout_constraintBottom_toTopOf="@id/sample_photo_info_layout"
         app:layout_constrainedHeight="true"
         app:layout_constraintTop_toBottomOf="@id/cbwtf_hcf_scan_appbar"
         android:background="@color/white"
@@ -351,18 +351,39 @@
         </LinearLayout>
     </ScrollView>
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/capture_weighing_photo_button"
+
+    <LinearLayout
+        android:id="@+id/sample_photo_info_layout"
+        android:layout_width="match_parent"
+        android:layout_marginBottom="8dp"
+        android:layout_height="wrap_content"
+        android:background="?attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true"
         android:layout_marginStart="20dp"
         android:layout_marginEnd="20dp"
-        android:layout_marginBottom="8dp"
-        android:textStyle="bold"
-        android:text="@string/capture_weighing_photo"
-        android:backgroundTint="@color/app_color_dark"
-        android:textColor="@color/white"
-        app:layout_constraintBottom_toTopOf="@id/cbwtf_hcf_scan_bottombar"
-        android:layout_width="match_parent"
-        android:layout_height="50dp"/>
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="6dp"
+        app:layout_constraintBottom_toTopOf="@+id/capture_weighing_photo_button"
+        tools:layout_editor_absoluteX="20dp">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:contentDescription="@string/image_description"
+            android:src="@drawable/outline_info_24" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="View Sample Weighing Station Photo"
+            android:textColor="@color/app_color_dark"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
 
     <LinearLayout
         android:id="@+id/weighing_photo_preview_layout"
@@ -373,7 +394,7 @@
         android:background="@drawable/bg_et"
         android:padding="10dp"
         android:orientation="vertical"
-        app:layout_constraintBottom_toTopOf="@id/cbwtf_hcf_scan_bottombar"
+        app:layout_constraintBottom_toTopOf="@id/sample_photo_info_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
@@ -614,6 +635,21 @@
             android:layout_height="wrap_content"/>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/capture_weighing_photo_button"
+        android:layout_width="match_parent"
+        android:layout_marginBottom="8dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="20dp"
+        android:layout_height="50dp"
+        android:backgroundTint="@color/app_color_dark"
+        android:text="@string/capture_weighing_photo"
+        android:textColor="@color/white"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toTopOf="@+id/cbwtf_hcf_scan_bottombar"
+        app:layout_constraintStart_toStartOf="parent" />
+
 
     <LinearLayout
         android:id="@+id/loading_view_ll"
