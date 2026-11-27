@@ -259,6 +259,13 @@ class ReportsFragment : Fragment() {
             if (colorCbwtf.contains("blue")) blueCountCbwtf++
             if (colorCbwtf.contains("yellow")) yellowCountCbwtf++
             if (colorCbwtf.contains("white")) whiteCountCbwtf++
+
+            if (!item.cbwtfWeightPhoto.isNullOrEmpty()) {
+                currentModel?.cbwtfWeightPhoto = item.cbwtfWeightPhoto
+            }
+            if (!item.hcfWeightPhoto.isNullOrEmpty()) {
+                currentModel?.hcfWeightPhoto = item.hcfWeightPhoto
+            }
         }
 
         // Add last model
@@ -296,6 +303,9 @@ class ReportsFragment : Fragment() {
         model.latLongCbwtf = item.latLongCbwtf
         model.operatorId = item.operatorId
         model.operatorIdCbwtf = item.operatorIdCbwtf
+        model.cbwtfWeightPhoto = item.cbwtfWeightPhoto
+        model.hcfWeightPhoto = item.hcfWeightPhoto
+        model.updatedOn = item.updatedOn
         model.operatorName = item.operatorName
         model.qrDataId = item.qrDataId
         model.qrId = item.qrId

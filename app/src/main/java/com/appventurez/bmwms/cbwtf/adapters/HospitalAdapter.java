@@ -11,6 +11,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
@@ -74,33 +75,25 @@ public class HospitalAdapter extends RecyclerView.Adapter<HospitalAdapter.ViewHo
         holder.waste_weight.setText(model.getWaste_weight().trim());
         holder.waste_weight_g.setText(model.getWaste_weight_g().trim());
 
-        holder.delete_weight.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                askDelete(position);
-            }
-        });
+        holder.delete_weight.setOnClickListener(view -> askDelete(position));
 
-        holder.update_weight.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (holder.waste_weight.getText().toString().trim().isEmpty() && holder.waste_weight_g.getText().toString().trim().isEmpty()){
-                    data.set(position,new HospitalModel(model.getHcf_code(), model.hcf_name, model.waste_color,"000","000",model.getQr_code()));
-                    notifyItemChanged(position);
-                    myHospitalEventListener.updateUI();
-                }else if (holder.waste_weight.getText().toString().trim().isEmpty() && !holder.waste_weight_g.getText().toString().trim().isEmpty()){
-                    data.set(position,new HospitalModel(model.getHcf_code(), model.hcf_name, model.waste_color,"000",holder.waste_weight_g.getText().toString().trim(),model.getQr_code()));
-                    notifyItemChanged(position);
-                    myHospitalEventListener.updateUI();
-                }else if (!holder.waste_weight.getText().toString().trim().isEmpty() && holder.waste_weight_g.getText().toString().trim().isEmpty()){
-                    data.set(position,new HospitalModel(model.getHcf_code(), model.hcf_name, model.waste_color,holder.waste_weight.getText().toString().trim(),"000",model.getQr_code()));
-                    notifyItemChanged(position);
-                    myHospitalEventListener.updateUI();
-                }else {
-                    data.set(position,new HospitalModel(model.getHcf_code(), model.hcf_name, model.waste_color,holder.waste_weight.getText().toString().trim(),holder.waste_weight_g.getText().toString().trim(),model.getQr_code()));
-                    notifyItemChanged(position);
-                    myHospitalEventListener.updateUI();
-                }
+        holder.update_weight.setOnClickListener(v -> {
+            if (holder.waste_weight.getText().toString().trim().isEmpty() && holder.waste_weight_g.getText().toString().trim().isEmpty()){
+                data.set(position,new HospitalModel(model.getHcf_code(), model.hcf_name, model.waste_color,"000","000",model.getQr_code()));
+                notifyItemChanged(position);
+                myHospitalEventListener.updateUI();
+            }else if (holder.waste_weight.getText().toString().trim().isEmpty() && !holder.waste_weight_g.getText().toString().trim().isEmpty()){
+                data.set(position,new HospitalModel(model.getHcf_code(), model.hcf_name, model.waste_color,"000",holder.waste_weight_g.getText().toString().trim(),model.getQr_code()));
+                notifyItemChanged(position);
+                myHospitalEventListener.updateUI();
+            }else if (!holder.waste_weight.getText().toString().trim().isEmpty() && holder.waste_weight_g.getText().toString().trim().isEmpty()){
+                data.set(position,new HospitalModel(model.getHcf_code(), model.hcf_name, model.waste_color,holder.waste_weight.getText().toString().trim(),"000",model.getQr_code()));
+                notifyItemChanged(position);
+                myHospitalEventListener.updateUI();
+            }else {
+                data.set(position,new HospitalModel(model.getHcf_code(), model.hcf_name, model.waste_color,holder.waste_weight.getText().toString().trim(),holder.waste_weight_g.getText().toString().trim(),model.getQr_code()));
+                notifyItemChanged(position);
+                myHospitalEventListener.updateUI();
             }
         });
 
@@ -137,15 +130,21 @@ public class HospitalAdapter extends RecyclerView.Adapter<HospitalAdapter.ViewHo
         builder.setMessage("Do you want to Delete ?");
         builder.setTitle("Alert !");
         builder.setCancelable(false);
-        builder.setPositiveButton("Yes", (DialogInterface.OnClickListener) (dialog, which) -> {
+        builder.setPositiveButton("Yes", (dialog, which) -> {
             data.remove(position);
             notifyDataSetChanged();
             myHospitalEventListener.updateUI();
         });
-        builder.setNegativeButton("No", (DialogInterface.OnClickListener) (dialog, which) -> {
+        builder.setNegativeButton("No", (dialog, which) -> {
             dialog.cancel();
         });
         AlertDialog alertDialog = builder.create();
         alertDialog.show();
+        if (alertDialog.getButton(AlertDialog.BUTTON_POSITIVE) != null) {
+            alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(ContextCompat.getColor(context, R.color.app_color_dark));
+        }
+        if (alertDialog.getButton(AlertDialog.BUTTON_NEGATIVE) != null) {
+            alertDialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(ContextCompat.getColor(context, R.color.app_color_dark));
+        }
     }
 }

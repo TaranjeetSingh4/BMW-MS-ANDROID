@@ -50,9 +50,13 @@ public class BluetoothDevicesAdapter extends RecyclerView.Adapter<BluetoothDevic
 
         BluetoothDevicesModel model = data.get(position);
 
-        if (model.getBluetoothDevice().getName() != null){
-            holder.blName.setText(model.getBluetoothDevice().getName());
-        }else {
+        try {
+            if (model.getBluetoothDevice().getName() != null){
+                holder.blName.setText(model.getBluetoothDevice().getName());
+            } else {
+                holder.blName.setText(model.getBluetoothDevice().getAddress());
+            }
+        } catch (SecurityException e) {
             holder.blName.setText(model.getBluetoothDevice().getAddress());
         }
 

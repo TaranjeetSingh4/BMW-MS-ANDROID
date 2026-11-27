@@ -11,12 +11,16 @@ import android.os.*
 import android.provider.Settings
 import android.text.format.DateFormat
 import android.util.Log
+import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.webkit.WebSettings
 import android.webkit.WebView
+import android.webkit.WebViewClient
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
@@ -43,14 +47,17 @@ import com.google.gson.Gson
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 import com.karumi.dexter.Dexter
+import com.karumi.dexter.MultiplePermissionsReport
 import com.karumi.dexter.PermissionToken
 import com.karumi.dexter.listener.PermissionDeniedResponse
 import com.karumi.dexter.listener.PermissionGrantedResponse
 import com.karumi.dexter.listener.PermissionRequest
+import com.karumi.dexter.listener.multi.MultiplePermissionsListener
 import com.karumi.dexter.listener.single.PermissionListener
 import java.text.DecimalFormat
 import java.util.*
 import androidx.core.net.toUri
+import com.google.android.material.button.MaterialButton
 
 class CbwtfDashboardActivity : AppCompatActivity() {
 
@@ -99,6 +106,7 @@ class CbwtfDashboardActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        supportActionBar?.hide()
         setContentView(R.layout.activity_dashboard)
 
         CrashlyticsHelper.log("CbwtfDashboardActivity onCreate")
@@ -257,24 +265,26 @@ class CbwtfDashboardActivity : AppCompatActivity() {
         }
     }
 
-    @SuppressLint("ClickableViewAccessibility")
+    @SuppressLint("ClickableViewAccessibility", "SetJavaScriptEnabled")
     private fun showNoticeDialog(url: String, cancelable: Boolean) {
-        val webView = WebView(this)
-        webView.layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-        webView.loadUrl(url)
-        
+        if (url.isEmpty()) return
+
+        val webView = WebView(this).apply {
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+            settings.javaScriptEnabled = true
+            settings.domStorageEnabled = true
+            loadUrl(url)
+        }
+
         val dialog = AlertDialog.Builder(this)
-            .setCancelable(true) // Force cancelable to true to allow clicking outside
+            .setCancelable(true)
             .setView(webView)
             .create()
 
-        // Dismiss when clicking inside the WebView
-        webView.setOnTouchListener { _, event ->
-            if (event.action == MotionEvent.ACTION_UP) {
-                dialog.dismiss()
-            }
-            false
-        }
+        dialog.setCanceledOnTouchOutside(true)
 
         dialog.show()
     }
@@ -383,11 +393,37 @@ class CbwtfDashboardActivity : AppCompatActivity() {
     }
 
     private fun getBluetoothPermission(): Boolean {
-        Dexter.withContext(this).withPermission(Manifest.permission.BLUETOOTH).withListener(object : PermissionListener {
-            override fun onPermissionGranted(response: PermissionGrantedResponse) { isBluetoothGranted = true }
-            override fun onPermissionDenied(response: PermissionDeniedResponse) { isBluetoothGranted = false }
-            override fun onPermissionRationaleShouldBeShown(request: PermissionRequest, token: PermissionToken) { token.continuePermissionRequest() }
-        }).check()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val connectGranted = ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
+            val scanGranted = ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED
+            if (connectGranted && scanGranted) {
+                isBluetoothGranted = true
+                return true
+            }
+            Dexter.withContext(this)
+                .withPermissions(
+                    Manifest.permission.BLUETOOTH_CONNECT,
+                    Manifest.permission.BLUETOOTH_SCAN
+                )
+                .withListener(object : MultiplePermissionsListener {
+                    override fun onPermissionsChecked(report: MultiplePermissionsReport?) {
+                        isBluetoothGranted = report?.areAllPermissionsGranted() == true
+                    }
+
+                    override fun onPermissionRationaleShouldBeShown(
+                        permissions: MutableList<PermissionRequest>?,
+                        token: PermissionToken?
+                    ) {
+                        token?.continuePermissionRequest()
+                    }
+                }).check()
+        } else {
+            Dexter.withContext(this).withPermission(Manifest.permission.BLUETOOTH).withListener(object : PermissionListener {
+                override fun onPermissionGranted(response: PermissionGrantedResponse) { isBluetoothGranted = true }
+                override fun onPermissionDenied(response: PermissionDeniedResponse) { isBluetoothGranted = false }
+                override fun onPermissionRationaleShouldBeShown(request: PermissionRequest, token: PermissionToken) { token.continuePermissionRequest() }
+            }).check()
+        }
         return isBluetoothGranted
     }
 

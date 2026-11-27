@@ -12,6 +12,7 @@ public class AppStrings {
     public final static String hospital_data = base_url+"Cbwtf_api/get_hospital";
     public final static String cbwtf_data = base_url+"Cbwtf_api/get_cbwtf";
     public final static String cbwtf_scan_submit = base_url+"App_Cbwtf/scanning_cbwtf_side";
+    public final static String scanning_hcf_side = base_url+"App_Cbwtf/scanning_hcf_side";
     public final static String hcf_scan_submit = base_url+"Cbwtf_api/scanning_hcf_side_api";
     public final static String hcf_scan_submit_hcf = base_url+"Cbwtf_api/scanning_hcf_side_api_hcf";
     public final static String get_today_data = base_url+"Cbwtf_api/get_today_qrdata";

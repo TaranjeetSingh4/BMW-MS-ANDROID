@@ -18,10 +18,10 @@ android {
 
     defaultConfig {
         applicationId "com.appventurez.bmwms"
-        minSdk 21
+        minSdk 24
         targetSdk 36
-        versionCode 4
-        versionName "1.2"
+        versionCode 10
+        versionName "1.4"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -41,11 +41,24 @@ android {
         }
     }
 
+    signingConfigs {
+        release {
+            def keystorePath = localProperties.getProperty("KEYSTORE_FILE") ?: "keystorefile.jks"
+            if (file(keystorePath).exists()) {
+                storeFile file(keystorePath)
+                storePassword localProperties.getProperty("KEYSTORE_PASSWORD") ?: "eco@1234"
+                keyAlias localProperties.getProperty("KEY_ALIAS") ?: "ecokey"
+                keyPassword localProperties.getProperty("KEY_PASSWORD") ?: "eco@1234"
+            }
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
             shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
         }
         debug {
             minifyEnabled false
@@ -130,6 +143,5 @@ dependencies {
 
     // Firebase
     implementation platform('com.google.firebase:firebase-bom:33.1.2')
-    implementation 'com.google.firebase:firebase-analytics'
     implementation 'com.google.firebase:firebase-crashlytics'
 }

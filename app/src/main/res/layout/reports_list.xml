@@ -6,6 +6,7 @@
     android:layout_marginTop="5dp"
     app:cardCornerRadius="10dp"
     app:cardElevation="5dp"
+    app:cardBackgroundColor="@color/white"
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -249,6 +250,66 @@
 
                 </LinearLayout>
 
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/layout_hcf_photo"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                android:gravity="center_vertical"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    android:textColor="@color/app_color_dark"
+                    android:textStyle="bold"
+                    android:textSize="12sp"
+                    android:text="HCF Weight Photo: "
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+                <ImageView
+                    android:id="@+id/report_hcf_photo_view"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:contentDescription="@string/image_description"
+                    android:focusable="true"
+                    android:padding="4dp"
+                    android:src="@drawable/ic_baseline_visibility_24"
+                    app:tint="@color/app_color_dark" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/layout_cbwtf_photo"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                android:gravity="center_vertical"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    android:textColor="@color/app_color_dark"
+                    android:textStyle="bold"
+                    android:textSize="12sp"
+                    android:text="CBWTF Weight Photo: "
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+                <ImageView
+                    android:id="@+id/report_cbwtf_photo_view"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:contentDescription="@string/image_description"
+                    android:focusable="true"
+                    android:padding="4dp"
+                    android:src="@drawable/ic_baseline_visibility_24"
+                    app:tint="@color/app_color_dark" />
 
             </LinearLayout>
 
