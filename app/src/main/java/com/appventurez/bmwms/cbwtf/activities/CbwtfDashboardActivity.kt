@@ -11,12 +11,16 @@ import android.os.*
 import android.provider.Settings
 import android.text.format.DateFormat
 import android.util.Log
+import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.webkit.WebSettings
 import android.webkit.WebView
+import android.webkit.WebViewClient
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
@@ -53,6 +57,7 @@ import com.karumi.dexter.listener.single.PermissionListener
 import java.text.DecimalFormat
 import java.util.*
 import androidx.core.net.toUri
+import com.google.android.material.button.MaterialButton
 
 class CbwtfDashboardActivity : AppCompatActivity() {
 
@@ -101,6 +106,7 @@ class CbwtfDashboardActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        supportActionBar?.hide()
         setContentView(R.layout.activity_dashboard)
 
         CrashlyticsHelper.log("CbwtfDashboardActivity onCreate")
@@ -259,24 +265,26 @@ class CbwtfDashboardActivity : AppCompatActivity() {
         }
     }
 
-    @SuppressLint("ClickableViewAccessibility")
+    @SuppressLint("ClickableViewAccessibility", "SetJavaScriptEnabled")
     private fun showNoticeDialog(url: String, cancelable: Boolean) {
-        val webView = WebView(this)
-        webView.layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-        webView.loadUrl(url)
-        
+        if (url.isEmpty()) return
+
+        val webView = WebView(this).apply {
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+            settings.javaScriptEnabled = true
+            settings.domStorageEnabled = true
+            loadUrl(url)
+        }
+
         val dialog = AlertDialog.Builder(this)
-            .setCancelable(true) // Force cancelable to true to allow clicking outside
+            .setCancelable(true)
             .setView(webView)
             .create()
 
-        // Dismiss when clicking inside the WebView
-        webView.setOnTouchListener { _, event ->
-            if (event.action == MotionEvent.ACTION_UP) {
-                dialog.dismiss()
-            }
-            false
-        }
+        dialog.setCanceledOnTouchOutside(true)
 
         dialog.show()
     }

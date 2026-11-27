@@ -2,6 +2,7 @@ package com.appventurez.bmwms.classes
 
 import android.app.Application
 import android.content.Context
+import androidx.appcompat.app.AppCompatDelegate
 import com.appventurez.bmwms.utils.CrashlyticsHelper
 import com.google.firebase.FirebaseApp
 
@@ -10,6 +11,7 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
         ctx = this
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
         FirebaseApp.initializeApp(this)
         CrashlyticsHelper.log("App onCreate initialized")
         CrashlyticsHelper.updateCrashlyticsUserContext(this)
