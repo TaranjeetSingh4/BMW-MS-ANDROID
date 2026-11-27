@@ -256,7 +256,7 @@
             <LinearLayout
                 android:id="@+id/layout_hcf_photo"
                 android:orientation="horizontal"
-                android:visibility="visible"
+                android:visibility="gone"
                 android:gravity="center_vertical"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content">
@@ -286,7 +286,7 @@
             <LinearLayout
                 android:id="@+id/layout_cbwtf_photo"
                 android:orientation="horizontal"
-                android:visibility="visible"
+                android:visibility="gone"
                 android:gravity="center_vertical"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content">

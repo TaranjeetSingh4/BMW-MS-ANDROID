@@ -97,14 +97,14 @@ public class ReportsAdapter extends RecyclerView.Adapter<ReportsAdapter.ViewHold
         holder.total_packets_tv.setText(model.getTotalPackets());
 
         if (model.getHcfWeightPhoto() != null && !model.getHcfWeightPhoto().trim().isEmpty()) {
-            holder.layoutHcfPhoto.setVisibility(View.VISIBLE);
+            holder.layoutHcfPhoto.setVisibility(View.GONE);
             holder.hcfPhotoView.setOnClickListener(v -> showImageDialog(context, "HCF Weight Photo", model.getHcfWeightPhoto()));
         } else {
             holder.layoutHcfPhoto.setVisibility(View.GONE);
         }
 
         if (model.getCbwtfWeightPhoto() != null && !model.getCbwtfWeightPhoto().trim().isEmpty()) {
-            holder.layoutCbwtfPhoto.setVisibility(View.VISIBLE);
+            holder.layoutCbwtfPhoto.setVisibility(View.GONE);
             holder.cbwtfPhotoView.setOnClickListener(v -> showImageDialog(context, "CBWTF Weight Photo", model.getCbwtfWeightPhoto()));
         } else {
             holder.layoutCbwtfPhoto.setVisibility(View.GONE);

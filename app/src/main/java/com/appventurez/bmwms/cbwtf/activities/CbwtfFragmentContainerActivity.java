@@ -19,6 +19,9 @@ public class CbwtfFragmentContainerActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().hide();
+        }
         setContentView(R.layout.activity_cbwtf_fragment_container);
 
         int f_id = getIntent().getIntExtra("f_id",0);

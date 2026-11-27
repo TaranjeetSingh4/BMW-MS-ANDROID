@@ -61,7 +61,10 @@
     <string name="scan">Scan</string>
     <string name="waste_weight_kg">Waste Weight (Kg)</string>
     <string name="capture_weighing_photo">Capture Weighing Photo</string>
+    <string name="capture">Capture</string>
     <string name="weighing_photo_mandatory">Weighing Photo (Mandatory)</string>
     <string name="retake_photo">Retake Photo</string>
     <string name="remove_photo">Remove Photo</string>
+    <string name="notice_announcements">Notice &amp; Announcements</string>
+    <string name="ok">OK</string>
 </resources>

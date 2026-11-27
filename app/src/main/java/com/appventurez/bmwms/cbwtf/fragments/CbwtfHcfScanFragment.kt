@@ -71,6 +71,8 @@ import com.android.volley.Response
 import com.android.volley.toolbox.StringRequest
 
 import com.bumptech.glide.Glide
+import com.bumptech.glide.Priority
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.github.douglasjunior.bluetoothclassiclibrary.BluetoothStatus
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.ResolvableApiException
@@ -315,40 +317,93 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
 
     private val takePhotoLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
+            Log.d(TAG, "takePhotoLauncher RESULT_OK, currentPhotoPath=$currentPhotoPath")
+            var fileSaved = false
             if (!currentPhotoPath.isNullOrEmpty()) {
                 val file = File(currentPhotoPath!!)
-                if (file.exists()) {
+                if (file.exists() && file.length() > 0) {
                     compressImageFile(currentPhotoPath!!)
                     updateMainPhotoUI()
+                    fileSaved = true
                 }
             }
+
+            if (!fileSaved) {
+                // Fallback: Check if camera returned bitmap thumbnail in result extras
+                val bundle = result.data?.extras
+                val bitmap = bundle?.get("data") as? Bitmap
+                if (bitmap != null) {
+                    try {
+                        val photoFile = createImageFile()
+                        currentPhotoPath = photoFile.absolutePath
+                        val fos = FileOutputStream(photoFile)
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, 90, fos)
+                        fos.flush()
+                        fos.close()
+                        compressImageFile(currentPhotoPath!!)
+                        updateMainPhotoUI()
+                        fileSaved = true
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error saving fallback bitmap from camera result", e)
+                    }
+                }
+            }
+
+            if (!fileSaved) {
+                showToast("Failed to save captured photo. Please try again.")
+                updateMainPhotoUI()
+            }
         } else {
-            currentPhotoPath = null
-            updateMainPhotoUI()
+            Log.d(TAG, "takePhotoLauncher canceled or failed, resultCode=${result.resultCode}")
+            if (currentPhotoPath != null && File(currentPhotoPath!!).exists() && File(currentPhotoPath!!).length() > 0) {
+                updateMainPhotoUI()
+            } else {
+                currentPhotoPath = null
+                updateMainPhotoUI()
+            }
         }
     }
 
     private fun dispatchTakePictureIntent() {
         val takePictureIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-        if (takePictureIntent.resolveActivity(requireActivity().packageManager) != null) {
-            val photoFile: File? = try {
-                createImageFile()
-            } catch (ex: IOException) {
-                Log.e(TAG, "Error creating image file", ex)
-                null
-            }
-            if (photoFile != null) {
-                currentPhotoPath = photoFile.absolutePath
-                val photoURI: Uri = FileProvider.getUriForFile(
-                    requireContext(),
-                    "${requireActivity().packageName}.provider",
-                    photoFile
-                )
-                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI)
-                takePhotoLauncher.launch(takePictureIntent)
-            }
-        } else {
+        val photoFile: File? = try {
+            createImageFile()
+        } catch (ex: IOException) {
+            Log.e(TAG, "Error creating image file", ex)
+            null
+        }
+
+        if (photoFile == null) {
+            showToast("Unable to create file for photo storage")
+            return
+        }
+
+        currentPhotoPath = photoFile.absolutePath
+        val photoURI: Uri = FileProvider.getUriForFile(
+            requireContext(),
+            "${requireActivity().packageName}.provider",
+            photoFile
+        )
+
+        takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI)
+        takePictureIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+
+        val pm = requireContext().packageManager
+        val resInfoList = pm.queryIntentActivities(takePictureIntent, PackageManager.MATCH_DEFAULT_ONLY)
+        for (resolveInfo in resInfoList) {
+            val packageName = resolveInfo.activityInfo.packageName
+            requireContext().grantUriPermission(
+                packageName,
+                photoURI,
+                Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION
+            )
+        }
+
+        try {
             takePhotoLauncher.launch(takePictureIntent)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error launching camera intent", e)
+            showToast("No camera application found to perform operation")
         }
     }
 
@@ -606,6 +661,11 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
             fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(requireActivity())
             geocoder = Geocoder(requireContext())
             checkLocationPermission()
+            preloadSamplePhoto()
+
+            if (savedInstanceState != null && currentPhotoPath.isNullOrEmpty()) {
+                currentPhotoPath = savedInstanceState.getString("KEY_CURRENT_PHOTO_PATH")
+            }
 
             val args = arguments
             if (args != null) {
@@ -644,23 +704,33 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
 
             val samplePhotoInfoLayout = rootView!!.findViewById<View>(R.id.sample_photo_info_layout)
             samplePhotoInfoLayout?.setOnClickListener {
-                showSampleImageDialog("Biomedical Waste Weighing Station", "http://staging16.dgmhup.in/images/Biomedical%20Waste%20Weighing%20Station.png")
+                showSampleImageDialog("Biomedical Waste Weighing Station", SAMPLE_WEIGHING_PHOTO_URL)
+            }
+
+            val onCaptureAction = {
+                if (getCameraPermission()) {
+                    dispatchTakePictureIntent()
+                } else {
+                    showToast("Camera permission required to capture photo")
+                }
             }
 
             captureWeighingPhotoButton!!.setOnClickListener {
-                if (getCameraPermission()) {
-                    dispatchTakePictureIntent()
-                } else {
-                    showToast("Camera permission required to capture photo")
-                }
+                showSampleImageDialog(
+                    title = "Biomedical Waste Weighing Station",
+                    photoPath = SAMPLE_WEIGHING_PHOTO_URL,
+                    showCaptureButton = true,
+                    onCaptureClick = onCaptureAction
+                )
             }
 
             weighingPhotoRetakeBtn!!.setOnClickListener {
-                if (getCameraPermission()) {
-                    dispatchTakePictureIntent()
-                } else {
-                    showToast("Camera permission required to capture photo")
-                }
+                showSampleImageDialog(
+                    title = "Biomedical Waste Weighing Station",
+                    photoPath = SAMPLE_WEIGHING_PHOTO_URL,
+                    showCaptureButton = true,
+                    onCaptureClick = onCaptureAction
+                )
             }
 
             weighingPhotoRemoveBtn!!.setOnClickListener {
@@ -1461,6 +1531,11 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
         }
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString("KEY_CURRENT_PHOTO_PATH", currentPhotoPath)
+    }
+
     interface RescanCallback {
         fun onResult(qrAlreadyScanned: Boolean, qrSwitch: Boolean, data: JSONObject)
     }
@@ -1810,8 +1885,23 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
         VolleySingleton.getInstance(requireContext()).addToRequestQueue(request)
     }
 
-    private fun showSampleImageDialog(title: String, photoPath: String) {
-        if (photoPath.isEmpty()) return
+    private fun preloadSamplePhoto() {
+        if (isAdded && context != null) {
+            Glide.with(requireContext())
+                .load(SAMPLE_WEIGHING_PHOTO_URL)
+                .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .priority(Priority.HIGH)
+                .preload()
+        }
+    }
+
+    private fun showSampleImageDialog(
+        title: String,
+        photoPath: String,
+        showCaptureButton: Boolean = false,
+        onCaptureClick: (() -> Unit)? = null
+    ) {
+        if (photoPath.isEmpty() || !isAdded) return
 
         val fullUrl = if (photoPath.startsWith("http://") || photoPath.startsWith("https://")) {
             photoPath
@@ -1823,18 +1913,24 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
         }
 
         val view = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_image_viewer, null)
-        val dialog = Dialog(requireContext(), android.R.style.Theme_Black_NoTitleBar_Fullscreen)
+        view.clipToOutline = true
+
+        val dialog = Dialog(requireContext())
         dialog.setContentView(view)
 
         if (dialog.window != null) {
-            dialog.window!!.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-            dialog.window!!.setBackgroundDrawableResource(android.R.color.black)
+            val displayMetrics = resources.displayMetrics
+            val width = (displayMetrics.widthPixels * 0.90).toInt()
+            val height = (displayMetrics.heightPixels * 0.70).toInt()
+            dialog.window!!.setLayout(width, height)
+            dialog.window!!.setBackgroundDrawableResource(android.R.color.transparent)
         }
 
         val titleTv = view.findViewById<TextView>(R.id.dialog_image_title)
         val imageView = view.findViewById<ImageView>(R.id.dialog_image_view)
         val closeBtn = view.findViewById<ImageView>(R.id.dialog_image_close)
         val progressBar = view.findViewById<ProgressBar>(R.id.dialog_image_progress)
+        val captureBtn = view.findViewById<MaterialButton>(R.id.dialog_capture_button)
 
         titleTv.text = title
 
@@ -1842,8 +1938,20 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
             progressBar.visibility = View.VISIBLE
         }
 
+        // Initially hide capture button while loading
+        captureBtn?.visibility = View.GONE
+        if (showCaptureButton && captureBtn != null) {
+            captureBtn.setOnClickListener {
+                dialog.dismiss()
+                onCaptureClick?.invoke()
+            }
+        }
+
         Glide.with(requireContext())
             .load(fullUrl)
+            .diskCacheStrategy(DiskCacheStrategy.ALL)
+            .priority(Priority.IMMEDIATE)
+            .dontAnimate()
             .listener(object : com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable> {
                 override fun onLoadFailed(
                     e: com.bumptech.glide.load.engine.GlideException?,
@@ -1863,6 +1971,9 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
                     isFirstResource: Boolean
                 ): Boolean {
                     progressBar?.visibility = View.GONE
+                    if (showCaptureButton) {
+                        captureBtn?.visibility = View.VISIBLE
+                    }
                     return false
                 }
             })
@@ -1874,5 +1985,6 @@ class CbwtfHcfScanFragment : Fragment(), BluetoothDevicesAdapter.EventListener, 
 
     companion object {
         private const val TAG = "CbwtfHcfScanFragment"
+        private const val SAMPLE_WEIGHING_PHOTO_URL = "http://staging16.dgmhup.in/images/Biomedical%20Waste%20Weighing%20Station.png"
     }
 }
